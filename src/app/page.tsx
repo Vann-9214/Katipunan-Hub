@@ -1,9 +1,9 @@
-// app/page.tsx (or pages/index.tsx for older versions)
+import Tab from "@/app/component/General/LandingPageTab";
 
-export default function Home() {
+export default function LandingPage() {
   return (
     <div>
-      <h1>Wassup Guys</h1>
+      <Tab />
     </div>
   );
 }

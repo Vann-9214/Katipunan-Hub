@@ -1,9 +1,10 @@
-import Button from "@/app/component/button";
+import Button, { TextButton } from "@/app/component/ReusableComponent/Buttons";
 
 export default function ButtonPage() {
   return (
     <div className="p-4 justify-center items-center flex min-h-screen">
       <Button text="Click Me" />
+      <TextButton text="Hello" />
     </div>
   );
 }
