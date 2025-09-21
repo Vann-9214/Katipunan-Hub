@@ -21,3 +21,26 @@
 .animate-fadeIn {
   animation: fadeIn 0.25s ease-out forwards;
 }
+/*background*/
+.landing-page {
+  min-height: 100vh;
+  background: #f4c542; /* gold */
+  position: relative;
+  overflow: hidden;
+}
+
+.landing-page::before {
+  content: "";
+  position: absolute;
+  top: -291px;   /* Y position from figma */
+  left: -90px;  /* X position from figma */
+  width: 1200px; /* adjust until it matches design */
+  height: 1200px; /* adjust until it matches design */
+  background: url("/maroon-shape.png") no-repeat center/cover;
+  z-index: 0;
+}
+
+.landing-page > * {
+  position: relative;
+  z-index: 1;
+}
