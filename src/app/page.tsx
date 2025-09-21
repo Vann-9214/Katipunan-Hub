@@ -1,9 +1,9 @@
-import Tab from "@/app/component/General/LandingPageTab";
+import LandingPageTab from "@/app/component/General/LandingPage/Tab/LandingPageTab";
 
 export default function LandingPage() {
   return (
     <div>
-      <Tab />
+      <LandingPageTab />
     </div>
   );
 }
