@@ -9,6 +9,7 @@ export default function Button({
   width = "w-[130px]",
   rounded = "rounded-[30px]",
   className,
+  type = "button",
 }: {
   onClick?: () => void;
   text: string;
@@ -18,9 +19,11 @@ export default function Button({
   width?: string;
   rounded?: string;
   className?: string;
+  type?: "button" | "submit" | "reset";
 }) {
   return (
     <button
+      type={type}
       onClick={onClick}
       style={{ fontFamily: "Montserrat, sans-serif" }}
       className={clsx(
@@ -42,13 +45,16 @@ export function TextButton({
   onClick,
   text,
   className,
+  type,
 }: {
   onClick?: () => void;
   text: string;
   className?: string;
+  type?: "button" | "submit" | "reset";
 }) {
   return (
     <button
+      type={type}
       onClick={onClick}
       style={{ fontFamily: "Montserrat, sans-serif" }}
       className={clsx(
