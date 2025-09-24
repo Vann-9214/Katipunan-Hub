@@ -1,38 +1,63 @@
-"use client"; // required for interactivity
+"use client";
 import { useState } from "react";
-import styles from "./LandingPage.module.css";
-import SignInForm from "@/app/component/General/LandingPage/Tab/\SignInForms"; 
+import SignInForm from "@/app/component/General/LandingPage/Tab/SignInForms";
 
 export default function LandingPageContent() {
   const [showSignIn, setShowSignIn] = useState(false);
 
   return (
-    <div className={styles.heroText}>
+    // ⬇️ only position content, don’t override background here
+    <div className="absolute top-[160px] left-[150px] max-w-[600px] text-white z-10">
       {/* Headlines */}
-      <div className={styles.headline}>
-        <span className={styles.stayGold}>STAY</span>
-        <span className={styles.subWhite}> UPDATED</span>
+      <div className="flex items-baseline">
+        <span
+          className="text-[96px] font-bold text-[#efbf04]"
+          style={{ fontFamily: "'Poppins', sans-serif" }}
+        >
+          STAY
+        </span>
+        <span
+          className="ml-[8px] text-[64px] font-bold text-white"
+          style={{ fontFamily: "'Poppins', sans-serif" }}
+        >
+          UPDATED
+        </span>
       </div>
-      <div className={styles.headline}>
-        <span className={styles.stayGold}>STAY</span>
-        <span className={styles.subWhite}> CONNECTED</span>
+      <div className="flex items-baseline ml-[80px]">
+        <span
+          className="text-[96px] font-bold text-[#efbf04]"
+          style={{ fontFamily: "'Poppins', sans-serif" }}
+        >
+          STAY
+        </span>
+        <span
+          className="ml-[8px] text-[64px] font-bold text-white"
+          style={{ fontFamily: "'Poppins', sans-serif" }}
+        >
+          CONNECTED
+        </span>
       </div>
 
       {/* Subtitle */}
-      <p className={styles.subtitle}>
+      <p
+        className="mt-[20px] text-[20px] leading-[1.5] text-white"
+        style={{ fontFamily: "'PT Sans', sans-serif" }}
+      >
         From school events to lost &amp; found, Katipunan Hub keeps the whole
         CIT community in one place
       </p>
 
       {/* CTA buttons */}
-      <div className={styles.ctaButtons}>
+      <div className="flex gap-[30px] mt-[40px]">
         <button
-          className={styles.btnJoin}
+          className="bg-[#efbf04] text-black px-[55px] py-[20px] rounded-full font-semibold text-[21px] border-none cursor-pointer"
           onClick={() => setShowSignIn(true)}
         >
           Join Hub
         </button>
-        <button className={styles.btnLearn}>Learn More</button>
+        <button className="bg-transparent text-white px-[55px] py-[20px] rounded-full font-semibold text-[21px] border-[3px] border-white cursor-pointer">
+          Learn More
+        </button>
       </div>
 
       {/* Sign In Form modal */}
