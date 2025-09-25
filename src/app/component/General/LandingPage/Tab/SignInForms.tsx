@@ -19,7 +19,7 @@ export default function SignInForm({ onClose }: SignInFormProps) {
   };
 
   return (
-    <div className="flex justify-center items-center fixed inset-0 bg-black/50 backdrop-blur-sm z-40">
+    <div className="flex justify-center items-center fixed inset-0 bg-black/50 backdrop-blur-sm z-49">
       <div className="flex w-[90%] max-w-[1200px] h-[min(90vh,770px)] bg-white rounded-[20px] shadow-md relative overflow-hidden">
         <div className="bg-[linear-gradient(to_bottom,#800000,#5A0505)] w-[530px] max-h-full m-[10px] rounded-[20px] p-10">
           <h1
@@ -33,7 +33,7 @@ export default function SignInForm({ onClose }: SignInFormProps) {
           </h1>
           <p
             className="text-white select-none mt-3"
-            style={{
+            style={{ 
               fontFamily: "PT sans, sans-serif",
               fontSize: "clamp(12px,4.5vw,20px)",
             }}
