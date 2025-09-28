@@ -1,12 +1,9 @@
-import Background from "@/app/component/ReusableComponent/Background";
 import LandingPageTab from "@/app/component/General/LandingPage/Tab/LandingPageTab";
-import LandingPageContent from "@/app/component/General/LandingPage/Tab/LandingPageContent";
 
-export default function Page() {
+export default function LandingPage() {
   return (
-    <Background>
+    <div>
       <LandingPageTab />
-      <LandingPageContent />
-    </Background>
+    </div>
   );
 }
