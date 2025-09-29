@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 
 interface TextBoxProps {
@@ -7,10 +7,13 @@ interface TextBoxProps {
   value?: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   className?: string;
-  rightImageSrc?: string; // path to your local image
+  rightImageSrc?: string;
+  rightToggleImageSrc?: string; // optional toggle image
   rightImageAlt?: string;
   rightImageWidth?: number;
   rightImageHeight?: number;
+  onRightClick?: () => void;
+  overrideTypeOnToggle?: [string, string]; // e.g. ["password", "text"]
 }
 
 export default function TextBox({
@@ -20,28 +23,70 @@ export default function TextBox({
   onChange,
   className = "",
   rightImageSrc,
+  rightToggleImageSrc,
   rightImageAlt = "icon",
-  rightImageWidth = 20,
-  rightImageHeight = 20,
+  rightImageWidth = 30,
+  rightImageHeight = 30,
+  onRightClick,
+  overrideTypeOnToggle,
 }: TextBoxProps) {
+  const [toggled, setToggled] = useState(false);
+
+  const handleRightClick = () => {
+    if (rightToggleImageSrc) {
+      setToggled((prev) => !prev);
+    }
+    onRightClick?.();
+  };
+
+  // Decide input type
+  const inputType =
+    overrideTypeOnToggle && toggled
+      ? overrideTypeOnToggle[1]
+      : overrideTypeOnToggle
+      ? overrideTypeOnToggle[0]
+      : type;
+
   return (
-    <div className="relative w-[540px]">
+    <div className="relative w-[540px] select-none">
       <input
-        type={type}
+        type={inputType}
         placeholder={placeholder}
         value={value}
         onChange={onChange}
-        className={`text-[20px] h-[60px] w-full px-5 pr-12 rounded-[30px] border border-black focus:outline-none focus:ring-1 ${className}`}
+        style={{ fontFamily: "Montserrat, sans-serif" }}
+        className={`text-[20px] h-[60px] w-full px-5 pr-15 rounded-[30px] border border-black focus:outline-none focus:ring-1 ${className}`}
       />
+
       {rightImageSrc && (
-        <div className="absolute right-3 top-1/2 -translate-y-1/2">
-          <Image
-            draggable={false}
-            src={rightImageSrc}
-            alt={rightImageAlt}
-            width={rightImageWidth}
-            height={rightImageHeight}
-          />
+        <div className="absolute right-6 top-1/2 -translate-y-1/2">
+          {onRightClick || rightToggleImageSrc ? (
+            <button
+              type="button"
+              onClick={handleRightClick}
+              className="cursor-pointer transition-all hover:scale-105 active:scale-95 duration-150 ease-in-out"
+            >
+              <Image
+                src={
+                  toggled && rightToggleImageSrc
+                    ? rightToggleImageSrc
+                    : rightImageSrc
+                }
+                alt={rightImageAlt}
+                width={rightImageWidth}
+                height={rightImageHeight}
+                draggable={false}
+              />
+            </button>
+          ) : (
+            <Image
+              src={rightImageSrc}
+              alt={rightImageAlt}
+              width={rightImageWidth}
+              height={rightImageHeight}
+              draggable={false}
+            />
+          )}
         </div>
       )}
     </div>
