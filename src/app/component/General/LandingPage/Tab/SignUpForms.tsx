@@ -6,7 +6,7 @@ interface SignUpFormProps {
 
 export default function SignUpForm({ onClose }: SignUpFormProps) {
   return (
-    <div className=" flex justify-center items-center  fixed inset-0 bg-black/50 backdrop-blur-sm z-40">
+    <div className=" flex justify-center items-center  fixed inset-0 bg-black/50 backdrop-blur-sm z-50">
       <div className="flex justify-center items-center w-[90%] max-w-[1200px] h-auto min-h-[500px] max-h-[770px] bg-white rounded-lg shadow-md relative">
         <h1 className="text-2xl font-bold">Sign Up Form</h1>
         <TextButton

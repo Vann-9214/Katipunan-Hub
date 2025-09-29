@@ -6,12 +6,12 @@ import SignInForm from "./SignInForms";
 import Image from "next/image";
 import Button, { TextButton } from "../../../ReusableComponent/Buttons";
 import { useState } from "react";
-export default function LandingPageComponent() {
+export default function LandingPageTab() {
   const [openSignInForm, setOpenSignInForm] = useState(false);
   const [openSignUpForm, setOpenSignUpForm] = useState(false);
 
   return (
-    <div className="fixed top-0 left-0 py-2 flex shadow-md bg-white w-full h-auto min-h-[70px] max-h-[100px] justify-between items-center">
+    <div className="z-50 fixed top-0 left-0 py-2 flex shadow-md bg-white w-full h-auto min-h-[70px] max-h-[100px] justify-between items-center">
       <div className="ml-10">
         <Logo />
       </div>
@@ -29,7 +29,6 @@ export default function LandingPageComponent() {
           text="Sign Up"
           bg="bg-[#DAA520]"
           rounded="rounded-l-[30px] rounded-r-none"
-          width="w-[140px]"
           onClick={() => setOpenSignUpForm(true)}
         />
       </div>
