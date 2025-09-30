@@ -3,6 +3,7 @@ import Image from "next/image";
 
 interface TextBoxProps {
   type?: string;
+  height?: string;
   placeholder?: string;
   value?: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -19,6 +20,7 @@ interface TextBoxProps {
 export default function TextBox({
   type = "text",
   placeholder = "",
+  height = "h-[60px]",
   value,
   onChange,
   className = "",
@@ -55,7 +57,7 @@ export default function TextBox({
         value={value}
         onChange={onChange}
         style={{ fontFamily: "Montserrat, sans-serif" }}
-        className={`text-[20px] h-[60px] w-full px-5 pr-15 rounded-[30px] border border-black focus:outline-none focus:ring-1 ${className}`}
+        className={`text-[20px] ${height} w-full px-5 pr-15 rounded-[30px] border border-black focus:outline-none focus:ring-1 ${className}`}
       />
 
       {rightImageSrc && (

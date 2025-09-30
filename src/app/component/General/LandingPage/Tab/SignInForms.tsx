@@ -7,9 +7,10 @@ import TextBox from "@/app/component/ReusableComponent/Textbox";
 
 interface SignInFormProps {
   onClose?: () => void;
+  onSwitch?: () => void;
 }
 
-export default function SignInForm({ onClose }: SignInFormProps) {
+export default function SignInForm({ onClose, onSwitch }: SignInFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -47,8 +48,9 @@ export default function SignInForm({ onClose }: SignInFormProps) {
           </p>
         </div>
         {/* Right Side Content */}
-        <div className="ml-8 mt-8 flex flex-col flex-1 p-8">
+        <div className="ml-8 flex flex-col flex-1 p-8">
           <div>
+            {/* Upper */}
             <Logo unclickable={true} />
             <p
               className="text-[30px] select-none mt-2"
@@ -56,8 +58,8 @@ export default function SignInForm({ onClose }: SignInFormProps) {
             >
               Welcome, Teknoy!
             </p>
-
-            <div className="w-[540px] h-[50px] bg-white rounded-[30px] border mt-5 flex justify-between items-center px-[5px]">
+            {/* Toggle Button */}
+            <div className="w-[540px] h-[50px] bg-white rounded-[30px] border mt-2 flex justify-between items-center px-[5px]">
               <Button
                 text="Sign In"
                 textcolor="text-white"
@@ -65,15 +67,29 @@ export default function SignInForm({ onClose }: SignInFormProps) {
                 height="h-[40px]"
                 width="w-[260px]"
               />
-              <TextButton text="Sign Up" className="mr-[70px]" />
+              <TextButton
+                text="Sign Up"
+                className="mr-[70px] text-[#7C7C7C]"
+                type="button"
+                onClick={() => {
+                  console.log("Sign Up button in SignInForm was clicked!");
+                  if (onSwitch) {
+                    onSwitch();
+                  } else {
+                    console.error("onSwitch prop is missing!");
+                  }
+                }}
+              />
             </div>
           </div>
 
+          {/* Form Text Box */}
           <form
             onSubmit={handleSubmit}
             className="flex flex-col justify-between flex-1 gap-4 mt-5 w-full max-w-[540px]"
           >
             <div className="flex flex-col gap-4">
+              {/* Email */}
               <TextBox
                 type="email"
                 placeholder="Cit Email"
@@ -85,14 +101,14 @@ export default function SignInForm({ onClose }: SignInFormProps) {
                 rightImageHeight={30}
                 className="w-full"
               />
-
+              {/* Password */}
               <TextBox
                 type="password"
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 rightImageSrc="/Open Eye Icon.svg"
-                rightToggleImageSrc="Logo.svg"
+                rightToggleImageSrc="Eye Off.svg"
                 rightImageAlt="password icon"
                 rightImageWidth={30}
                 rightImageHeight={30}
@@ -100,9 +116,9 @@ export default function SignInForm({ onClose }: SignInFormProps) {
                 overrideTypeOnToggle={["password", "text"]}
               />
             </div>
-
+            {/* Login Button */}
             <div className="pt-2">
-              <Button text="Log in" width="w-full" className="" />
+              <Button text="Login" width="w-full" className="" />
             </div>
           </form>
         </div>
