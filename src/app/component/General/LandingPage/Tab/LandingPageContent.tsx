@@ -1,13 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import SignInForm from "./SignInForms";
+import SignInForm from "@/app/component/General/LandingPage/Tab/SignInForms";
 
-interface LandingPageContentProps {
-  onLoginSuccess: () => void;
-}
-
-export default function LandingPageContent({ onLoginSuccess }: LandingPageContentProps) {
+export default function LandingPageContent() {
   const [showSignIn, setShowSignIn] = useState(false);
 
   return (
@@ -17,17 +13,26 @@ export default function LandingPageContent({ onLoginSuccess }: LandingPageConten
     >
       {/* Headlines */}
       <div className="flex items-baseline">
-        <span className="text-[96px] font-bold text-[#efbf04] font-poppins">STAY</span>
-        <span className="ml-[8px] text-[64px] font-bold text-white font-poppins">UPDATED</span>
+        <span className="text-[96px] font-bold text-[#efbf04] font-poppins">
+          STAY
+        </span>
+        <span className="ml-[8px] text-[64px] font-bold text-white font-poppins">
+          UPDATED
+        </span>
       </div>
       <div className="flex items-baseline ml-[80px]">
-        <span className="text-[96px] font-bold text-[#efbf04] font-poppins">STAY</span>
-        <span className="ml-[8px] text-[64px] font-bold text-white font-poppins">CONNECTED</span>
+        <span className="text-[96px] font-bold text-[#efbf04] font-poppins">
+          STAY
+        </span>
+        <span className="ml-[8px] text-[64px] font-bold text-white font-poppins">
+          CONNECTED
+        </span>
       </div>
 
       {/* Subtitle */}
       <p className="mt-[20px] text-[20px] leading-[1.5] font-ptsans">
-        From school events to lost &amp; found, Katipunan Hub keeps the whole CIT community in one place
+        From school events to lost &amp; found, Katipunan Hub keeps the whole
+        CIT community in one place
       </p>
 
       {/* CTA buttons */}
@@ -42,20 +47,17 @@ export default function LandingPageContent({ onLoginSuccess }: LandingPageConten
           className="bg-transparent text-white px-[55px] py-[20px] rounded-full font-semibold text-[21px] border-[3px] border-white cursor-pointer"
           onClick={() => {
             const section = document.getElementById("feature");
-            if (section) section.scrollIntoView({ behavior: "smooth" });
+            if (section) {
+              section.scrollIntoView({ behavior: "smooth" });
+            }
           }}
         >
           Learn More
         </button>
       </div>
 
-      {/* SignInForm */}
-      {showSignIn && (
-        <SignInForm
-          onClose={() => setShowSignIn(false)}
-          onLoginSuccess={onLoginSuccess}
-        />
-      )}
+      {/* Sign In Form modal */}
+      {showSignIn && <SignInForm onClose={() => setShowSignIn(false)} />}
     </section>
   );
 }

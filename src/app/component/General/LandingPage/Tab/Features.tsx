@@ -7,10 +7,10 @@ export default function Features() {
   return (
     <motion.section
       id="feature"
-      initial={{ y: "-100vh", opacity: 0 }} // start above
-      whileInView={{ y: 0, opacity: 1 }}   // slide down
+      initial={{ opacity: 0, y: 50 }} // 👈 fade-in + small slide up
+      whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, ease: "easeOut" }}
-      viewport={{ once: true }}             // animate once
+      viewport={{ once: true, amount: 0.5 }} // 👈 trigger only when 50% in view
       className="h-screen relative flex flex-col"
       style={{
         backgroundImage: "url('/Rectangle.svg')",

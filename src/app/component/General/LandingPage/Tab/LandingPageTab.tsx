@@ -1,52 +1,41 @@
 "use client";
 
 import Logo from "@/app/component/ReusableComponent/Logo";
-import SignInForm from "./SignInForms";
 import SignUpForm from "./SignUpForms";
+import SignInForm from "./SignInForms";
 import Button from "../../../ReusableComponent/Buttons";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
-interface LandingPageTabProps {
-  onLoginSuccess: () => void; // required
-}
-
-export default function LandingPageTab({ onLoginSuccess }: LandingPageTabProps) {
+export default function LandingPageTab() {
   const [openSignInForm, setOpenSignInForm] = useState(false);
   const [openSignUpForm, setOpenSignUpForm] = useState(false);
   const [activeTab, setActiveTab] = useState("Home");
-
-  const firstRender = useRef(true);
-
-  useEffect(() => {
-    firstRender.current = false;
-  }, []);
+  const [mounted, setMounted] = useState(false); // ✅ prevent flicker
 
   const navItems = ["Home", "Feature", "About Us"];
 
+  // 👇 Detect section in view
   useEffect(() => {
+    setMounted(true); // ✅ wait until client-side before running observer
     const sections = document.querySelectorAll("section[id]");
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             let id = entry.target.id;
-
-            // ✅ Fix: force "Home" when scroll is near top
-            if (window.scrollY < 100) {
-              setActiveTab("Home");
-            } else if (id === "aboutus") {
-              setActiveTab("About Us");
-            } else {
-              setActiveTab(id.charAt(0).toUpperCase() + id.slice(1));
-            }
+            if (id === "aboutus") setActiveTab("About Us");
+            else setActiveTab(id.charAt(0).toUpperCase() + id.slice(1));
           }
         });
       },
-      { threshold: 0.3 }
+      { threshold: 0.6 }
     );
+
     sections.forEach((sec) => observer.observe(sec));
     return () => observer.disconnect();
   }, []);
+
+  if (!mounted) return null; // ✅ remove SSR hydration mismatch
 
   return (
     <div className="fixed top-0 left-0 py-2 flex shadow-md bg-white w-full h-auto min-h-[70px] max-h-[100px] justify-between items-center z-50">
@@ -59,12 +48,14 @@ export default function LandingPageTab({ onLoginSuccess }: LandingPageTabProps) 
             <button
               key={item}
               onClick={() => {
-                if (firstRender.current) return;
                 let targetId = item.toLowerCase().replace(/\s+/g, "");
                 const section = document.getElementById(targetId);
-                if (section) section.scrollIntoView({ behavior: "smooth" });
-                else if (item === "Home")
+
+                if (section) {
+                  section.scrollIntoView({ behavior: "smooth" });
+                } else if (item === "Home") {
                   window.scrollTo({ top: 0, behavior: "smooth" });
+                }
               }}
               className={`relative pb-1 text-base font-medium transition-colors ${
                 activeTab === item
@@ -86,11 +77,9 @@ export default function LandingPageTab({ onLoginSuccess }: LandingPageTabProps) 
         />
       </div>
 
+      {/* Sign in / Sign up modals */}
       {openSignInForm && (
-        <SignInForm
-          onClose={() => setOpenSignInForm(false)}
-          onLoginSuccess={onLoginSuccess}
-        />
+        <SignInForm onClose={() => setOpenSignInForm(false)} />
       )}
       {openSignUpForm && <SignUpForm onClose={() => setOpenSignUpForm(false)} />}
     </div>
