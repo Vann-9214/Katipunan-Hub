@@ -9,7 +9,7 @@ export default function Background({ children }: { children: React.ReactNode }) 
           left: "-5vw",      // scale with viewport width
           width: "80vw",      // responsive size
           height: "80vw",     // keep square ratio
-          maxWidth: "1200px", // don’t exceed design size
+          maxWidth: "1200px", 
           maxHeight: "1200px",
           backgroundImage: "url('/maroon-shape.png')",
           backgroundRepeat: "no-repeat",

@@ -17,7 +17,6 @@
     transform: scale(1);
   }
 }
-
 .animate-fadeIn {
   animation: fadeIn 0.25s ease-out forwards;
 }

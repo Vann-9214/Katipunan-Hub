@@ -1,17 +1,52 @@
 "use client";
 
 import Logo from "@/app/component/ReusableComponent/Logo";
-import SignUpForm from "./SignUpForms";
 import SignInForm from "./SignInForms";
-import Button, { TextButton } from "../../../ReusableComponent/Buttons";
-import { useState } from "react";
+import SignUpForm from "./SignUpForms";
+import Button from "../../../ReusableComponent/Buttons";
+import { useState, useEffect, useRef } from "react";
 
-export default function LandingPageComponent() {
+interface LandingPageTabProps {
+  onLoginSuccess: () => void; // required
+}
+
+export default function LandingPageTab({ onLoginSuccess }: LandingPageTabProps) {
   const [openSignInForm, setOpenSignInForm] = useState(false);
   const [openSignUpForm, setOpenSignUpForm] = useState(false);
-  const [activeTab, setActiveTab] = useState("Home"); // ✅ track which tab is active
+  const [activeTab, setActiveTab] = useState("Home");
+
+  const firstRender = useRef(true);
+
+  useEffect(() => {
+    firstRender.current = false;
+  }, []);
 
   const navItems = ["Home", "Feature", "About Us"];
+
+  useEffect(() => {
+    const sections = document.querySelectorAll("section[id]");
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            let id = entry.target.id;
+
+            // ✅ Fix: force "Home" when scroll is near top
+            if (window.scrollY < 100) {
+              setActiveTab("Home");
+            } else if (id === "aboutus") {
+              setActiveTab("About Us");
+            } else {
+              setActiveTab(id.charAt(0).toUpperCase() + id.slice(1));
+            }
+          }
+        });
+      },
+      { threshold: 0.3 }
+    );
+    sections.forEach((sec) => observer.observe(sec));
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <div className="fixed top-0 left-0 py-2 flex shadow-md bg-white w-full h-auto min-h-[70px] max-h-[100px] justify-between items-center z-50">
@@ -24,10 +59,12 @@ export default function LandingPageComponent() {
             <button
               key={item}
               onClick={() => {
-                setActiveTab(item);
-                if (item === "Home") {
+                if (firstRender.current) return;
+                let targetId = item.toLowerCase().replace(/\s+/g, "");
+                const section = document.getElementById(targetId);
+                if (section) section.scrollIntoView({ behavior: "smooth" });
+                else if (item === "Home")
                   window.scrollTo({ top: 0, behavior: "smooth" });
-                }
               }}
               className={`relative pb-1 text-base font-medium transition-colors ${
                 activeTab === item
@@ -48,12 +85,14 @@ export default function LandingPageComponent() {
           onClick={() => setOpenSignUpForm(true)}
         />
       </div>
+
       {openSignInForm && (
-        <SignInForm onClose={() => setOpenSignInForm(false)} />
+        <SignInForm
+          onClose={() => setOpenSignInForm(false)}
+          onLoginSuccess={onLoginSuccess}
+        />
       )}
-      {openSignUpForm && (
-        <SignUpForm onClose={() => setOpenSignUpForm(false)} />
-      )}
+      {openSignUpForm && <SignUpForm onClose={() => setOpenSignUpForm(false)} />}
     </div>
   );
 }
