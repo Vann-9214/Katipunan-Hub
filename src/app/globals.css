@@ -1,10 +1,11 @@
 @import "tailwindcss";
-@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap");
 
 @theme {
   --color-maroon: #8b0e0e;
   --color-gold: #efbf04;
+
+  --font-montserrat: var(--font-montserrat), sans-serif;
+  --font-ptsans: var(--font-ptsans), sans-serif;
 }
 
 @keyframes fadeIn {
