@@ -3,9 +3,13 @@
 import LandingPageTab from "./Tab/LandingPageTab";
 import Button from "../../ReusableComponent/Buttons";
 import SignUpForm from "./Tab/SignUpForms";
+import SignInForm from "./Tab/SignInForms";
 import { useState } from "react";
+import { AnimatePresence } from "framer-motion";
+
 export default function LandingPageBG() {
-  const [openSignUpForm, setOpenSignUpForm] = useState(false);
+  // controls which modal is open
+  const [mode, setMode] = useState<"none" | "signup" | "signin">("none");
 
   return (
     <div className="bg-gold h-screen w-full relative overflow-hidden flex">
@@ -13,16 +17,14 @@ export default function LandingPageBG() {
 
       {/* Texts */}
       <div
-        className="relative z-1 px-24 select-none"
+        className="relative z-10 px-24 select-none"
         style={{ fontFamily: "Montserrat, sans-serif" }}
       >
         <h1 className="mt-40 leading-[1.1]">
-          <span className="text-gold font-bold text-[96px]">STAY </span>{" "}
+          <span className="text-gold font-bold text-[96px]">STAY </span>
           <span className="text-white font-bold text-[64px]">UPDATED</span>
           <br />
-          <span className="text-gold font-bold text-[96px] pl-20">
-            STAY{" "}
-          </span>{" "}
+          <span className="text-gold font-bold text-[96px] pl-20">STAY </span>
           <span className="text-white font-bold text-[64px]">CONNECTED</span>
           <br />
         </h1>
@@ -31,7 +33,7 @@ export default function LandingPageBG() {
           style={{ fontFamily: "PT Sans, sans-serif" }}
         >
           From school events to lost & found, Katipunan Hub keeps
-          <br />{" "}
+          <br />
           <span className="ml-25">the whole CIT community in one place</span>
         </p>
 
@@ -41,12 +43,28 @@ export default function LandingPageBG() {
           bg="bg-gold"
           font="font-bold"
           className="mt-5 ml-20"
-          onClick={() => setOpenSignUpForm(true)}
+          onClick={() => setMode("signup")}
         />
       </div>
-      {openSignUpForm && (
-        <SignUpForm onClose={() => setOpenSignUpForm(false)} />
-      )}
+
+      {/* Modals */}
+      <AnimatePresence mode="wait">
+        {mode === "signup" && (
+          <SignUpForm
+            key="signup"
+            onClose={() => setMode("none")}
+            onSwitch={() => setMode("signin")}
+          />
+        )}
+        {mode === "signin" && (
+          <SignInForm
+            key="signin"
+            onClose={() => setMode("none")}
+            onSwitch={() => setMode("signup")}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Background circle */}
       <div className="absolute -top-180 -left-80 w-[1400px] h-[1400px] rounded-full bg-maroon z-0" />
     </div>

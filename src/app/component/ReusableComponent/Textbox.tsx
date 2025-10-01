@@ -3,6 +3,8 @@ import Image from "next/image";
 
 interface TextBoxProps {
   type?: string;
+  height?: string;
+  width?: string; // Tailwind width like "w-full", "w-[300px]"
   placeholder?: string;
   value?: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -19,6 +21,8 @@ interface TextBoxProps {
 export default function TextBox({
   type = "text",
   placeholder = "",
+  height = "h-[60px]",
+  width = "w-[540px]",
   value,
   onChange,
   className = "",
@@ -39,7 +43,6 @@ export default function TextBox({
     onRightClick?.();
   };
 
-  // Decide input type
   const inputType =
     overrideTypeOnToggle && toggled
       ? overrideTypeOnToggle[1]
@@ -48,18 +51,17 @@ export default function TextBox({
       : type;
 
   return (
-    <div className="relative w-[540px] select-none">
+    <div className={`relative ${width} select-none`}>
       <input
         type={inputType}
         placeholder={placeholder}
         value={value}
         onChange={onChange}
-        style={{ fontFamily: "Montserrat, sans-serif" }}
-        className={`text-[20px] h-[60px] w-full px-5 pr-15 rounded-[30px] border border-black focus:outline-none focus:ring-1 ${className}`}
+        className={`text-[20px] ${height} w-full px-5 pr-13 rounded-[30px] border border-black font-montserrat focus:outline-none focus:ring-1 ${className}`}
       />
 
       {rightImageSrc && (
-        <div className="absolute right-6 top-1/2 -translate-y-1/2">
+        <div className="absolute right-4 top-1/2 -translate-y-[45%]">
           {onRightClick || rightToggleImageSrc ? (
             <button
               type="button"
