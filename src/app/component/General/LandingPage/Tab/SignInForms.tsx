@@ -21,7 +21,13 @@ export default function SignInForm({ onClose, onSwitch }: SignInFormProps) {
   };
 
   return (
-    <div className="flex justify-center items-center fixed inset-0 bg-black/50 backdrop-blur-sm z-50">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.3 }}
+      className="flex justify-center items-center fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -53,7 +59,10 @@ export default function SignInForm({ onClose, onSwitch }: SignInFormProps) {
             }}
           >
             Katipunan Hub brings together everything you need to thrive as a
-            Teknoy...
+            Teknoy. Stay updated with announcements, manage your schedule with
+            ease, connect with peers through groups and chats, and access
+            resources that support both learning and campus life. All in one
+            platform designed for you.
           </p>
         </motion.div>
 
@@ -142,6 +151,6 @@ export default function SignInForm({ onClose, onSwitch }: SignInFormProps) {
           className="absolute top-3 right-3"
         />
       </motion.div>
-    </div>
+    </motion.div>
   );
 }

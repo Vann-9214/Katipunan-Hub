@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion"; // Note: AnimatePresence isn't used here, but in the parent
+import { motion, AnimatePresence } from "framer-motion";
 import Button, { TextButton } from "@/app/component/ReusableComponent/Buttons";
 import Logo from "@/app/component/ReusableComponent/Logo";
 import TextBox from "@/app/component/ReusableComponent/Textbox";
+import { Combobox } from "@/app/component/ReusableComponent/Combobox";
 
 interface SignUpFormProps {
   onClose?: () => void;
@@ -12,6 +13,13 @@ interface SignUpFormProps {
 }
 
 export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
+  const frameworks = [
+    { value: "next.js", label: "Next.js" },
+    { value: "sveltekit", label: "SvelteKit" },
+    { value: "nuxt.js", label: "Nuxt.js" },
+    { value: "remix", label: "Remix" },
+    { value: "astro", label: "Astro" },
+  ];
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -30,19 +38,17 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
   };
 
   return (
-    // NEW: Changed the outer div to a motion.div to animate the backdrop
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.3 }} // Control backdrop fade speed
+      transition={{ duration: 0.3 }}
       className="flex justify-center items-center fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
     >
-      {/* This is your original modal panel. It's already perfect. */}
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.9 }} // This is the exit animation that will now play!
+        exit={{ opacity: 0, scale: 0.9 }}
         transition={{ duration: 0.4, ease: "easeInOut" }}
         className="flex w-[90%] max-w-[1200px] h-[min(90vh,770px)] bg-white rounded-[20px] shadow-md relative overflow-hidden"
       >
@@ -159,17 +165,28 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
                 className="w-full"
                 height="h-[55px]"
               />
-              <TextBox
-                type="text"
-                placeholder="Course"
-                value={studentID}
-                onChange={(e) => setStudentID(e.target.value)}
-                rightImageSrc="/Id Card.svg"
-                rightImageAlt="Id icon"
-                rightImageWidth={30}
-                rightImageHeight={30}
-                className="w-full"
-                height="h-[55px]"
+              <Combobox
+                items={frameworks}
+                rounded="rounded-[30px]"
+                width="w-full"
+                buttonHeight="h-[55px]"
+                dropdownHeight="h-[300px]"
+                placeholder="Pick your framework"
+                emptyText="Nothing found."
+                buttonBG="bg-white"
+                borderColor="border-maroon"
+                textColor="text-maroon"
+                hoverBG="hover:bg-maroon"
+                hoverTextColor="hover:text-white"
+                activeHoverBG="data-[state=open]:bg-maroon"
+                activeHoverTextColor="data-[state=open]:text-white"
+                checkArrowColor="text-green-500"
+                dropdownBG="bg-white"
+                dropdownTextColor="text-maroon"
+                dropdownHoverBG="hover:bg-maroon"
+                dropdownHoverTextColor="hover:text-white"
+                dropdownBorderColor="border-maroon"
+                onChange={(val) => console.log("Selected:", val)}
               />
               <div className="flex justify-between">
                 <TextBox

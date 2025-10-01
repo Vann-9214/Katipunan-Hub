@@ -22,7 +22,7 @@ export default function TextBox({
   type = "text",
   placeholder = "",
   height = "h-[60px]",
-  width = "w-[540px]", // default width
+  width = "w-[540px]",
   value,
   onChange,
   className = "",
@@ -43,7 +43,6 @@ export default function TextBox({
     onRightClick?.();
   };
 
-  // Decide input type
   const inputType =
     overrideTypeOnToggle && toggled
       ? overrideTypeOnToggle[1]
