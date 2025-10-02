@@ -23,10 +23,10 @@ interface ComboboxProps {
   placeholder?: string;
   emptyText?: string;
 
-  width?: string; // shared width
-  buttonHeight?: string; // button height
-  dropdownHeight?: string; // dropdown max height
-  rounded?: string; // shared rounded for both
+  width?: string;
+  buttonHeight?: string;
+  dropdownHeight?: string;
+  rounded?: string;
 
   buttonBG?: string;
   borderColor?: string;
@@ -43,6 +43,8 @@ interface ComboboxProps {
   dropdownHoverTextColor?: string;
   dropdownBorderColor?: string;
 
+  selectedTextColor?: string;
+
   onChange?: (value: string) => void;
 }
 
@@ -51,25 +53,27 @@ export function Combobox({
   placeholder = "Select option...",
   emptyText = "No items found.",
 
-  width = "w-[200px]",
-  buttonHeight = "h-9",
-  dropdownHeight = "max-h-60",
-  rounded = "rounded-md",
+  width = "w-full",
+  buttonHeight = "h-[55px]",
+  dropdownHeight = "h-[300px]",
+  rounded = "rounded-[30px]",
 
   buttonBG = "bg-white",
-  borderColor = "border-gray-300",
-  textColor = "text-gray-900",
-  hoverBG = "hover:bg-gray-100",
-  hoverTextColor = "hover:text-gray-900",
-  activeHoverBG = "bg-gray-200",
-  activeHoverTextColor = "text-gray-900",
-  checkArrowColor = "text-green-500",
+  borderColor = "border border-black",
+  textColor = "text-customgray",
+  hoverBG = "hover:bg-gray-50",
+  hoverTextColor = "hover:text-black/70",
+  activeHoverBG = "bg-white",
+  activeHoverTextColor = "text-black",
+  checkArrowColor = "text-green-600",
 
   dropdownBG = "bg-white",
-  dropdownTextColor = "text-gray-900",
-  dropdownHoverBG = "hover:bg-gray-100",
-  dropdownHoverTextColor = "hover:text-gray-900",
-  dropdownBorderColor = "border-gray-300",
+  dropdownTextColor = "text-customgray",
+  dropdownHoverBG = "hover:bg-gray-200",
+  dropdownHoverTextColor = "hover:text-black",
+  dropdownBorderColor = "border border-gray-200",
+
+  selectedTextColor = "text-black",
 
   onChange,
 }: ComboboxProps) {
@@ -88,17 +92,17 @@ export function Combobox({
           role="combobox"
           aria-expanded={open}
           className={cn(
-            "justify-between transition-colors cursor-pointer  text-[20px] font-montserrat",
+            "justify-between transition-colors cursor-pointer text-[20px] font-light font-montserrat px-4 select-none",
             width,
             buttonHeight,
             rounded,
             borderColor,
             buttonBG,
-            textColor,
+            !value ? textColor : selectedTextColor,
             hoverBG,
             hoverTextColor,
-            open || value ? activeHoverBG : "",
-            open || value ? activeHoverTextColor : ""
+            open ? activeHoverBG : "",
+            open ? activeHoverTextColor : ""
           )}
         >
           {selectedLabel}
@@ -108,7 +112,7 @@ export function Combobox({
 
       <PopoverContent
         className={cn(
-          "p-0 overflow-y-auto text-[20px] font-montserrat",
+          "p-0 overflow-y-auto text-[20px] font-light font-montserrat",
           "w-[var(--radix-popover-trigger-width)]",
           dropdownHeight,
           rounded,
@@ -118,7 +122,7 @@ export function Combobox({
         )}
       >
         <Command>
-          <CommandInput placeholder={placeholder} className="h-9" />
+          <CommandInput placeholder={placeholder} className="h-9 pl-4 pr-3" />
           <CommandList>
             <CommandEmpty>{emptyText}</CommandEmpty>
             <CommandGroup>
@@ -133,10 +137,13 @@ export function Combobox({
                     onChange?.(newValue);
                   }}
                   className={cn(
-                    "cursor-pointer text-[20px] font-montserrat",
+                    "cursor-pointer text-[20px] font-light font-montserrat px-4",
                     dropdownTextColor,
-                    `${dropdownHoverBG} ${dropdownHoverTextColor} !important`,
-                    "data-[selected=true]:bg-maroon data-[selected=true]:text-white"
+                    dropdownHoverBG,
+                    dropdownHoverTextColor,
+                    value === item.value
+                      ? `${selectedTextColor} font-normal`
+                      : ""
                   )}
                 >
                   {item.label}

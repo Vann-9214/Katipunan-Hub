@@ -12,7 +12,7 @@ export default function LandingPageBG() {
   const [mode, setMode] = useState<"none" | "signup" | "signin">("none");
 
   return (
-    <div className="bg-gold h-screen w-full relative overflow-hidden flex">
+    <div className="bg-gold h-screen w-full relative flex">
       <LandingPageTab />
 
       {/* Texts */}
@@ -64,7 +64,6 @@ export default function LandingPageBG() {
           />
         )}
       </AnimatePresence>
-
       {/* Background circle */}
       <div className="absolute -top-180 -left-80 w-[1400px] h-[1400px] rounded-full bg-maroon z-0" />
     </div>

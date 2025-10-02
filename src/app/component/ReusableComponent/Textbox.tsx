@@ -57,7 +57,7 @@ export default function TextBox({
         placeholder={placeholder}
         value={value}
         onChange={onChange}
-        className={`text-[20px] ${height} w-full px-5 pr-13 rounded-[30px] border border-black font-montserrat focus:outline-none focus:ring-1 ${className}`}
+        className={`text-[20px] ${height} w-full px-5 pr-13 rounded-[30px] border border-black font-montserrat focus:outline-none focus:ring-[0.5px] ${className}`}
       />
 
       {rightImageSrc && (

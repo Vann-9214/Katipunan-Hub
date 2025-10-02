@@ -6,27 +6,38 @@ import SignInForm from "./SignInForms";
 import Button, { TextButton } from "../../../ReusableComponent/Buttons";
 import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
+import { usePathname, useRouter } from "next/navigation";
 
 type AuthMode = "signin" | "signup" | null;
 
 export default function LandingPageTab() {
   const [authMode, setAuthMode] = useState<AuthMode>(null);
+  const pathname = usePathname();
+  const router = useRouter();
 
   const handleClose = () => setAuthMode(null);
   const handleSwitchToSignUp = () => setAuthMode("signup");
   const handleSwitchToSignIn = () => setAuthMode("signin");
 
+  const handleHomeClick = () => {
+    if (pathname === "/") {
+      window.scrollTo({ top: 0, behavior: "smooth" }); // already on home page scroll up
+    } else {
+      window.location.href = "/"; // forces full reload and goes landing page
+    }
+  };
+
   return (
+    // Fixed White Tab
     <div className="z-50 fixed top-0 left-0 py-2 flex shadow-md bg-white w-full h-auto min-h-[70px] max-h-[100px] justify-between items-center">
+      {/* Logo */}
       <div className="ml-10">
         <Logo />
       </div>
+      {/* Buttons */}
       <div className="flex gap-5">
         <div className="flex gap-2">
-          <TextButton
-            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-            text="Home"
-          />
+          <TextButton onClick={handleHomeClick} text="Home" />
           <TextButton text="Feature" />
           <TextButton text="About Us" />
         </div>

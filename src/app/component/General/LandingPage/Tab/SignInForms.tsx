@@ -73,7 +73,9 @@ export default function SignInForm({ onClose, onSwitch }: SignInFormProps) {
           transition={{ delay: 0.3, duration: 0.6 }}
           className="ml-8 flex flex-col flex-1 p-8"
         >
+          {/* Logo */}
           <Logo unclickable={true} />
+          {/* Header */}
           <p
             className="text-[30px] select-none mt-2"
             style={{ fontFamily: "Montserrat, sans-serif" }}
@@ -86,7 +88,7 @@ export default function SignInForm({ onClose, onSwitch }: SignInFormProps) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.5 }}
-            className="w-[540px] h-[50px] bg-white rounded-[30px] border mt-2 flex justify-between items-center px-[5px]"
+            className="w-[540px] h-[50px] bg-white rounded-[30px] border border-black/40 mt-2 flex justify-between items-center px-[5px]"
           >
             <Button
               text="Sign In"

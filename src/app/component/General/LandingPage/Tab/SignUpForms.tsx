@@ -13,13 +13,42 @@ interface SignUpFormProps {
 }
 
 export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
-  const frameworks = [
-    { value: "next.js", label: "Next.js" },
-    { value: "sveltekit", label: "SvelteKit" },
-    { value: "nuxt.js", label: "Nuxt.js" },
-    { value: "remix", label: "Remix" },
-    { value: "astro", label: "Astro" },
+  const year = [
+    { value: "1st", label: "1st Year" },
+    { value: "2nd", label: "2nd Year" },
+    { value: "3rd", label: "3rd Year" },
+    { value: "4th", label: "4th Year" },
+    { value: "5th", label: "5th Year" },
   ];
+  const courses = [
+    { value: "accountancy", label: "Accountancy" },
+    { value: "business-administration", label: "Business Administration" },
+    { value: "office-administration", label: "Office Administration" },
+    {
+      value: "college-of-arts-and-sciences",
+      label: "College of Arts & Sciences",
+    },
+    { value: "computer-science", label: "Computer Science" },
+    { value: "information-technology", label: "Information Technology" },
+    { value: "computer-engineering", label: "Computer Engineering" },
+    { value: "college-of-education", label: "College of Education" },
+    { value: "electrical-engineering", label: "Electrical Engineering" },
+    { value: "industrial-engineering", label: "Industrial Engineering" },
+    { value: "civil-engineering", label: "Civil Engineering" },
+    { value: "nursing", label: "Nursing" },
+    { value: "midwifery", label: "Midwifery" },
+    { value: "mechanical-engineering", label: "Mechanical Engineering" },
+    { value: "architecture", label: "Architecture" },
+    {
+      value: "hotel-and-restaurant-management",
+      label: "Hotel & Restaurant Management",
+    },
+    { value: "tourism-management", label: "Tourism Management" },
+    { value: "mining-engineering", label: "Mining Engineering" },
+    { value: "chemical-engineering", label: "Chemical Engineering" },
+    { value: "electronics-engineering", label: "Electronics Engineering" },
+  ];
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -89,7 +118,9 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
           transition={{ delay: 0.3, duration: 0.6 }}
           className="ml-8 flex flex-col flex-1 p-8"
         >
+          {/* Logo */}
           <Logo unclickable={true} />
+          {/* Header */}
           <p
             className="text-[30px] select-none mt-2"
             style={{ fontFamily: "Montserrat, sans-serif" }}
@@ -102,11 +133,11 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.5 }}
-            className="w-[540px] h-[50px] bg-white rounded-[30px] border mt-2 flex justify-between items-center px-[5px]"
+            className="w-[540px] h-[50px] bg-white rounded-[30px] border border-black/40 mt-2 flex justify-between items-center px-[5px]"
           >
             <TextButton
               text="Sign In"
-              className="ml-[75px] text-[#7C7C7C]"
+              className="ml-[75px] text-customgray"
               type="button"
               onClick={onSwitch}
             />
@@ -153,41 +184,35 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
                 className="w-full"
                 height="h-[55px]"
               />
-              <TextBox
-                type="text"
-                placeholder="Student ID"
-                value={studentID}
-                onChange={(e) => setStudentID(e.target.value)}
-                rightImageSrc="/Id Card.svg"
-                rightImageAlt="Id icon"
-                rightImageWidth={30}
-                rightImageHeight={30}
-                className="w-full"
-                height="h-[55px]"
-              />
+
               <Combobox
-                items={frameworks}
-                rounded="rounded-[30px]"
-                width="w-full"
-                buttonHeight="h-[55px]"
-                dropdownHeight="h-[300px]"
-                placeholder="Pick your framework"
-                emptyText="Nothing found."
-                buttonBG="bg-white"
-                borderColor="border-maroon"
-                textColor="text-maroon"
-                hoverBG="hover:bg-maroon"
-                hoverTextColor="hover:text-white"
-                activeHoverBG="data-[state=open]:bg-maroon"
-                activeHoverTextColor="data-[state=open]:text-white"
-                checkArrowColor="text-green-500"
-                dropdownBG="bg-white"
-                dropdownTextColor="text-maroon"
-                dropdownHoverBG="hover:bg-maroon"
-                dropdownHoverTextColor="hover:text-white"
-                dropdownBorderColor="border-maroon"
+                items={courses}
+                placeholder="Select Course"
                 onChange={(val) => console.log("Selected:", val)}
               />
+              {/* ID and Year */}
+              <div className="flex justify-between">
+                <TextBox
+                  type="text"
+                  placeholder="Student ID"
+                  value={studentID}
+                  onChange={(e) => setStudentID(e.target.value)}
+                  rightImageSrc="/Id Card.svg"
+                  rightImageAlt="Id icon"
+                  rightImageWidth={30}
+                  rightImageHeight={30}
+                  width="w-[260px]"
+                  height="h-[55px]"
+                />
+                <Combobox
+                  items={year}
+                  width="w-[260px]"
+                  dropdownHeight="h-[260px]"
+                  placeholder="Select Year"
+                  onChange={(val) => console.log("Selected:", val)}
+                />
+              </div>
+              {/* Password */}
               <div className="flex justify-between">
                 <TextBox
                   type="password"
@@ -219,7 +244,7 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
                 />
               </div>
             </div>
-
+            {/* Sign Up Button */}
             <div>
               <Button text="Sign Up" bg="bg-gold" width="w-full" />
             </div>
