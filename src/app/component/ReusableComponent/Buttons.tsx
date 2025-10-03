@@ -31,7 +31,7 @@ export default function Button({
       onClick={onClick}
       style={{ fontFamily: "Montserrat, sans-serif" }}
       className={clsx(
-        "select-none px-10 cursor-pointer flex items-center justify-center transition-all hover:scale-103 duration-150 ease-in-out active:scale-97 text-[24px] shadow-lg hover:brightness-105 hover:shadow-xl active:brightness-95 active:shadow-md",
+        "select-none px-10 cursor-pointer flex items-center justify-center transition-all hover:scale-101 duration-150 ease-in-out active:scale-99 text-[24px] shadow-lg hover:brightness-105 hover:shadow-xl active:brightness-95 active:shadow-md",
         bg,
         textcolor,
         height,
@@ -50,20 +50,25 @@ export function TextButton({
   onClick,
   text,
   className,
-  type,
+  type = "button",
+  textSize = "text-[24px]",
+  fontSize,
 }: {
   onClick?: () => void;
   text: string;
   className?: string;
   type?: "button" | "submit" | "reset";
+  textSize?: string;
+  fontSize?: string;
 }) {
   return (
     <button
       type={type}
       onClick={onClick}
-      style={{ fontFamily: "Montserrat, sans-serif" }}
       className={clsx(
-        "select-none px-4 py-2 cursor-pointer inline-flex transition-all hover:scale-103 duration-150 ease-in-out active:scale-97 font-medium text-[24px]",
+        "select-none w-fit px-4 py-2 font-montserrat cursor-pointer inline-flex transition-all hover:scale-101 duration-150 ease-in-out active:scale-99",
+        textSize,
+        fontSize,
         className
       )}
     >
@@ -102,7 +107,7 @@ export function ImageButton({
     <button
       onClick={handleClick}
       className={clsx(
-        "select-none p-2 cursor-pointer inline-flex items-center justify-center transition-all hover:scale-105 duration-150 ease-in-out active:scale-95",
+        "select-none p-2 cursor-pointer inline-flex items-center justify-center transition-all hover:scale-101 duration-150 ease-in-out active:scale-99",
         className
       )}
     >

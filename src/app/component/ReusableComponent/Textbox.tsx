@@ -4,7 +4,7 @@ import Image from "next/image";
 interface TextBoxProps {
   type?: string;
   height?: string;
-  width?: string; // Tailwind width like "w-full", "w-[300px]"
+  width?: string;
   placeholder?: string;
   value?: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;

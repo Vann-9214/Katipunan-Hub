@@ -20,33 +20,65 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
     { value: "4th", label: "4th Year" },
     { value: "5th", label: "5th Year" },
   ];
-  const courses = [
-    { value: "accountancy", label: "Accountancy" },
-    { value: "business-administration", label: "Business Administration" },
-    { value: "office-administration", label: "Office Administration" },
+  const programs = [
+    // Business & Accountancy
+    { value: "bs-accountancy", label: "Bachelor of Science in Accountancy" },
+    { value: "bsba", label: "Bachelor of Science in Business Administration" },
+    { value: "bsoa", label: "Bachelor of Science in Office Administration" },
+
+    // Arts & Sciences
+    { value: "ba-english", label: "Bachelor of Arts in English" },
     {
-      value: "college-of-arts-and-sciences",
-      label: "College of Arts & Sciences",
+      value: "ba-political-science",
+      label: "Bachelor of Arts in Political Science",
     },
-    { value: "computer-science", label: "Computer Science" },
-    { value: "information-technology", label: "Information Technology" },
-    { value: "computer-engineering", label: "Computer Engineering" },
-    { value: "college-of-education", label: "College of Education" },
-    { value: "electrical-engineering", label: "Electrical Engineering" },
-    { value: "industrial-engineering", label: "Industrial Engineering" },
-    { value: "civil-engineering", label: "Civil Engineering" },
-    { value: "nursing", label: "Nursing" },
-    { value: "midwifery", label: "Midwifery" },
-    { value: "mechanical-engineering", label: "Mechanical Engineering" },
-    { value: "architecture", label: "Architecture" },
+    { value: "bs-psychology", label: "Bachelor of Science in Psychology" },
+    { value: "bs-biology", label: "Bachelor of Science in Biology" },
+    { value: "bs-mathematics", label: "Bachelor of Science in Mathematics" },
+
+    // Computer Studies
     {
-      value: "hotel-and-restaurant-management",
-      label: "Hotel & Restaurant Management",
+      value: "bs-computer-science",
+      label: "Bachelor of Science in Computer Science",
     },
-    { value: "tourism-management", label: "Tourism Management" },
-    { value: "mining-engineering", label: "Mining Engineering" },
-    { value: "chemical-engineering", label: "Chemical Engineering" },
-    { value: "electronics-engineering", label: "Electronics Engineering" },
+    {
+      value: "bs-information-technology",
+      label: "Bachelor of Science in Information Technology",
+    },
+    {
+      value: "bs-computer-engineering",
+      label: "Bachelor of Science in Computer Engineering",
+    },
+
+    // Education
+    { value: "beed", label: "Bachelor of Elementary Education" },
+    { value: "bsed", label: "Bachelor of Secondary Education" },
+
+    // Engineering
+    { value: "bsee", label: "Bachelor of Science in Electrical Engineering" },
+    { value: "bsie", label: "Bachelor of Science in Industrial Engineering" },
+    { value: "bsce", label: "Bachelor of Science in Civil Engineering" },
+    { value: "bsme", label: "Bachelor of Science in Mechanical Engineering" },
+    { value: "bsmining", label: "Bachelor of Science in Mining Engineering" },
+    {
+      value: "bs-chemeng",
+      label: "Bachelor of Science in Chemical Engineering",
+    },
+    { value: "bsece", label: "Bachelor of Science in Electronics Engineering" },
+
+    // Health Sciences
+    { value: "bsn", label: "Bachelor of Science in Nursing" },
+    { value: "midwifery", label: "Diploma in Midwifery" },
+
+    // Architecture & Design
+    { value: "bs-architecture", label: "Bachelor of Science in Architecture" },
+
+    // Hospitality & Tourism
+    {
+      value: "bs-hrm",
+      label: "Bachelor of Science in Hotel and Restaurant Management",
+    },
+    { value: "bstm", label: "Bachelor of Science in Tourism Management" },
   ];
 
   const [email, setEmail] = useState("");
@@ -186,7 +218,7 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
               />
 
               <Combobox
-                items={courses}
+                items={programs}
                 placeholder="Select Course"
                 onChange={(val) => console.log("Selected:", val)}
               />

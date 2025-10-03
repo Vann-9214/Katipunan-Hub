@@ -138,6 +138,14 @@ export default function SignInForm({ onClose, onSwitch }: SignInFormProps) {
                 className="w-full"
                 overrideTypeOnToggle={["password", "text"]}
               />
+              <div className="flex justify-end -mt-4">
+                <TextButton
+                  text="Forgot Password?"
+                  className="font-light"
+                  textSize="text-[20px]"
+                  fontSize="font-light"
+                />
+              </div>
             </div>
 
             <div className="pt-2">

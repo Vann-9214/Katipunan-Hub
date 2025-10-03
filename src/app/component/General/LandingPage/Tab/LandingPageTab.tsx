@@ -38,8 +38,14 @@ export default function LandingPageTab() {
       <div className="flex gap-5">
         <div className="flex gap-2">
           <TextButton onClick={handleHomeClick} text="Home" />
-          <TextButton text="Feature" />
-          <TextButton text="About Us" />
+          <TextButton
+            onClick={() => (window.location.href = "/Features")}
+            text="Feature"
+          />
+          <TextButton
+            onClick={() => (window.location.href = "/AboutUs")}
+            text="About Us"
+          />
         </div>
 
         <Button text="Log in" onClick={() => setAuthMode("signin")} />

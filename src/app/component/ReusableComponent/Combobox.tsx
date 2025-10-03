@@ -92,7 +92,7 @@ export function Combobox({
           role="combobox"
           aria-expanded={open}
           className={cn(
-            "justify-between transition-colors cursor-pointer text-[20px] font-light font-montserrat px-4 select-none",
+            "justify-between transition-colors cursor-pointer text-[20px] font-light font-montserrat px-4 select-none overflow-hidden",
             width,
             buttonHeight,
             rounded,
