@@ -1,11 +1,16 @@
-import LandingPageTab from "@/app/component/General/LandingPage/Tab/LandingPageTab";
-import LandingPageBG from "./component/General/LandingPage/LandingPageBG";
+"use client";
+
+import LandingPageBG from "@/app/component/General/LandingPage/Tab/LandingPageTab";
+import Features from "@/app/component/General/LandingPage/Tab/Features";
+import Aboutus from "@/app/component/General/LandingPage/Tab/Aboutus";
 
 export default function LandingPage() {
   return (
-    <div>
-      <LandingPageTab />
+    <>
       <LandingPageBG />
-    </div>
+      <Features />
+      <Aboutus />
+    </>
   );
 }
+

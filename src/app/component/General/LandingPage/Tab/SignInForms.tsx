@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Button, { TextButton } from "@/app/component/ReusableComponent/Buttons";
 import Logo from "@/app/component/ReusableComponent/Logo";
@@ -14,10 +15,14 @@ interface SignInFormProps {
 export default function SignInForm({ onClose, onSwitch }: SignInFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const router = useRouter();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     console.log("login", { email, password });
+
+    // ✅ After login redirect
+    router.push("/announcement");
   };
 
   return (
@@ -35,7 +40,7 @@ export default function SignInForm({ onClose, onSwitch }: SignInFormProps) {
         transition={{ duration: 0.4, ease: "easeInOut" }}
         className="flex w-[90%] max-w-[1200px] h-[min(90vh,770px)] bg-white rounded-[20px] shadow-md relative overflow-hidden"
       >
-        {/* Left Side */}
+        {/* Left Panel */}
         <motion.div
           initial={{ x: -50, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
@@ -61,12 +66,11 @@ export default function SignInForm({ onClose, onSwitch }: SignInFormProps) {
             Katipunan Hub brings together everything you need to thrive as a
             Teknoy. Stay updated with announcements, manage your schedule with
             ease, connect with peers through groups and chats, and access
-            resources that support both learning and campus life. All in one
-            platform designed for you.
+            resources that support both learning and campus life.
           </p>
         </motion.div>
 
-        {/* Right Side */}
+        {/* Right Panel */}
         <motion.div
           initial={{ x: 50, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
@@ -83,7 +87,7 @@ export default function SignInForm({ onClose, onSwitch }: SignInFormProps) {
             Welcome, Teknoy!
           </p>
 
-          {/* Toggle */}
+          {/* Toggle Buttons */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -96,6 +100,7 @@ export default function SignInForm({ onClose, onSwitch }: SignInFormProps) {
               bg="bg-maroon"
               height="h-[40px]"
               width="w-[260px]"
+              type="button"
             />
             <TextButton
               text="Sign Up"
@@ -105,7 +110,7 @@ export default function SignInForm({ onClose, onSwitch }: SignInFormProps) {
             />
           </motion.div>
 
-          {/* Form */}
+          {/* Login Form */}
           <motion.form
             onSubmit={handleSubmit}
             initial={{ opacity: 0, y: 20 }}
@@ -116,7 +121,7 @@ export default function SignInForm({ onClose, onSwitch }: SignInFormProps) {
             <div className="flex flex-col gap-4">
               <TextBox
                 type="email"
-                placeholder="Cit Email"
+                placeholder="CIT Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 rightImageSrc="/Email Icon.svg"
@@ -141,7 +146,7 @@ export default function SignInForm({ onClose, onSwitch }: SignInFormProps) {
             </div>
 
             <div className="pt-2">
-              <Button text="Login" width="w-full" />
+              <Button text="Login" width="w-full" type="submit" />
             </div>
           </motion.form>
         </motion.div>
