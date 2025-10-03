@@ -19,8 +19,8 @@ export default function NavBar({ currentTab }: NavBarProps) {
 
   const tabs = [
     { name: "Announcement", path: "/announcement" },
-    { name: "Feeds", path: "/feed" },
-    { name: "Groups", path: "/group" },
+    { name: "Feeds", path: "/feeds" },
+    { name: "Groups", path: "/groups" },
     { name: "Calendar", path: "/calendar" },
     { name: "PLC", path: "/plc" },
     { name: "Lost & Found", path: "/lost&found" },
