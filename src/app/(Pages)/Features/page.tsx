@@ -1,5 +1,11 @@
-import LandingPageTab from "@/app/component/General/LandingPage/Tab/LandingPageTab";
+import LandingPageTab from "@/app/component/General/LandingPage/LandingPageTab/LandingPageTab";
+import FeaturesContent from "@/app/component/General/Features/FeaturesContent";
 
 export default function Features() {
-  return <LandingPageTab />;
+  return (
+    <div>
+      <LandingPageTab />
+      <FeaturesContent />
+    </div>
+  );
 }

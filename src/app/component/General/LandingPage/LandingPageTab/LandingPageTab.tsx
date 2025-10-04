@@ -27,6 +27,22 @@ export default function LandingPageTab() {
     }
   };
 
+  const handleAboutUsClick = () => {
+    if (pathname === "/AboutUs") {
+      window.scrollTo({ top: 0, behavior: "smooth" }); // already on home page scroll up
+    } else {
+      window.location.href = "/AboutUs"; // forces full reload and goes AboutUs
+    }
+  };
+
+  const handleFeaturesClick = () => {
+    if (pathname === "/Features") {
+      window.scrollTo({ top: 0, behavior: "smooth" }); // already on home page scroll up
+    } else {
+      window.location.href = "/Features"; // forces full reload and goes Features
+    }
+  };
+
   return (
     // Fixed White Tab
     <div className="z-50 fixed top-0 left-0 py-2 flex shadow-md bg-white w-full h-auto min-h-[70px] max-h-[100px] justify-between items-center">
@@ -38,14 +54,8 @@ export default function LandingPageTab() {
       <div className="flex gap-5">
         <div className="flex gap-2">
           <TextButton onClick={handleHomeClick} text="Home" />
-          <TextButton
-            onClick={() => (window.location.href = "/Features")}
-            text="Feature"
-          />
-          <TextButton
-            onClick={() => (window.location.href = "/AboutUs")}
-            text="About Us"
-          />
+          <TextButton onClick={handleFeaturesClick} text="Feature" />
+          <TextButton onClick={handleAboutUsClick} text="About Us" />
         </div>
 
         <Button text="Log in" onClick={() => setAuthMode("signin")} />
