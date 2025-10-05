@@ -1,3 +1,5 @@
+"use client";
+
 import ToggleButton from "@/app/component/ReusableComponent/ToggleButton";
 
 export default function ToggleButtonPage() {
