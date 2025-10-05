@@ -1,11 +1,11 @@
-import LandingPageTab from "@/app/component/General/LandingPage/Tab/LandingPageTab";
-import LandingPageBG from "./component/General/LandingPage/LandingPageBG";
+import LandingPageTab from "@/app/component/General/LandingPage/LandingPageTab/LandingPageTab";
+import LandingPageContent from "./component/General/LandingPage/LandingPageContent";
 
 export default function LandingPage() {
   return (
     <div>
       <LandingPageTab />
-      <LandingPageBG />
+      <LandingPageContent />
     </div>
   );
 }

@@ -3,10 +3,38 @@
 
 @custom-variant dark (&:is(.dark *));
 
+html,
+body {
+  background-color: white;
+  scrollbar-gutter: stable;
+  overflow-y: auto; /* no overlay rendering outside */
+  position: relative;
+  z-index: 0; /* keeps scrollbar inside */
+}
+
+/* ===== GHOST SCROLLBAR ===== */
+::-webkit-scrollbar {
+  width: 8px; /* slim scrollbar */
+}
+
+::-webkit-scrollbar-track {
+  background: transparent; /* no visible track */
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.15); /* faint thumb */
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.25); /* slightly visible when hovered */
+}
+
 @theme {
   --color-maroon: #8b0e0e;
   --color-gold: #efbf04;
   --color-customgray: #7c7c7c;
+  --color-darkmaroon: #4e0505;
 
   --font-montserrat: var(--font-montserrat), sans-serif;
   --font-ptsans: var(--font-ptsans), sans-serif;

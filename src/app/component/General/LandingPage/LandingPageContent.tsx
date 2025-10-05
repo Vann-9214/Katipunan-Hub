@@ -1,13 +1,13 @@
 "use client";
 
-import LandingPageTab from "./Tab/LandingPageTab";
+import LandingPageTab from "./LandingPageTab/LandingPageTab";
 import Button from "../../ReusableComponent/Buttons";
-import SignUpForm from "./Tab/SignUpForms";
-import SignInForm from "./Tab/SignInForms";
+import SignUpForm from "./LandingPageTab/SignUpForms";
+import SignInForm from "./LandingPageTab/SignInForms";
 import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
 
-export default function LandingPageBG() {
+export default function LandingPageContent() {
   // controls which modal is open
   const [mode, setMode] = useState<"none" | "signup" | "signin">("none");
 

@@ -1,5 +1,6 @@
 "use client";
 
+import ToggleButton from "@/app/component/ReusableComponent/ToggleButton";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Button, { TextButton } from "@/app/component/ReusableComponent/Buttons";
@@ -165,21 +166,14 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.5 }}
-            className="w-[540px] h-[50px] bg-white rounded-[30px] border border-black/40 mt-2 flex justify-between items-center px-[5px]"
           >
-            <TextButton
-              text="Sign In"
-              className="ml-[75px] text-customgray"
-              type="button"
-              onClick={onSwitch}
-            />
-            <Button
-              text="Sign Up"
-              textcolor="text-white"
-              bg="bg-gold"
-              height="h-[40px]"
-              width="w-[260px]"
-              type="button"
+            <ToggleButton
+              leftLabel="Sign In"
+              rightLabel="Sign Up"
+              active="right"
+              onToggle={(side) => {
+                if (side === "left") onSwitch?.();
+              }}
             />
           </motion.div>
 

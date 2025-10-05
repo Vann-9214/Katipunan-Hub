@@ -1,5 +1,11 @@
-import LandingPageTab from "@/app/component/General/LandingPage/Tab/LandingPageTab";
+import LandingPageTab from "@/app/component/General/LandingPage/LandingPageTab/LandingPageTab";
+import AboutUsContent from "@/app/component/General/AboutUs/AboutUsContent";
 
 export default function AboutUs() {
-  return <LandingPageTab />;
+  return (
+    <div>
+      <LandingPageTab />
+      <AboutUsContent />
+    </div>
+  );
 }
