@@ -1,7 +1,8 @@
+// app/component/Post/UploadButton.tsx
 "use client";
 
 interface UploadButtonProps {
-  onUpload: (files: string[]) => void;
+  onUpload: (files: string[]) => void; // currently returns object URLs
 }
 
 export default function UploadButton({ onUpload }: UploadButtonProps) {

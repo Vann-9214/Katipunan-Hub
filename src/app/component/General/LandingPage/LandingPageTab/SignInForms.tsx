@@ -1,5 +1,6 @@
 "use client";
 
+import ToggleButton from "@/app/component/ReusableComponent/ToggleButton";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import Button, { TextButton } from "@/app/component/ReusableComponent/Buttons";
@@ -84,24 +85,19 @@ export default function SignInForm({ onClose, onSwitch }: SignInFormProps) {
           </p>
 
           {/* Toggle */}
+          {/* Toggle */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.5 }}
-            className="w-[540px] h-[50px] bg-white rounded-[30px] border border-black/40 mt-2 flex justify-between items-center px-[5px]"
           >
-            <Button
-              text="Sign In"
-              textcolor="text-white"
-              bg="bg-maroon"
-              height="h-[40px]"
-              width="w-[260px]"
-            />
-            <TextButton
-              text="Sign Up"
-              className="mr-[70px] text-[#7C7C7C]"
-              type="button"
-              onClick={onSwitch}
+            <ToggleButton
+              leftLabel="Sign In"
+              rightLabel="Sign Up"
+              active="left"
+              onToggle={(side) => {
+                if (side === "right") onSwitch?.();
+              }}
             />
           </motion.div>
 
@@ -149,7 +145,11 @@ export default function SignInForm({ onClose, onSwitch }: SignInFormProps) {
             </div>
 
             <div className="pt-2">
-              <Button text="Login" width="w-full" />
+              <Button
+                text="Login"
+                width="w-full"
+                onClick={() => (window.location.href = "/Announcement")}
+              />
             </div>
           </motion.form>
         </motion.div>

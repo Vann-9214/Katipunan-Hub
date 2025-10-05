@@ -167,11 +167,6 @@ function SingleColorImage({ src }: { src: string }) {
   );
 }
 
-/* ---------------------------
-   ColorMatchedImage
-   - Used for each tile in 2-image layout
-   - Hooks local to this component
-   --------------------------- */
 function ColorMatchedImage({
   src,
   minHeightClass = "min-h-[300px]",

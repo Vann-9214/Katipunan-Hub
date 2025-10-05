@@ -45,7 +45,7 @@ export default function LandingPageTab() {
 
   return (
     // Fixed White Tab
-    <div className="z-50 fixed top-0 left-0 py-2 flex shadow-md bg-white w-full h-auto min-h-[70px] max-h-[100px] justify-between items-center">
+    <div className="z-50 fixed top-0 left-0 py-2 flex shadow-md bg-white w-full h-auto min-h-[60px] max-h-[80px] justify-between items-center">
       {/* Logo */}
       <div className="ml-10">
         <Logo />
