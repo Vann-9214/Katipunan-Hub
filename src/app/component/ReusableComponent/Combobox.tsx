@@ -42,6 +42,7 @@ interface ComboboxProps {
   dropdownHoverBG?: string;
   dropdownHoverTextColor?: string;
   dropdownBorderColor?: string;
+  dropdownRounded?: string;
 
   selectedTextColor?: string;
 
@@ -72,6 +73,7 @@ export function Combobox({
   dropdownHoverBG = "hover:bg-gray-200",
   dropdownHoverTextColor = "hover:text-black",
   dropdownBorderColor = "border border-gray-200",
+  dropdownRounded = "rounded-[20px]",
 
   selectedTextColor = "text-black",
 
@@ -115,7 +117,7 @@ export function Combobox({
           "p-0 overflow-y-auto text-[20px] font-light font-montserrat",
           "w-[var(--radix-popover-trigger-width)]",
           dropdownHeight,
-          rounded,
+          dropdownRounded,
           dropdownBG,
           dropdownTextColor,
           dropdownBorderColor

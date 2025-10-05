@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 "use client";
 
 import React from "react";
@@ -141,7 +139,7 @@ function SingleColorImage({ src }: { src: string }) {
         const fac = new FastAverageColor();
         const color = await fac.getColorAsync(imgRef.current);
         if (mounted) setBgColor(color.hex);
-        if (typeof (fac as any).destroy === "function") (fac as any).destroy();
+        if (typeof fac.destroy === "function") fac.destroy();
       } catch {
         if (mounted) setBgColor("#000");
       }
@@ -189,7 +187,7 @@ function ColorMatchedImage({
         const fac = new FastAverageColor();
         const color = await fac.getColorAsync(imgRef.current);
         if (mounted) setBgColor(color.hex);
-        if (typeof (fac as any).destroy === "function") (fac as any).destroy();
+        if (typeof fac.destroy === "function") fac.destroy();
       } catch {
         if (mounted) setBgColor("#000");
       }

@@ -2,7 +2,7 @@
 
 import ToggleButton from "@/app/component/ReusableComponent/ToggleButton";
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import Button, { TextButton } from "@/app/component/ReusableComponent/Buttons";
 import Logo from "@/app/component/ReusableComponent/Logo";
 import TextBox from "@/app/component/ReusableComponent/Textbox";

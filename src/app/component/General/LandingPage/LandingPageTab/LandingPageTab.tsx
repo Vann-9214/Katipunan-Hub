@@ -6,14 +6,13 @@ import SignInForm from "./SignInForms";
 import Button, { TextButton } from "../../../ReusableComponent/Buttons";
 import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 type AuthMode = "signin" | "signup" | null;
 
 export default function LandingPageTab() {
   const [authMode, setAuthMode] = useState<AuthMode>(null);
   const pathname = usePathname();
-  const router = useRouter();
 
   const handleClose = () => setAuthMode(null);
   const handleSwitchToSignUp = () => setAuthMode("signup");
