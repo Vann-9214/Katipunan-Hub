@@ -69,7 +69,7 @@ export default function LandingPageTab() {
         </div>
         <Button text="Log in" onClick={() => setOpenSignInForm(true)} />
         <Button
-          text="Sign Up"
+          text="SignUp"
           bg="bg-[#DAA520]"
           rounded="rounded-l-[30px] rounded-r-none"
           width="w-[140px]"
