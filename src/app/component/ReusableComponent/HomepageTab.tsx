@@ -22,7 +22,7 @@ export default function HomepageTab() {
   };
 
   return (
-    <header className="fixed top-0 left-0 w-full z-50 shadow-md">
+    <header className="fixed top-0 left-0 w-full z-1 shadow-md">
       {/* Top Gradient Bar */}
       <div className="flex justify-between items-center h-[80px] px-8 py-2 bg-[linear-gradient(to_right,#FFFFFF_0%,#EFBF04_60%,#8B0E0E_87%,#4E0505_100%)]">
         {/* Left: Logo */}

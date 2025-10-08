@@ -6,6 +6,7 @@ export default function Button({
   onClick,
   text,
   font,
+  textSize = "text-[24px]",
   textcolor = "text-white",
   bg = "bg-maroon",
   height = "h-[45px]",
@@ -15,6 +16,7 @@ export default function Button({
   type = "button",
 }: {
   onClick?: () => void;
+  textSize?: string;
   text: string;
   font?: string;
   textcolor?: string;
@@ -31,8 +33,9 @@ export default function Button({
       onClick={onClick}
       style={{ fontFamily: "Montserrat, sans-serif" }}
       className={clsx(
-        "select-none px-10 cursor-pointer flex items-center justify-center transition-all hover:scale-101 duration-150 ease-in-out active:scale-99 text-[24px] shadow-lg hover:brightness-105 hover:shadow-xl active:brightness-95 active:shadow-md",
+        "select-none px-5 cursor-pointer flex items-center justify-center transition-all hover:scale-101 duration-150 ease-in-out active:scale-99 shadow-lg hover:brightness-105 hover:shadow-xl active:brightness-95 active:shadow-md",
         bg,
+        textSize,
         textcolor,
         height,
         width,
@@ -107,7 +110,7 @@ export function ImageButton({
     <button
       onClick={handleClick}
       className={clsx(
-        "select-none p-2 cursor-pointer inline-flex items-center justify-center transition-all hover:scale-101 duration-150 ease-in-out active:scale-99",
+        "select-none border-none outline-none focus:outline-none bg-transparent cursor-pointer inline-flex items-center justify-center transition-all hover:scale-101 duration-150 ease-in-out active:scale-99",
         className
       )}
     >

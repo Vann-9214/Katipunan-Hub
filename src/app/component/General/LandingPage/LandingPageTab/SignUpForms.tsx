@@ -105,7 +105,7 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
-      className="flex justify-center items-center fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+      className="flex justify-center items-center fixed inset-0 z-1 bg-black/50 backdrop-blur-sm"
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}

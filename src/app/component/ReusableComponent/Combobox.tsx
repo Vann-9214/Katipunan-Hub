@@ -46,6 +46,7 @@ interface ComboboxProps {
 
   selectedTextColor?: string;
 
+  disabled?: boolean; // ✅ new prop
   onChange?: (value: string) => void;
 }
 
@@ -77,6 +78,7 @@ export function Combobox({
 
   selectedTextColor = "text-black",
 
+  disabled = false, // ✅ default
   onChange,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
@@ -87,22 +89,28 @@ export function Combobox({
     : placeholder;
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open && !disabled} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          disabled={disabled}
           className={cn(
-            "justify-between transition-colors cursor-pointer text-[20px] font-light font-montserrat px-4 select-none overflow-hidden",
+            "justify-between transition-colors text-[20px] font-light font-montserrat px-4 select-none overflow-hidden",
             width,
             buttonHeight,
             rounded,
             borderColor,
-            buttonBG,
-            !value ? textColor : selectedTextColor,
-            hoverBG,
-            hoverTextColor,
+            disabled
+              ? "bg-gray-200 text-gray-400 cursor-not-allowed opacity-70"
+              : [
+                  buttonBG,
+                  "cursor-pointer",
+                  !value ? textColor : selectedTextColor,
+                  hoverBG,
+                  hoverTextColor,
+                ],
             open ? activeHoverBG : "",
             open ? activeHoverTextColor : ""
           )}
@@ -112,55 +120,58 @@ export function Combobox({
         </Button>
       </PopoverTrigger>
 
-      <PopoverContent
-        className={cn(
-          "p-0 overflow-y-auto text-[20px] font-light font-montserrat",
-          "w-[var(--radix-popover-trigger-width)]",
-          dropdownHeight,
-          dropdownRounded,
-          dropdownBG,
-          dropdownTextColor,
-          dropdownBorderColor
-        )}
-      >
-        <Command>
-          <CommandInput placeholder={placeholder} className="h-9 pl-4 pr-3" />
-          <CommandList>
-            <CommandEmpty>{emptyText}</CommandEmpty>
-            <CommandGroup>
-              {items.map((item) => (
-                <CommandItem
-                  key={item.value}
-                  value={item.value}
-                  onSelect={(currentValue) => {
-                    const newValue = currentValue === value ? "" : currentValue;
-                    setValue(newValue);
-                    setOpen(false);
-                    onChange?.(newValue);
-                  }}
-                  className={cn(
-                    "cursor-pointer text-[20px] font-light font-montserrat px-4",
-                    dropdownTextColor,
-                    dropdownHoverBG,
-                    dropdownHoverTextColor,
-                    value === item.value
-                      ? `${selectedTextColor} font-normal`
-                      : ""
-                  )}
-                >
-                  {item.label}
-                  <Check
+      {!disabled && (
+        <PopoverContent
+          className={cn(
+            "p-0 overflow-y-auto text-[20px] font-light font-montserrat",
+            "w-[var(--radix-popover-trigger-width)]",
+            dropdownHeight,
+            dropdownRounded,
+            dropdownBG,
+            dropdownTextColor,
+            dropdownBorderColor
+          )}
+        >
+          <Command>
+            <CommandInput placeholder={placeholder} className="h-9 pl-4 pr-3" />
+            <CommandList>
+              <CommandEmpty>{emptyText}</CommandEmpty>
+              <CommandGroup>
+                {items.map((item) => (
+                  <CommandItem
+                    key={item.value}
+                    value={item.value}
+                    onSelect={(currentValue) => {
+                      const newValue =
+                        currentValue === value ? "" : currentValue;
+                      setValue(newValue);
+                      setOpen(false);
+                      onChange?.(newValue);
+                    }}
                     className={cn(
-                      "ml-auto",
-                      value === item.value ? checkArrowColor : "opacity-0"
+                      "cursor-pointer text-[20px] font-light font-montserrat px-4",
+                      dropdownTextColor,
+                      dropdownHoverBG,
+                      dropdownHoverTextColor,
+                      value === item.value
+                        ? `${selectedTextColor} font-normal`
+                        : ""
                     )}
-                  />
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
+                  >
+                    {item.label}
+                    <Check
+                      className={cn(
+                        "ml-auto",
+                        value === item.value ? checkArrowColor : "opacity-0"
+                      )}
+                    />
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      )}
     </Popover>
   );
 }

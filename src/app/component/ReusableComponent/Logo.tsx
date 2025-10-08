@@ -9,7 +9,7 @@ export default function Logo({ href = "/", unclickable = false }: LogoProps) {
   const content = (
     <>
       <Image
-        src="logo.svg"
+        src="Logo.svg"
         alt="My Logo"
         width={58}
         height={73}

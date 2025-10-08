@@ -30,6 +30,16 @@ body {
   background-color: rgba(0, 0, 0, 0.25); /* slightly visible when hovered */
 }
 
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.hide-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
 @theme {
   --color-maroon: #8b0e0e;
   --color-gold: #efbf04;
