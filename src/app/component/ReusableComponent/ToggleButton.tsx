@@ -7,8 +7,8 @@ interface ToggleButtonProps {
   rightLabel?: string;
   active?: "left" | "right";
   onToggle?: (side: "left" | "right") => void;
-  leftActiveBg?: string; // new: background for left active
-  rightActiveBg?: string; // new: background for right active
+  leftActiveBg?: string;
+  rightActiveBg?: string;
 }
 
 export default function ToggleButton({
@@ -20,42 +20,48 @@ export default function ToggleButton({
   rightActiveBg = "bg-gold",
 }: ToggleButtonProps) {
   return (
-    <div className="w-[540px] h-[50px] bg-white rounded-[30px] border border-black/40 flex justify-between items-center px-[5px]">
-      {active === "left" ? (
-        <Button
-          text={leftLabel}
-          textcolor="text-white"
-          bg={leftActiveBg}
-          height="h-[40px]"
-          width="w-[260px]"
-          onClick={() => onToggle?.("left")}
-        />
-      ) : (
-        <TextButton
-          text={leftLabel}
-          className="ml-[75px] text-[#7C7C7C]"
-          type="button"
-          onClick={() => onToggle?.("left")}
-        />
-      )}
+    <div className="w-[540px] h-[50px] bg-white rounded-[30px] border border-black/40 flex items-center px-[5px]">
+      {/* Left slot */}
+      <div className="w-[50%] flex justify-center">
+        {active === "left" ? (
+          <Button
+            text={leftLabel}
+            textcolor="text-white"
+            bg={leftActiveBg}
+            height="h-[40px]"
+            width="w-[260px]"
+            onClick={() => onToggle?.("left")}
+          />
+        ) : (
+          <TextButton
+            text={leftLabel}
+            className="text-[#7C7C7C]"
+            type="button"
+            onClick={() => onToggle?.("left")}
+          />
+        )}
+      </div>
 
-      {active === "right" ? (
-        <Button
-          text={rightLabel}
-          textcolor="text-white"
-          bg={rightActiveBg}
-          height="h-[40px]"
-          width="w-[260px]"
-          onClick={() => onToggle?.("right")}
-        />
-      ) : (
-        <TextButton
-          text={rightLabel}
-          className="mr-[70px] text-[#7C7C7C]"
-          type="button"
-          onClick={() => onToggle?.("right")}
-        />
-      )}
+      {/* Right slot */}
+      <div className="w-[50%] flex justify-center">
+        {active === "right" ? (
+          <Button
+            text={rightLabel}
+            textcolor="text-white"
+            bg={rightActiveBg}
+            height="h-[40px]"
+            width="w-[260px]"
+            onClick={() => onToggle?.("right")}
+          />
+        ) : (
+          <TextButton
+            text={rightLabel}
+            className="text-[#7C7C7C]"
+            type="button"
+            onClick={() => onToggle?.("right")}
+          />
+        )}
+      </div>
     </div>
   );
 }

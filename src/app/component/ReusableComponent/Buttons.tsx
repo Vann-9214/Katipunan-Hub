@@ -69,7 +69,7 @@ export function TextButton({
       type={type}
       onClick={onClick}
       className={clsx(
-        "select-none w-fit px-4 py-2 font-montserrat cursor-pointer inline-flex transition-all hover:scale-101 duration-150 ease-in-out active:scale-99",
+        "select-none w-fit px-4 py-1 font-montserrat cursor-pointer inline-flex transition-all hover:scale-101 duration-150 ease-in-out active:scale-99",
         textSize,
         fontSize,
         className

@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/popover";
 
 interface ComboboxProps {
-  items: { value: string; label: string }[];
+  items: { value: string; label: string; selectedPlaceholder?: string }[]; // ✅ added per-item placeholder
   placeholder?: string;
   emptyText?: string;
 
@@ -84,8 +84,10 @@ export function Combobox({
   const [open, setOpen] = React.useState(false);
   const [value, setValue] = React.useState("");
 
+  // ✅ Updated logic: show selectedPlaceholder if available
+  const selectedItem = items.find((item) => item.value === value);
   const selectedLabel = value
-    ? items.find((item) => item.value === value)?.label
+    ? selectedItem?.selectedPlaceholder || selectedItem?.label || placeholder
     : placeholder;
 
   return (

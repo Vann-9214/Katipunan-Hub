@@ -1,31 +1,33 @@
-// app/component/Post/Posts.tsx
 "use client";
 
 import Image from "next/image";
 import ImageAttachments from "./ImageAttachments";
-import { ImageButton, TextButton } from "../../ReusableComponent/Buttons";
+import { TextButton } from "../../ReusableComponent/Buttons";
+import EditPostsButton from "./EditPostsButton";
 
 interface PostsProps {
   title?: string;
   description?: string;
   date?: string;
-  images?: string[]; // controlled list of image URLs
+  images?: string[];
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
 export default function Posts({
-  title = "Title (With Attachment)",
-  description = `The quick brown fox jumps over the lazy dog while simultaneously
-reciting the alphabet backwards in order to impress the curious
-crowd that had gathered at the edge of the forest.`,
-  date = "24/09/2025",
+  title = "Title",
+  description = "Description",
+  date = "Date",
   images = [],
+  onEdit,
+  onDelete,
 }: PostsProps) {
   return (
     <div>
       {/* Outer Post (Gold Background) */}
-      <div className="w-[800px] bg-gold rounded-[30px] p-[10px]">
+      <div className="w-[800px] bg-gold rounded-[30px] p-[5px]">
         {/* Inner Post (Dark Maroon Background) */}
-        <div className="w-[780px] bg-darkmaroon rounded-t-[30px] flex flex-col">
+        <div className="w-[790px] bg-darkmaroon rounded-t-[30px] flex flex-col">
           {/* Upper Section: Logo, Title, Date, Triple Dot */}
           <div className="flex items-start justify-between mt-[15px] mx-[20px]">
             {/* Logo + Title + Date */}
@@ -50,7 +52,14 @@ crowd that had gathered at the edge of the forest.`,
 
             {/* Triple dot menu */}
             <div className="select-none">
-              <ImageButton src="Triple Dot.svg" width={50} height={50} />
+              <EditPostsButton
+                onEdit={() => {
+                  if (onEdit) onEdit();
+                }}
+                onRemove={() => {
+                  if (onDelete) onDelete();
+                }}
+              />
             </div>
           </div>
 
@@ -63,9 +72,10 @@ crowd that had gathered at the edge of the forest.`,
           <ImageAttachments images={images} />
         </div>
 
-        {/* Bottom buttons */}
-        <div className="flex justify-between px-5 mt-2">
+        {/* Bottom buttons - added Edit/Delete handlers */}
+        <div className="flex justify-between px-5 items-center">
           <TextButton text="10k" />
+
           <TextButton
             text="React"
             textSize="text-[28px]"
