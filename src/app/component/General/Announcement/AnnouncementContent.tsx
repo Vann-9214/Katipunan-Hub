@@ -1,16 +1,20 @@
 "use client";
 
-import AddPosts from "./AddPosts"; // your AddAnnouncement file (keeps same import name)
+import AddPosts from "./AddPosts";
 import TagsFilter from "./TagsFilter";
 import ButtonFIlter from "@/app/component/General/Announcement/ButtonFilter";
 import HomepageTab from "@/app/component/ReusableComponent/HomepageTab";
 import ToggleButton from "@/app/component/ReusableComponent/ToggleButton";
 import SearchFilter from "@/app/component/General/Announcement/SearchFilter";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { getCurrentUserDetails } from "../../../../../supabase/Lib/getUser";
 import Posts from "./Posts";
 
 export default function AnnouncementPageContent() {
-  // store multiple posts
+  // --- ALL hooks declared up front (stable order) ---
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  // Posts state
   const [posts, setPosts] = useState<
     {
       title: string;
@@ -22,7 +26,7 @@ export default function AnnouncementPageContent() {
     }[]
   >([]);
 
-  // Editor control state
+  // Post editor control
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingPost, setEditingPost] = useState<{
@@ -34,22 +38,44 @@ export default function AnnouncementPageContent() {
     type: "announcement" | "highlight";
   } | null>(null);
 
-  // Active tab state (controlled)
-  // "announcement" = left, "highlight" = right
+  // Active tab
   const [activeTab, setActiveTab] = useState<"announcement" | "highlight">(
     "announcement"
   );
 
-  // Search + sorting states
+  // Filtering & sorting
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState<
     "latest" | "oldest" | "top-reacts"
   >("latest");
 
-  // ✅ Tag filter state
+  // Tag filter
   const [activeTags, setActiveTags] = useState<string[]>([]);
 
-  // Add post
+  // --- Fetch current user once (effect after hooks) ---
+  useEffect(() => {
+    let isMounted = true;
+
+    (async () => {
+      try {
+        const user = await getCurrentUserDetails();
+        if (isMounted) setCurrentUser(user);
+      } catch (err) {
+        console.error("Error getting current user details:", err);
+        if (isMounted) setCurrentUser(null);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // --- Safe destructure with fallback (currentUser might still be null briefly) ---
+  const { id, email, fullName, role, course, studentID, year, avatarURL } =
+    currentUser || {};
+
+  // --- Post handlers (unchanged) ---
   const handleAddPost = (newPost: {
     title: string;
     description: string;
@@ -61,7 +87,6 @@ export default function AnnouncementPageContent() {
     setPosts((prev) => [newPost, ...prev]);
   };
 
-  // Update post
   const handleUpdatePost = (updatedPost: {
     title: string;
     description: string;
@@ -78,7 +103,6 @@ export default function AnnouncementPageContent() {
     setEditorOpen(false);
   };
 
-  // Delete post
   const handleDelete = (index: number) => {
     setPosts((prev) => prev.filter((_, i) => i !== index));
     if (editingIndex === index) {
@@ -88,7 +112,6 @@ export default function AnnouncementPageContent() {
     }
   };
 
-  // Edit post
   const handleEdit = (index: number) => {
     const post = posts[index];
     if (!post) return;
@@ -97,7 +120,7 @@ export default function AnnouncementPageContent() {
     setEditorOpen(true);
   };
 
-  // Derived tags: only from posts of the active tab (announcement or highlight)
+  // --- Derived tags ---
   const derivedTags = Array.from(
     new Set(
       posts
@@ -106,14 +129,12 @@ export default function AnnouncementPageContent() {
     )
   );
 
-  // Proper memoized filter + sort (includes tag filtering + type filter)
+  // --- Memoized filtered/sorted posts ---
   const filteredPosts = useMemo(() => {
     let list = [...posts];
 
-    // filter by active tab type
     list = list.filter((p) => p.type === activeTab);
 
-    // search filter
     if (searchTerm.trim() !== "") {
       const lower = searchTerm.toLowerCase();
       list = list.filter(
@@ -123,14 +144,12 @@ export default function AnnouncementPageContent() {
       );
     }
 
-    // tags filter (OR logic: show posts that have any selected tag)
     if (activeTags.length > 0) {
       list = list.filter((p) =>
         p.tags?.some((tag) => activeTags.includes(tag))
       );
     }
 
-    // sort by date
     list.sort((a, b) => {
       const da = new Date(a.date).getTime();
       const db = new Date(b.date).getTime();
@@ -140,15 +159,30 @@ export default function AnnouncementPageContent() {
     return list;
   }, [posts, activeTab, searchTerm, sortOrder, activeTags]);
 
+  // --- Loading UI while user data is still fetching ---
+  if (!currentUser) {
+    return (
+      <div className="p-[25px]">
+        <HomepageTab />
+        <p className="mt-[130px] text-gray-500 text-lg font-montserrat">
+          Loading user data...
+        </p>
+      </div>
+    );
+  }
+
+  // --- Main render ---
   return (
     <div className="p-[25px] flex-col">
       <HomepageTab />
+
+      {/* Dynamic Header */}
       <h1 className="font-bold font-montserrat text-[32px] text-maroon mt-[130px]">
         {activeTab === "announcement" ? "Announcement" : "Highlights"}
       </h1>
 
       <div className="flex gap-10">
-        {/* Left: Posts */}
+        {/* Left: Display Area for Filtered Posts */}
         <div className="space-y-8">
           {filteredPosts.length === 0 ? (
             <p className="text-gray-500 text-[18px] w-[800px] font-montserrat mt-5">
@@ -162,10 +196,6 @@ export default function AnnouncementPageContent() {
                 description={post.description}
                 date={post.date}
                 images={post.images}
-                // pass type (optional display inside Posts)
-                // @ts-ignore no prop type required, Posts will accept it if present
-                // (or update Posts prop types to include type)
-                // type={post.type}
                 onDelete={() => handleDelete(i)}
                 onEdit={() => handleEdit(i)}
               />
@@ -173,7 +203,7 @@ export default function AnnouncementPageContent() {
           )}
         </div>
 
-        {/* Right: Filters + AddPosts */}
+        {/* Right: Filters, Toggles, and AddPosts Controls */}
         <div>
           <div className="fixed w-[540px] flex flex-col gap-3">
             <ToggleButton
@@ -183,7 +213,6 @@ export default function AnnouncementPageContent() {
               rightActiveBg="bg-maroon"
               active={activeTab === "announcement" ? "left" : "right"}
               onToggle={(side) => {
-                // switch tabs and clear active tag filters so they don't carry over
                 setActiveTab(side === "left" ? "announcement" : "highlight");
                 setActiveTags([]);
               }}
@@ -204,18 +233,24 @@ export default function AnnouncementPageContent() {
                 setActiveTags(selectedTags)
               }
             />
-            <AddPosts
-              onAddPost={handleAddPost}
-              externalOpen={editorOpen}
-              onExternalClose={() => {
-                setEditorOpen(false);
-                setEditingIndex(null);
-                setEditingPost(null);
-              }}
-              initialPost={editingPost ?? null}
-              onUpdatePost={handleUpdatePost}
-              currentType={activeTab} // pass current active tab to modal
-            />
+
+            {/* ✅ AddPosts only for authorized roles */}
+            {role &&
+              (role.includes("Platform Administrator") ||
+                role.includes("Announcements Moderator")) && (
+                <AddPosts
+                  onAddPost={handleAddPost}
+                  externalOpen={editorOpen}
+                  onExternalClose={() => {
+                    setEditorOpen(false);
+                    setEditingIndex(null);
+                    setEditingPost(null);
+                  }}
+                  initialPost={editingPost ?? null}
+                  onUpdatePost={handleUpdatePost}
+                  currentType={activeTab}
+                />
+              )}
           </div>
         </div>
       </div>
