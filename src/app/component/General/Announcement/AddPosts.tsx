@@ -1,23 +1,154 @@
 "use client";
 
+import UploadButton from "./UploadButton";
 import Button from "../../ReusableComponent/Buttons";
 import { Combobox } from "../../ReusableComponent/Combobox";
 import TagsFilter from "./TagsFilter";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ImageButton } from "../../ReusableComponent/Buttons";
+import { useRouter } from "next/navigation";
 
-export default function AddPosts() {
+interface PostShape {
+  id?: string;
+  title: string;
+  description: string;
+  images: string[];
+  tags: string[];
+  type: "announcement" | "highlight";
+  visibleTo?: "global" | "college";
+  visibleCollege?: string | null;
+  author_id?: string;
+  visibility?: string | null;
+}
+
+interface UserSummary {
+  id: string;
+  fullName?: string | null;
+  avatarURL?: string | null;
+}
+
+interface AddPostsProps {
+  onAddPost?: (post: {
+    title: string;
+    description: string;
+    images: string[];
+    tags: string[];
+    type: "announcement" | "highlight";
+    visibility?: string | null;
+    author_id?: string | undefined;
+  }) => Promise<void> | void;
+  externalOpen?: boolean;
+  onExternalClose?: () => void;
+  initialPost?: PostShape | null;
+  onUpdatePost?: (updated: {
+    id: string;
+    title: string;
+    description: string;
+    images: string[];
+    tags: string[];
+    type: "announcement" | "highlight";
+    visibility?: string | null;
+  }) => Promise<void> | void;
+  currentType?: "announcement" | "highlight";
+  author?: UserSummary | null;
+  authorId?: string | null;
+}
+
+export default function AddPosts({
+  onAddPost,
+  externalOpen,
+  onExternalClose,
+  initialPost = null,
+  onUpdatePost,
+  currentType = "announcement",
+  author = null,
+  authorId = null,
+}: AddPostsProps) {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [visibleTo, setVisibleTo] = useState<"global" | "course">("global");
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [loading, setLoading] = useState(false);
 
-  // tags state + input controlled state
+  const [visibleTo, setVisibleTo] = useState<"global" | "college">("global");
+  const [visibleCollege, setVisibleCollege] = useState<string | null>(null);
+
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
+  const [images, setImages] = useState<string[]>([]);
+  const [postType, setPostType] = useState<"announcement" | "highlight">(
+    currentType ?? "announcement"
+  );
+
+  const collegeitems = [
+    {
+      value: "cea",
+      label: "Engineering and Architecture (CEA)",
+      selectedPlaceholder: "CEA",
+    },
+    {
+      value: "cba",
+      label: "Business Administration (CBA)",
+      selectedPlaceholder: "CBA",
+    },
+    {
+      value: "cas",
+      label: "Arts and Sciences (CAS)",
+      selectedPlaceholder: "CAS",
+    },
+    {
+      value: "ccs",
+      label: "Computer Studies (CCS)",
+      selectedPlaceholder: "CCS",
+    },
+    { value: "coed", label: "Education (COED)", selectedPlaceholder: "COED" },
+    { value: "con", label: "Nursing (CON)", selectedPlaceholder: "CON" },
+    {
+      value: "chtm",
+      label: "Hospitality and Tourism Management (CHTM)",
+      selectedPlaceholder: "CHTM",
+    },
+    { value: "claw", label: "Law (CLAW)", selectedPlaceholder: "CLAW" },
+    { value: "cah", label: "Allied Health (CAH)", selectedPlaceholder: "CAH" },
+    {
+      value: "cit",
+      label: "Industrial Technology (CIT)",
+      selectedPlaceholder: "CIT",
+    },
+    { value: "cagr", label: "Agriculture (CAGR)", selectedPlaceholder: "CAGR" },
+  ];
 
   useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    if (typeof externalOpen === "boolean") setIsOpen(externalOpen);
+  }, [externalOpen]);
+  useEffect(() => {
+    setPostType(currentType ?? "announcement");
+  }, [currentType]);
+  useEffect(() => {
+    if (initialPost) {
+      setTitle(initialPost.title || "");
+      setDescription(
+        initialPost.description?.replace(/\s*#\S+/g, "").trim() || ""
+      );
+      // ensure we always set an array (may be null in DB)
+      setTags(initialPost.tags ?? []);
+      setImages(initialPost.images ?? []);
+      setPostType(initialPost.type ?? currentType ?? "announcement");
+      setVisibleTo(initialPost.visibleTo ?? "global");
+      setVisibleCollege(initialPost.visibleCollege ?? null);
+      setIsOpen(true);
+    }
+  }, [initialPost, currentType]);
+  useEffect(() => {
+    if (isOpen && !initialPost) {
+      clearLocalForm();
+      setPostType(currentType ?? "announcement");
+    }
+  }, [isOpen]);
 
   const handleInput = () => {
     const el = textareaRef.current;
@@ -28,152 +159,271 @@ export default function AddPosts() {
     el.style.overflowY = el.scrollHeight > 210 ? "auto" : "hidden";
   };
 
-  // add tag helper (prevents empty / duplicate)
   const addTag = (raw: string) => {
     const t = raw.trim();
-    if (!t) return;
-    if (tags.includes(t)) {
-      setTagInput(""); // clear anyway
-      return;
-    }
+    if (!t || tags.includes(t)) return;
     setTags((prev) => [...prev, t]);
     setTagInput("");
   };
 
-  // remove tag (optional: used if you want to support removal from parent)
   const removeTag = (tagToRemove: string) => {
     setTags((prev) => prev.filter((t) => t !== tagToRemove));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // example: include tags in submission payload
-    // send { title, body, visibleTo, selectedCourse, tags, ... }
-    alert(`Post submitted!\nTags: ${tags.join(", ")}`);
-    setIsOpen(false);
+  const handleUpload = (urls: string[]) => {
+    if (!Array.isArray(urls)) return;
+    setImages(urls);
   };
+
+  // allow removing a single image from the current images list
+  const removeImage = (url: string) => {
+    setImages((prev) => prev.filter((u) => u !== url));
+  };
+
+  const clearLocalForm = () => {
+    setTitle("");
+    setDescription("");
+    setTags([]);
+    setImages([]);
+    setTagInput("");
+    setVisibleTo("global");
+    setVisibleCollege(null);
+  };
+
+  const resetForm = () => {
+    setIsOpen(false);
+    clearLocalForm();
+    if (onExternalClose) onExternalClose();
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (loading) return;
+    setLoading(true);
+
+    const tagString = tags.length
+      ? " " + tags.map((t) => `#${t}`).join(" ")
+      : "";
+    const combinedDescription = description.trim() + tagString;
+    const uniqueImages = Array.from(new Set(images));
+
+    // ensure resolvedAuthorId is undefined or a string
+    const resolvedAuthorId = authorId ?? author?.id ?? undefined;
+
+    // Update flow: delegate to parent
+    if (initialPost && onUpdatePost) {
+      if (!initialPost.id) {
+        alert("Post id missing. Cannot update.");
+        setLoading(false);
+        return;
+      }
+
+      const visibilityToStore =
+        postType === "highlight"
+          ? "global"
+          : postType === "announcement"
+          ? visibleTo === "global"
+            ? "global"
+            : visibleCollege ?? null
+          : null;
+
+      const payload = {
+        id: initialPost.id,
+        title,
+        description: combinedDescription,
+        images: uniqueImages,
+        tags,
+        type: postType,
+        visibility: visibilityToStore ?? null,
+      };
+
+      try {
+        await onUpdatePost(payload);
+        resetForm();
+        router.refresh();
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          console.error("Failed to update via parent:", err.message);
+        } else {
+          console.error("Failed to update via parent:", err);
+        }
+        alert("Failed to update post.");
+      }
+
+      return;
+    }
+
+    // Create flow: delegate to parent
+    if (!onAddPost) {
+      alert("Add handler not provided.");
+      setLoading(false);
+      return;
+    }
+
+    if (!resolvedAuthorId) {
+      alert("Author not found. Please make sure you're logged in.");
+      setLoading(false);
+      return;
+    }
+
+    if (
+      postType === "announcement" &&
+      visibleTo === "college" &&
+      !visibleCollege
+    ) {
+      alert("Please select a college before publishing.");
+      setLoading(false);
+      return;
+    }
+
+    const visibilityToStore: string | null =
+      postType === "highlight"
+        ? "global"
+        : postType === "announcement"
+        ? visibleTo === "global"
+          ? "global"
+          : visibleCollege ?? null
+        : null;
+
+    const createPayload = {
+      title,
+      description: combinedDescription,
+      images: uniqueImages,
+      tags,
+      type: postType,
+      visibility: visibilityToStore ?? null,
+      author_id: resolvedAuthorId as string, // validated above, safe to assert
+    };
+
+    try {
+      await onAddPost(createPayload);
+      resetForm();
+      router.refresh();
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("Failed to update via parent:", err.message);
+      } else {
+        console.error("Failed to update via parent:", err);
+      }
+      alert("Failed to update post.");
+    }
+  };
+
+  const modalTitle = initialPost
+    ? `Edit ${postType === "announcement" ? "Announcement" : "Highlight"}`
+    : `New ${postType === "announcement" ? "Announcement" : "Highlight"}`;
 
   const modalContent = (
     <div className="fixed inset-0 z-50 flex justify-center items-center bg-black/50 backdrop-blur-sm">
       <div className="bg-white rounded-[30px] w-[90%] max-w-[850px] h-[90%] max-h-[930px] p-8 overflow-y-auto">
-        <h1 className="font-montserrat text-[40px] mb-4">New Announcement</h1>
+        <h1 className="font-montserrat text-[40px] mb-4">{modalTitle}</h1>
 
         <form
           onSubmit={handleSubmit}
           className="flex flex-col gap-4 font-montserrat"
         >
-          {/* Title input */}
           <input
             type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
             placeholder="Enter highlight title…"
             className="border border-black placeholder-white/80 px-5 bg-maroon text-white rounded-[20px] h-[55px] w-full p-2 focus:outline-none focus:ring-1"
             required
           />
 
-          {/* Auto-resizing textarea */}
           <textarea
             ref={textareaRef}
-            onInput={handleInput}
+            value={description}
+            onChange={(e) => {
+              setDescription(e.target.value);
+              handleInput();
+            }}
             placeholder="Enter detailed information to be shared with the community..."
             className="border border-black placeholder-white/80 px-5 bg-maroon text-white rounded-[20px] min-h-[100px] max-h-[210px] w-full p-2 focus:outline-none focus:ring-1 resize-none overflow-hidden"
             required
           />
 
-          {/* Visible To */}
-          <h2 className="text-[24px] font-montserrat">Visible To</h2>
-
-          <div className="grid grid-cols-3 gap-4 items-center">
-            <Button
-              text="Global"
-              bg={visibleTo === "global" ? "bg-maroon" : "bg-gray-200"}
-              textcolor={visibleTo === "global" ? "text-white" : "text-black"}
-              height="h-[45px]"
-              rounded="rounded-[30px]"
-              onClick={() => setVisibleTo("global")}
-              width="w-full"
-              className="border border-black"
-            />
-
-            <Button
-              text="Course"
-              bg={visibleTo === "course" ? "bg-maroon" : "bg-gray-200"}
-              textcolor={visibleTo === "course" ? "text-white" : "text-black"}
-              height="h-[45px]"
-              rounded="rounded-[30px]"
-              onClick={() => setVisibleTo("course")}
-              width="w-full"
-              className="border border-black"
-            />
-
-            <Combobox
-              items={[
-                { value: "c1", label: "BSIT 1A" },
-                { value: "c2", label: "BSIT 2B" },
-              ]}
-              placeholder="Select course"
-              buttonHeight="h-[45px]"
-              disabled={visibleTo !== "course"}
-              width="w-full"
-            />
-          </div>
-
-          {/* Tags input row */}
-          <div className="flex flex-col">
-            <h2 className="text-[24px] mb-2 font-montserrat text-black">
-              Tags
-            </h2>
-
-            <div className="flex items-center gap-3">
-              {/* tag input - enter adds tag */}
-              <input
-                type="text"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault(); // prevent form submit
-                    addTag(tagInput);
+          {postType === "announcement" && (
+            <>
+              <h2 className="text-[24px] font-montserrat">Visible To</h2>
+              <div className="grid grid-cols-3 gap-4 items-center">
+                <Button
+                  text="Global"
+                  bg={visibleTo === "global" ? "bg-maroon" : "bg-gray-200"}
+                  textcolor={
+                    visibleTo === "global" ? "text-white" : "text-black"
                   }
-                }}
-                placeholder="Add tags..."
-                aria-label="Add tag"
-                className="flex-1 h-10 rounded-full border border-gray-300 px-4 text-[16px] placeholder-gray-400 focus:outline-none focus:ring-1"
-              />
+                  height="h-[45px]"
+                  rounded="rounded-[30px]"
+                  onClick={() => {
+                    setVisibleTo("global");
+                    setVisibleCollege(null);
+                  }}
+                  width="w-full"
+                  className="border border-black"
+                />
+                <Button
+                  text="College"
+                  bg={visibleTo === "college" ? "bg-maroon" : "bg-gray-200"}
+                  textcolor={
+                    visibleTo === "college" ? "text-white" : "text-black"
+                  }
+                  height="h-[45px]"
+                  rounded="rounded-[30px]"
+                  onClick={() => setVisibleTo("college")}
+                  width="w-full"
+                  className="border border-black"
+                />
+                <Combobox
+                  items={collegeitems}
+                  placeholder="Select College"
+                  buttonHeight="h-[45px]"
+                  disabled={visibleTo !== "college"}
+                  width="w-full"
+                  onChange={(val) => setVisibleCollege(val || null)}
+                />
+              </div>
+            </>
+          )}
 
-              {/* plus button */}
-              <button
-                type="button"
-                onClick={() => addTag(tagInput)}
-                aria-label="Add tag"
-                className="h-10 w-10 rounded-full border border-black inline-flex items-center justify-center bg-white text-[20px] font-semibold hover:scale-105 transition"
-              >
-                +
-              </button>
+          <div className="flex flex-col">
+            <div className="flex mb-2 gap-4">
+              <h2 className="text-[24px] font-montserrat text-black">Tags</h2>
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addTag(tagInput);
+                    }
+                  }}
+                  placeholder="Add tags..."
+                  className="w-[300px] h-10 rounded-full border border-gray-300 px-4 text-[16px] placeholder-gray-400 focus:outline-none focus:ring-1"
+                />
+                <button
+                  type="button"
+                  onClick={() => addTag(tagInput)}
+                  className="h-10 w-10 rounded-full border border-black inline-flex items-center justify-center bg-white text-[20px] font-semibold hover:scale-105 transition"
+                >
+                  +
+                </button>
+              </div>
             </div>
-
-            {/* pass tags to TagsFilter (it will render them) */}
             <div className="mt-3">
-              <TagsFilter
-                mode="edit"
-                tags={tags}
-                onTagRemove={(tag) => removeTag(tag)}
-              />
-
-              {/* onTagClick will toggle selection inside TagsFilter; here we use it to remove tag when clicked — adjust as desired */}
+              <TagsFilter mode="edit" tags={tags} onTagRemove={removeTag} />
             </div>
           </div>
 
-          {/* Attachment */}
-          <div>
-            <span className="text-[18px] font-medium text-black">
-              Attachment
-            </span>
-            <div className="bg-maroon text-white rounded-[20px] h-[100px] flex items-center justify-center text-[18px] font-light cursor-pointer">
-              Drag & drop or click to upload an image.
-            </div>
-          </div>
+          {/* Upload control */}
+          <UploadButton
+            key={initialPost?.id ?? "new"}
+            onUpload={handleUpload}
+            predefinedImages={images}
+          />
 
-          {/* Buttons */}
           <div className="flex justify-end gap-3 mt-6">
             <Button
               text="Cancel"
@@ -182,18 +432,24 @@ export default function AddPosts() {
               rounded="rounded-[20px]"
               width="w-[170px]"
               height="h-[45px]"
-              onClick={() => setIsOpen(false)}
+              onClick={resetForm}
               className="border border-black"
             />
-
             <Button
-              text="Publish"
+              text={
+                loading
+                  ? "Publishing..."
+                  : initialPost
+                  ? "Save changes"
+                  : "Publish"
+              }
               textSize="text-[18px]"
               type="submit"
               width="w-[170px]"
               rounded="rounded-[20px]"
               height="h-[45px]"
               className="border border-black"
+              disabled={loading}
             />
           </div>
         </form>
@@ -203,16 +459,22 @@ export default function AddPosts() {
 
   return (
     <>
-      <div className="fixed bottom-5 ml-110">
-        <ImageButton
-          src="Plus Sign.svg"
-          height={90}
-          width={90}
-          className="hover:scale-105 active:scale-95 transition-transform"
-          onClick={() => setIsOpen(true)}
-        />
+      <div className="relative h-screen flex flex-col justify-end">
+        <div className="sticky ml-110 bottom-0 flex justify-center pb-5">
+          <ImageButton
+            src="Plus Sign.svg"
+            height={90}
+            width={90}
+            className="hover:scale-105 active:scale-95 transition-transform"
+            onClick={() => {
+              onExternalClose?.();
+              clearLocalForm();
+              setPostType(currentType ?? "announcement");
+              setIsOpen(true);
+            }}
+          />
+        </div>
       </div>
-
       {mounted && isOpen && createPortal(modalContent, document.body)}
     </>
   );

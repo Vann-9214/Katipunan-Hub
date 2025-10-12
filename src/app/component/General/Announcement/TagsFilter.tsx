@@ -6,7 +6,7 @@ import Button from "../../ReusableComponent/Buttons";
 interface TagsDisplayProps {
   tags?: string[];
   mode?: "filter" | "edit"; // 🔥 two modes
-  onTagClick?: (tag: string) => void;
+  onTagClick?: (tags: string[]) => void;
   onTagRemove?: (tag: string) => void; // only used in edit mode
 }
 
@@ -21,10 +21,11 @@ export default function TagsFilter({
 
   const handleTagClick = (tag: string) => {
     if (mode === "filter") {
-      setSelectedTags((prev) =>
-        prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-      );
-      onTagClick?.(tag);
+      const newSelection = selectedTags.includes(tag)
+        ? selectedTags.filter((t) => t !== tag)
+        : [...selectedTags, tag];
+      setSelectedTags(newSelection);
+      onTagClick?.(newSelection);
     }
   };
 

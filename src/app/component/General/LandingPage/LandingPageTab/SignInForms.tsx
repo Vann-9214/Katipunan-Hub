@@ -1,8 +1,11 @@
 "use client";
 
-import ToggleButton from "@/app/component/ReusableComponent/ToggleButton";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { motion } from "framer-motion";
+
+import ToggleButton from "@/app/component/ReusableComponent/ToggleButton";
 import Button, { TextButton } from "@/app/component/ReusableComponent/Buttons";
 import Logo from "@/app/component/ReusableComponent/Logo";
 import TextBox from "@/app/component/ReusableComponent/Textbox";
@@ -13,12 +16,52 @@ interface SignInFormProps {
 }
 
 export default function SignInForm({ onClose, onSwitch }: SignInFormProps) {
+  const supabase = createClientComponentClient();
+  const router = useRouter();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("login", { email, password });
+
+    // Email validation
+    if (!email.endsWith("@cit.edu")) {
+      alert("Only @cit.edu emails are allowed.");
+      return;
+    }
+
+    if (!email || !password) {
+      alert("Please fill in all fields.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        alert(error.message);
+        return;
+      }
+
+      if (!data?.user) {
+        alert("Login failed. Please check your credentials.");
+        return;
+      }
+
+      window.location.href = "/Announcement";
+    } catch (err) {
+      console.error("Login error:", err);
+      alert("An unexpected error occurred. Check console for details.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -85,7 +128,6 @@ export default function SignInForm({ onClose, onSwitch }: SignInFormProps) {
           </p>
 
           {/* Toggle */}
-          {/* Toggle */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -146,9 +188,9 @@ export default function SignInForm({ onClose, onSwitch }: SignInFormProps) {
 
             <div className="pt-2">
               <Button
-                text="Login"
+                text={loading ? "Logging In..." : "Login"}
                 width="w-full"
-                onClick={() => (window.location.href = "/Announcement")}
+                type="submit"
               />
             </div>
           </motion.form>

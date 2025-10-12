@@ -7,6 +7,7 @@ import Button, { TextButton } from "@/app/component/ReusableComponent/Buttons";
 import Logo from "@/app/component/ReusableComponent/Logo";
 import TextBox from "@/app/component/ReusableComponent/Textbox";
 import { Combobox } from "@/app/component/ReusableComponent/Combobox";
+import { supabase } from "../../../../../../supabase/Lib/supabaseClient";
 
 interface SignUpFormProps {
   onClose?: () => void;
@@ -21,13 +22,11 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
     { value: "4th", label: "4th Year" },
     { value: "5th", label: "5th Year" },
   ];
+
   const programs = [
-    // Business & Accountancy
     { value: "bs-accountancy", label: "Bachelor of Science in Accountancy" },
     { value: "bsba", label: "Bachelor of Science in Business Administration" },
     { value: "bsoa", label: "Bachelor of Science in Office Administration" },
-
-    // Arts & Sciences
     { value: "ba-english", label: "Bachelor of Arts in English" },
     {
       value: "ba-political-science",
@@ -36,8 +35,6 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
     { value: "bs-psychology", label: "Bachelor of Science in Psychology" },
     { value: "bs-biology", label: "Bachelor of Science in Biology" },
     { value: "bs-mathematics", label: "Bachelor of Science in Mathematics" },
-
-    // Computer Studies
     {
       value: "bs-computer-science",
       label: "Bachelor of Science in Computer Science",
@@ -50,12 +47,8 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
       value: "bs-computer-engineering",
       label: "Bachelor of Science in Computer Engineering",
     },
-
-    // Education
     { value: "beed", label: "Bachelor of Elementary Education" },
     { value: "bsed", label: "Bachelor of Secondary Education" },
-
-    // Engineering
     { value: "bsee", label: "Bachelor of Science in Electrical Engineering" },
     { value: "bsie", label: "Bachelor of Science in Industrial Engineering" },
     { value: "bsce", label: "Bachelor of Science in Civil Engineering" },
@@ -66,15 +59,9 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
       label: "Bachelor of Science in Chemical Engineering",
     },
     { value: "bsece", label: "Bachelor of Science in Electronics Engineering" },
-
-    // Health Sciences
     { value: "bsn", label: "Bachelor of Science in Nursing" },
     { value: "midwifery", label: "Diploma in Midwifery" },
-
-    // Architecture & Design
     { value: "bs-architecture", label: "Bachelor of Science in Architecture" },
-
-    // Hospitality & Tourism
     {
       value: "bs-hrm",
       label: "Bachelor of Science in Hotel and Restaurant Management",
@@ -87,16 +74,96 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
   const [firstName, setFirstName] = useState("");
   const [studentID, setStudentID] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [selectedCourse, setSelectedCourse] = useState("");
+  const [selectedYear, setSelectedYear] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("signup", {
-      firstName,
-      email,
-      studentID,
-      password,
-      confirmPassword,
-    });
+
+    // Basic validation
+    if (
+      !firstName.trim() ||
+      !email.trim() ||
+      !studentID.trim() ||
+      !selectedCourse ||
+      !selectedYear
+    ) {
+      alert("Please fill in all required fields.");
+      return;
+    }
+
+    // ✅ CIT Email Validation
+    if (!email.toLowerCase().endsWith("@cit.edu")) {
+      alert(
+        "Please use your valid CIT email address (must end with @cit.edu)."
+      );
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      alert("Passwords do not match!");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Sign up with Supabase (v2)
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (error) {
+        alert(error.message);
+        return;
+      }
+
+      // Safely type the shape we expect from supabase signUp data
+      const typedData = data as { user?: { id?: string } } | null;
+      const userId = typedData?.user?.id ?? null;
+
+      if (!userId) {
+        alert(
+          "Sign-up succeeded — check your email to confirm your account. After confirming, sign in and your profile will be created."
+        );
+        return;
+      }
+
+      // Insert profile row into Accounts table
+      const { error: insertError } = await supabase.from("Accounts").insert([
+        {
+          id: userId,
+          fullName: firstName,
+          studentID,
+          course: selectedCourse,
+          year: selectedYear,
+          avatarURL: "",
+          role: "Student, ",
+        },
+      ]);
+
+      if (insertError) {
+        console.error("Insert error:", insertError);
+        alert(
+          "Account created, but saving profile failed. Check RLS policies or DB constraints. (See console for details.)"
+        );
+        return;
+      }
+
+      alert("Account created successfully! You can now sign in.");
+      onSwitch?.();
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("Sign up error:", err.message);
+      } else {
+        console.error("Sign up error (non-Error):", err);
+      }
+      alert("Unexpected error during sign-up. See console for details.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -151,9 +218,7 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
           transition={{ delay: 0.3, duration: 0.6 }}
           className="ml-8 flex flex-col flex-1 p-8"
         >
-          {/* Logo */}
           <Logo unclickable={true} />
-          {/* Header */}
           <p
             className="text-[30px] select-none mt-2"
             style={{ fontFamily: "Montserrat, sans-serif" }}
@@ -161,7 +226,6 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
             Join the Katipunan Hub!
           </p>
 
-          {/* Toggle Buttons */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -177,13 +241,12 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
             />
           </motion.div>
 
-          {/* Form */}
           <motion.form
             onSubmit={handleSubmit}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.5 }}
-            className="flex flex-col justify-between flex-1 gap-3 mt-5  max-w-[540px]"
+            className="flex flex-col justify-between flex-1 gap-3 mt-5 max-w-[540px]"
           >
             <div className="flex flex-col gap-3">
               <TextBox
@@ -200,7 +263,7 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
               />
               <TextBox
                 type="email"
-                placeholder="Cit Email"
+                placeholder="CIT Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 rightImageSrc="/Mail Plus.svg"
@@ -214,9 +277,9 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
               <Combobox
                 items={programs}
                 placeholder="Select Course"
-                onChange={(val) => console.log("Selected:", val)}
+                onChange={(val) => setSelectedCourse(val)}
               />
-              {/* ID and Year */}
+
               <div className="flex justify-between">
                 <TextBox
                   type="text"
@@ -235,10 +298,10 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
                   width="w-[260px]"
                   dropdownHeight="h-[260px]"
                   placeholder="Select Year"
-                  onChange={(val) => console.log("Selected:", val)}
+                  onChange={(val) => setSelectedYear(val)}
                 />
               </div>
-              {/* Password */}
+
               <div className="flex justify-between">
                 <TextBox
                   type="password"
@@ -270,14 +333,18 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
                 />
               </div>
             </div>
-            {/* Sign Up Button */}
+
             <div>
-              <Button text="Sign Up" bg="bg-gold" width="w-full" />
+              <Button
+                text={loading ? "Signing Up..." : "Sign Up"}
+                bg="bg-gold"
+                width="w-full"
+                type="submit"
+              />
             </div>
           </motion.form>
         </motion.div>
 
-        {/* Close */}
         <TextButton
           text="X"
           onClick={onClose}
