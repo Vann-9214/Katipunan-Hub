@@ -56,31 +56,31 @@ SET default_tablespace = '';
 SET default_table_access_method = "heap";
 
 
-CREATE TABLE IF NOT EXISTS "public"."Accounts" (
-    "id" "uuid" NOT NULL,
-    "fullName" "text",
-    "avatarURL" "text",
-    "role" "text",
-    "course" "text",
-    "studentID" "text",
-    "year" "text"
-);
+-- CREATE TABLE IF NOT EXISTS "public"."Accounts" (
+--     "id" "uuid" NOT NULL,
+--     "fullName" "text",
+--     "avatarURL" "text",
+--     "role" "text",
+--     "course" "text",
+--     "studentID" "text",
+--     "year" "text"
+-- );
 
 
-ALTER TABLE "public"."Accounts" OWNER TO "postgres";
+-- ALTER TABLE "public"."Accounts" OWNER TO "postgres";
 
 
-ALTER TABLE ONLY "public"."Accounts"
-    ADD CONSTRAINT "Accounts_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."Accounts"
-    ADD CONSTRAINT "Accounts_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+-- ALTER TABLE ONLY "public"."Accounts"
+--     ADD CONSTRAINT "Accounts_pkey" PRIMARY KEY ("id");
 
 
 
-ALTER TABLE "public"."Accounts" ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE ONLY "public"."Accounts"
+--     ADD CONSTRAINT "Accounts_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+-- ALTER TABLE "public"."Accounts" ENABLE ROW LEVEL SECURITY;
 
 
 
