@@ -12,6 +12,7 @@ interface PostsProps {
   images?: string[];
   onEdit?: () => void;
   onDelete?: () => void;
+  canEdit?: boolean;
 }
 
 export default function Posts({
@@ -21,6 +22,7 @@ export default function Posts({
   images = [],
   onEdit,
   onDelete,
+  canEdit = false,
 }: PostsProps) {
   return (
     <div>
@@ -50,20 +52,18 @@ export default function Posts({
               </div>
             </div>
 
-            {/* Triple dot menu */}
-            <div className="select-none">
-              <EditPostsButton
-                onEdit={() => {
-                  if (onEdit) onEdit();
-                }}
-                onRemove={() => {
-                  if (onDelete) onDelete();
-                }}
-              />
-            </div>
+            {/* ✅ Conditionally show edit button */}
+            {canEdit && (
+              <div className="select-none">
+                <EditPostsButton
+                  onEdit={() => onEdit?.()}
+                  onRemove={() => onDelete?.()}
+                />
+              </div>
+            )}
           </div>
 
-          {/* Description (Truncated to 3 lines) */}
+          {/* Description */}
           <div className="font-ptsans text-[22px] mt-[5px] mx-[20px] text-white select-text line-clamp-3 break-words mb-[10px]">
             {description}
           </div>
@@ -72,10 +72,9 @@ export default function Posts({
           <ImageAttachments images={images} />
         </div>
 
-        {/* Bottom buttons - added Edit/Delete handlers */}
+        {/* Bottom buttons */}
         <div className="flex justify-between px-5 items-center">
           <TextButton text="10k" />
-
           <TextButton
             text="React"
             textSize="text-[28px]"

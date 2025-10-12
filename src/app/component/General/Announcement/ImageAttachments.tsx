@@ -128,26 +128,54 @@ export default function ImageAttachments({ images }: ImageAttachmentsProps) {
    - Uses FastAverageColor inside useEffect (hooks are local here)
    --------------------------- */
 function SingleColorImage({ src }: { src: string }) {
-  const [bgColor, setBgColor] = React.useState<string>("#000");
+  const [bgColor, setBgColor] = React.useState("#000");
   const imgRef = React.useRef<HTMLImageElement | null>(null);
 
   React.useEffect(() => {
-    let mounted = true;
-    const compute = async () => {
-      if (!imgRef.current) return;
+    let cancelled = false;
+    if (!imgRef.current) return;
+    const fac = new FastAverageColor();
+    const img = imgRef.current;
+
+    const computeColor = async () => {
+      // Wait for the image to load
+      if (!img.complete || !img.naturalWidth || !img.naturalHeight) {
+        await new Promise<void>((resolve) => {
+          const onLoad = () => {
+            img.removeEventListener("load", onLoad);
+            img.removeEventListener("error", onError);
+            resolve();
+          };
+          const onError = () => {
+            img.removeEventListener("load", onLoad);
+            img.removeEventListener("error", onError);
+            resolve(); // still resolve, we’ll fallback color
+          };
+          img.addEventListener("load", onLoad);
+          img.addEventListener("error", onError);
+        });
+      }
+
       try {
-        const fac = new FastAverageColor();
-        const color = await fac.getColorAsync(imgRef.current);
-        if (mounted) setBgColor(color.hex);
+        // guard against broken or zero-size images
+        if (img.naturalWidth && img.naturalHeight) {
+          const color = await fac.getColorAsync(img);
+          if (!cancelled) setBgColor(color.hex);
+        } else if (!cancelled) {
+          setBgColor("#000");
+        }
+      } catch (err) {
+        console.warn("FAC failed:", err);
+        if (!cancelled) setBgColor("#000");
+      } finally {
         if (typeof fac.destroy === "function") fac.destroy();
-      } catch {
-        if (mounted) setBgColor("#000");
       }
     };
 
-    compute();
+    computeColor();
     return () => {
-      mounted = false;
+      cancelled = true;
+      if (typeof fac.destroy === "function") fac.destroy();
     };
   }, [src]);
 
@@ -176,26 +204,52 @@ function ColorMatchedImage({
   minHeightClass?: string;
   maxHeight?: string;
 }) {
-  const [bgColor, setBgColor] = React.useState<string>("#000");
+  const [bgColor, setBgColor] = React.useState("#000");
   const imgRef = React.useRef<HTMLImageElement | null>(null);
 
   React.useEffect(() => {
-    let mounted = true;
-    const compute = async () => {
-      if (!imgRef.current) return;
+    let cancelled = false;
+    if (!imgRef.current) return;
+    const fac = new FastAverageColor();
+    const img = imgRef.current;
+
+    const computeColor = async () => {
+      if (!img.complete || !img.naturalWidth || !img.naturalHeight) {
+        await new Promise<void>((resolve) => {
+          const onLoad = () => {
+            img.removeEventListener("load", onLoad);
+            img.removeEventListener("error", onError);
+            resolve();
+          };
+          const onError = () => {
+            img.removeEventListener("load", onLoad);
+            img.removeEventListener("error", onError);
+            resolve();
+          };
+          img.addEventListener("load", onLoad);
+          img.addEventListener("error", onError);
+        });
+      }
+
       try {
-        const fac = new FastAverageColor();
-        const color = await fac.getColorAsync(imgRef.current);
-        if (mounted) setBgColor(color.hex);
+        if (img.naturalWidth && img.naturalHeight) {
+          const color = await fac.getColorAsync(img);
+          if (!cancelled) setBgColor(color.hex);
+        } else if (!cancelled) {
+          setBgColor("#000");
+        }
+      } catch (err) {
+        console.warn("FAC failed:", err);
+        if (!cancelled) setBgColor("#000");
+      } finally {
         if (typeof fac.destroy === "function") fac.destroy();
-      } catch {
-        if (mounted) setBgColor("#000");
       }
     };
 
-    compute();
+    computeColor();
     return () => {
-      mounted = false;
+      cancelled = true;
+      if (typeof fac.destroy === "function") fac.destroy();
     };
   }, [src]);
 
@@ -209,7 +263,7 @@ function ColorMatchedImage({
         src={src}
         alt="Attachment"
         className="w-full h-auto object-contain block"
-        style={{ maxHeight: maxHeight }}
+        style={{ maxHeight }}
         crossOrigin="anonymous"
       />
     </div>

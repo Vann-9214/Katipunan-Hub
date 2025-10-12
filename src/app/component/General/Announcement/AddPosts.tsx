@@ -7,30 +7,52 @@ import TagsFilter from "./TagsFilter";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ImageButton } from "../../ReusableComponent/Buttons";
+import { useRouter } from "next/navigation";
 
 interface PostShape {
+  id?: string;
   title: string;
-  description: string; // description will include appended tags
-  date: string;
+  description: string;
   images: string[];
   tags: string[];
   type: "announcement" | "highlight";
-  // optionally you can add visibleTo info if you need to persist it:
   visibleTo?: "global" | "college";
   visibleCollege?: string | null;
+  author_id?: string;
+  visibility?: string | null;
+}
+
+interface UserSummary {
+  id: string;
+  fullName?: string | null;
+  avatarURL?: string | null;
 }
 
 interface AddPostsProps {
-  onAddPost: (post: PostShape) => void;
-
-  // NEW optional props for external edit control:
-  externalOpen?: boolean; // when set, AddPosts will follow this to open/close modal
-  onExternalClose?: () => void; // notify parent to close externally / clear edit
-  initialPost?: PostShape | null; // when provided, modal pre-fills fields for edit
-  onUpdatePost?: (updated: PostShape) => void; // called when saving an edit
-
-  // NEW: current type from parent (controlled by ToggleButton)
+  onAddPost?: (post: {
+    title: string;
+    description: string;
+    images: string[];
+    tags: string[];
+    type: "announcement" | "highlight";
+    visibility?: string | null;
+    author_id?: string | undefined;
+  }) => Promise<void> | void;
+  externalOpen?: boolean;
+  onExternalClose?: () => void;
+  initialPost?: PostShape | null;
+  onUpdatePost?: (updated: {
+    id: string;
+    title: string;
+    description: string;
+    images: string[];
+    tags: string[];
+    type: "announcement" | "highlight";
+    visibility?: string | null;
+  }) => Promise<void> | void;
   currentType?: "announcement" | "highlight";
+  author?: UserSummary | null;
+  authorId?: string | null;
 }
 
 export default function AddPosts({
@@ -40,11 +62,14 @@ export default function AddPosts({
   initialPost = null,
   onUpdatePost,
   currentType = "announcement",
+  author = null,
+  authorId = null,
 }: AddPostsProps) {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  // Visible-to state (only relevant for announcement type)
   const [visibleTo, setVisibleTo] = useState<"global" | "college">("global");
   const [visibleCollege, setVisibleCollege] = useState<string | null>(null);
 
@@ -58,42 +83,71 @@ export default function AddPosts({
     currentType ?? "announcement"
   );
 
+  const collegeitems = [
+    {
+      value: "cea",
+      label: "Engineering and Architecture (CEA)",
+      selectedPlaceholder: "CEA",
+    },
+    {
+      value: "cba",
+      label: "Business Administration (CBA)",
+      selectedPlaceholder: "CBA",
+    },
+    {
+      value: "cas",
+      label: "Arts and Sciences (CAS)",
+      selectedPlaceholder: "CAS",
+    },
+    {
+      value: "ccs",
+      label: "Computer Studies (CCS)",
+      selectedPlaceholder: "CCS",
+    },
+    { value: "coed", label: "Education (COED)", selectedPlaceholder: "COED" },
+    { value: "con", label: "Nursing (CON)", selectedPlaceholder: "CON" },
+    {
+      value: "chtm",
+      label: "Hospitality and Tourism Management (CHTM)",
+      selectedPlaceholder: "CHTM",
+    },
+    { value: "claw", label: "Law (CLAW)", selectedPlaceholder: "CLAW" },
+    { value: "cah", label: "Allied Health (CAH)", selectedPlaceholder: "CAH" },
+    {
+      value: "cit",
+      label: "Industrial Technology (CIT)",
+      selectedPlaceholder: "CIT",
+    },
+    { value: "cagr", label: "Agriculture (CAGR)", selectedPlaceholder: "CAGR" },
+  ];
+
   useEffect(() => setMounted(true), []);
-
-  // sync with externalOpen (if provided)
   useEffect(() => {
-    if (typeof externalOpen === "boolean") {
-      setIsOpen(externalOpen);
-    }
+    if (typeof externalOpen === "boolean") setIsOpen(externalOpen);
   }, [externalOpen]);
-
-  // if parent changes the currentType (tab), update local postType
   useEffect(() => {
     setPostType(currentType ?? "announcement");
   }, [currentType]);
-
-  // when initialPost changes (edit), prefill fields for edit mode
   useEffect(() => {
     if (initialPost) {
       setTitle(initialPost.title || "");
       setDescription(
         initialPost.description?.replace(/\s*#\S+/g, "").trim() || ""
       );
-      setTags(initialPost.tags || []);
-      setImages(initialPost.images || []);
+      // ensure we always set an array (may be null in DB)
+      setTags(initialPost.tags ?? []);
+      setImages(initialPost.images ?? []);
       setPostType(initialPost.type ?? currentType ?? "announcement");
       setVisibleTo(initialPost.visibleTo ?? "global");
       setVisibleCollege(initialPost.visibleCollege ?? null);
+      setIsOpen(true);
     }
   }, [initialPost, currentType]);
-
-  // If modal is opened for create (no initialPost), ensure form is cleared
   useEffect(() => {
     if (isOpen && !initialPost) {
       clearLocalForm();
       setPostType(currentType ?? "announcement");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   const handleInput = () => {
@@ -117,7 +171,13 @@ export default function AddPosts({
   };
 
   const handleUpload = (urls: string[]) => {
-    setImages((prev) => [...prev, ...urls]);
+    if (!Array.isArray(urls)) return;
+    setImages(urls);
+  };
+
+  // allow removing a single image from the current images list
+  const removeImage = (url: string) => {
+    setImages((prev) => prev.filter((u) => u !== url));
   };
 
   const clearLocalForm = () => {
@@ -130,49 +190,129 @@ export default function AddPosts({
     setVisibleCollege(null);
   };
 
-  // full reset: close local modal + clear + notify parent to clear edit if applicable
   const resetForm = () => {
     setIsOpen(false);
     clearLocalForm();
     if (onExternalClose) onExternalClose();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
+    setLoading(true);
 
     const tagString = tags.length
       ? " " + tags.map((t) => `#${t}`).join(" ")
       : "";
     const combinedDescription = description.trim() + tagString;
+    const uniqueImages = Array.from(new Set(images));
 
-    const newPost: PostShape = {
+    // ensure resolvedAuthorId is undefined or a string
+    const resolvedAuthorId = authorId ?? author?.id ?? undefined;
+
+    // Update flow: delegate to parent
+    if (initialPost && onUpdatePost) {
+      if (!initialPost.id) {
+        alert("Post id missing. Cannot update.");
+        setLoading(false);
+        return;
+      }
+
+      const visibilityToStore =
+        postType === "highlight"
+          ? "global"
+          : postType === "announcement"
+          ? visibleTo === "global"
+            ? "global"
+            : visibleCollege ?? null
+          : null;
+
+      const payload = {
+        id: initialPost.id,
+        title,
+        description: combinedDescription,
+        images: uniqueImages,
+        tags,
+        type: postType,
+        visibility: visibilityToStore ?? null,
+      };
+
+      try {
+        await onUpdatePost(payload);
+        resetForm();
+        router.refresh();
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          console.error("Failed to update via parent:", err.message);
+        } else {
+          console.error("Failed to update via parent:", err);
+        }
+        alert("Failed to update post.");
+      }
+
+      return;
+    }
+
+    // Create flow: delegate to parent
+    if (!onAddPost) {
+      alert("Add handler not provided.");
+      setLoading(false);
+      return;
+    }
+
+    if (!resolvedAuthorId) {
+      alert("Author not found. Please make sure you're logged in.");
+      setLoading(false);
+      return;
+    }
+
+    if (
+      postType === "announcement" &&
+      visibleTo === "college" &&
+      !visibleCollege
+    ) {
+      alert("Please select a college before publishing.");
+      setLoading(false);
+      return;
+    }
+
+    const visibilityToStore: string | null =
+      postType === "highlight"
+        ? "global"
+        : postType === "announcement"
+        ? visibleTo === "global"
+          ? "global"
+          : visibleCollege ?? null
+        : null;
+
+    const createPayload = {
       title,
       description: combinedDescription,
-      date: new Date().toISOString().split("T")[0],
-      images,
+      images: uniqueImages,
       tags,
       type: postType,
-      visibleTo: postType === "announcement" ? visibleTo : undefined,
-      visibleCollege: postType === "announcement" ? visibleCollege : undefined,
+      visibility: visibilityToStore ?? null,
+      author_id: resolvedAuthorId as string, // validated above, safe to assert
     };
 
-    // If editing (initialPost provided) and parent supplied onUpdatePost, call that
-    if (initialPost && onUpdatePost) {
-      onUpdatePost(newPost);
+    try {
+      await onAddPost(createPayload);
       resetForm();
-    } else {
-      // create new post path
-      onAddPost(newPost);
-      resetForm();
+      router.refresh();
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("Failed to update via parent:", err.message);
+      } else {
+        console.error("Failed to update via parent:", err);
+      }
+      alert("Failed to update post.");
     }
   };
 
-  // compute the modal title based on action and postType
   const modalTitle = initialPost
     ? `Edit ${postType === "announcement" ? "Announcement" : "Highlight"}`
     : `New ${postType === "announcement" ? "Announcement" : "Highlight"}`;
 
-  // modal content (Visible To will only appear when postType === "announcement")
   const modalContent = (
     <div className="fixed inset-0 z-50 flex justify-center items-center bg-black/50 backdrop-blur-sm">
       <div className="bg-white rounded-[30px] w-[90%] max-w-[850px] h-[90%] max-h-[930px] p-8 overflow-y-auto">
@@ -182,7 +322,6 @@ export default function AddPosts({
           onSubmit={handleSubmit}
           className="flex flex-col gap-4 font-montserrat"
         >
-          {/* Title */}
           <input
             type="text"
             value={title}
@@ -192,7 +331,6 @@ export default function AddPosts({
             required
           />
 
-          {/* Description */}
           <textarea
             ref={textareaRef}
             value={description}
@@ -205,7 +343,6 @@ export default function AddPosts({
             required
           />
 
-          {/* Visible To - only for announcements */}
           {postType === "announcement" && (
             <>
               <h2 className="text-[24px] font-montserrat">Visible To</h2>
@@ -218,7 +355,10 @@ export default function AddPosts({
                   }
                   height="h-[45px]"
                   rounded="rounded-[30px]"
-                  onClick={() => setVisibleTo("global")}
+                  onClick={() => {
+                    setVisibleTo("global");
+                    setVisibleCollege(null);
+                  }}
                   width="w-full"
                   className="border border-black"
                 />
@@ -235,63 +375,7 @@ export default function AddPosts({
                   className="border border-black"
                 />
                 <Combobox
-                  items={[
-                    {
-                      value: "cea",
-                      label: "Engineering and Architecture (CEA)",
-                      selectedPlaceholder: "CEA",
-                    },
-                    {
-                      value: "cba",
-                      label: "Business Administration (CBA)",
-                      selectedPlaceholder: "CBA",
-                    },
-                    {
-                      value: "cas",
-                      label: "Arts and Sciences (CAS)",
-                      selectedPlaceholder: "CAS",
-                    },
-                    {
-                      value: "ccs",
-                      label: "Computer Studies (CCS)",
-                      selectedPlaceholder: "CCS",
-                    },
-                    {
-                      value: "coed",
-                      label: "Education (COED)",
-                      selectedPlaceholder: "COED",
-                    },
-                    {
-                      value: "con",
-                      label: "Nursing (CON)",
-                      selectedPlaceholder: "CON",
-                    },
-                    {
-                      value: "chtm",
-                      label: "Hospitality and Tourism Management (CHTM)",
-                      selectedPlaceholder: "CHTM",
-                    },
-                    {
-                      value: "claw",
-                      label: "Law (CLAW)",
-                      selectedPlaceholder: "CLAW",
-                    },
-                    {
-                      value: "cah",
-                      label: "Allied Health (CAH)",
-                      selectedPlaceholder: "CAH",
-                    },
-                    {
-                      value: "cit",
-                      label: "Industrial Technology (CIT)",
-                      selectedPlaceholder: "CIT",
-                    },
-                    {
-                      value: "cagr",
-                      label: "Agriculture (CAGR)",
-                      selectedPlaceholder: "CAGR",
-                    },
-                  ]}
+                  items={collegeitems}
                   placeholder="Select College"
                   buttonHeight="h-[45px]"
                   disabled={visibleTo !== "college"}
@@ -302,7 +386,6 @@ export default function AddPosts({
             </>
           )}
 
-          {/* Tags */}
           <div className="flex flex-col">
             <div className="flex mb-2 gap-4">
               <h2 className="text-[24px] font-montserrat text-black">Tags</h2>
@@ -329,16 +412,18 @@ export default function AddPosts({
                 </button>
               </div>
             </div>
-
             <div className="mt-3">
               <TagsFilter mode="edit" tags={tags} onTagRemove={removeTag} />
             </div>
           </div>
 
-          {/* Upload */}
-          <UploadButton onUpload={handleUpload} />
+          {/* Upload control */}
+          <UploadButton
+            key={initialPost?.id ?? "new"}
+            onUpload={handleUpload}
+            predefinedImages={images}
+          />
 
-          {/* Buttons */}
           <div className="flex justify-end gap-3 mt-6">
             <Button
               text="Cancel"
@@ -347,20 +432,24 @@ export default function AddPosts({
               rounded="rounded-[20px]"
               width="w-[170px]"
               height="h-[45px]"
-              onClick={() => {
-                // always fully reset local form and close modal
-                resetForm();
-              }}
+              onClick={resetForm}
               className="border border-black"
             />
             <Button
-              text={initialPost ? "Save changes" : "Publish"}
+              text={
+                loading
+                  ? "Publishing..."
+                  : initialPost
+                  ? "Save changes"
+                  : "Publish"
+              }
               textSize="text-[18px]"
               type="submit"
               width="w-[170px]"
               rounded="rounded-[20px]"
               height="h-[45px]"
               className="border border-black"
+              disabled={loading}
             />
           </div>
         </form>
@@ -370,7 +459,6 @@ export default function AddPosts({
 
   return (
     <>
-      {/* Floating Add Button (keeps same behavior you had) */}
       <div className="relative h-screen flex flex-col justify-end">
         <div className="sticky ml-110 bottom-0 flex justify-center pb-5">
           <ImageButton
@@ -379,9 +467,7 @@ export default function AddPosts({
             width={90}
             className="hover:scale-105 active:scale-95 transition-transform"
             onClick={() => {
-              // If parent provided an editing context, ask parent to clear it
-              if (onExternalClose) onExternalClose();
-              // open local modal for creating new post with cleared fields
+              onExternalClose?.();
               clearLocalForm();
               setPostType(currentType ?? "announcement");
               setIsOpen(true);
@@ -389,7 +475,6 @@ export default function AddPosts({
           />
         </div>
       </div>
-
       {mounted && isOpen && createPortal(modalContent, document.body)}
     </>
   );

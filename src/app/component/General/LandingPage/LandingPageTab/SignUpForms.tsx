@@ -7,7 +7,7 @@ import Button, { TextButton } from "@/app/component/ReusableComponent/Buttons";
 import Logo from "@/app/component/ReusableComponent/Logo";
 import TextBox from "@/app/component/ReusableComponent/Textbox";
 import { Combobox } from "@/app/component/ReusableComponent/Combobox";
-import { supabase } from "../../../../../../supabase/Lib/supabaseClient"; // keep your existing path
+import { supabase } from "../../../../../../supabase/Lib/supabaseClient";
 
 interface SignUpFormProps {
   onClose?: () => void;
@@ -120,7 +120,9 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
         return;
       }
 
-      const userId = (data as any)?.user?.id ?? null;
+      // Safely type the shape we expect from supabase signUp data
+      const typedData = data as { user?: { id?: string } } | null;
+      const userId = typedData?.user?.id ?? null;
 
       if (!userId) {
         alert(
@@ -138,7 +140,7 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
           course: selectedCourse,
           year: selectedYear,
           avatarURL: "",
-          role: "student",
+          role: "Student, ",
         },
       ]);
 
@@ -152,8 +154,12 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
 
       alert("Account created successfully! You can now sign in.");
       onSwitch?.();
-    } catch (err) {
-      console.error("Sign up error:", err);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("Sign up error:", err.message);
+      } else {
+        console.error("Sign up error (non-Error):", err);
+      }
       alert("Unexpected error during sign-up. See console for details.");
     } finally {
       setLoading(false);

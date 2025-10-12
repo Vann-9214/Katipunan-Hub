@@ -1,22 +1,9 @@
-import { supabase } from "./supabaseClient";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
-// Basic: only auth info
-export async function getCurrentUser() {
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
+const supabase = createClientComponentClient();
 
-  if (error) {
-    console.error("Error fetching user:", error.message);
-    return null;
-  }
-
-  return user;
-}
-
-// Extended: with Account table details
 export async function getCurrentUserDetails() {
+  // ✅ Get the authenticated user from Supabase auth
   const {
     data: { user },
     error: userError,
@@ -27,39 +14,31 @@ export async function getCurrentUserDetails() {
     return null;
   }
 
-  // Fetch all account columns you need
+  console.log("🟩 Auth user fetched:", user.email, user.id);
+
+  // ✅ Fetch additional details from your Accounts table
   const { data: account, error: accountError } = await supabase
     .from("Accounts")
     .select("id, fullName, avatarURL, role, course, studentID, year")
-    .eq("id", user.id)
-    .single();
+    .eq("id", user.id) // <-- make sure this matches the logged-in user's id
+    .maybeSingle(); // safer than .single() to prevent "multiple rows" errors
 
   if (accountError) {
     console.error("⚠️ Error fetching account info:", accountError.message);
-    return {
-      id: user.id,
-      email: user.email,
-      fullName: "",
-      avatarURL: "",
-      role: "",
-      course: "",
-      studentID: "",
-      year: "",
-    };
   }
 
-  // ✅ Merge both (auth + table)
+  // ✅ Merge both auth + Accounts data
   const fullUser = {
     id: user.id,
-    email: user.email,
-    fullName: account?.fullName || "",
-    avatarURL: account?.avatarURL || "",
-    role: account?.role || "",
-    course: account?.course || "",
-    studentID: account?.studentID || "",
-    year: account?.year || "",
+    email: user.email, // comes from auth
+    fullName: account?.fullName ?? "",
+    avatarURL: account?.avatarURL ?? "",
+    role: account?.role ?? "",
+    course: account?.course ?? "",
+    studentID: account?.studentID ?? "",
+    year: account?.year ?? "",
   };
 
-  console.log("🟩 Full user object:", fullUser);
+  console.log("✅ Full merged user:", fullUser);
   return fullUser;
 }

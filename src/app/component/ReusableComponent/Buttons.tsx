@@ -4,6 +4,7 @@ import { useState } from "react";
 
 export default function Button({
   onClick,
+  disabled = false,
   text,
   font,
   textSize = "text-[24px]",
@@ -15,6 +16,7 @@ export default function Button({
   className,
   type = "button",
 }: {
+  disabled?: boolean;
   onClick?: () => void;
   textSize?: string;
   text: string;
@@ -29,6 +31,7 @@ export default function Button({
 }) {
   return (
     <button
+      disabled={disabled}
       type={type}
       onClick={onClick}
       style={{ fontFamily: "Montserrat, sans-serif" }}

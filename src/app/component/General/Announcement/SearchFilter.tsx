@@ -26,7 +26,7 @@ export default function SearchFilter({
         <Search className="text-[#6D0000] w-5 h-5 mr-2" />
         <input
           type="text"
-          placeholder="Search announcements..."
+          placeholder="Search posts..."
           value={search}
           onChange={(e) => {
             const val = e.target.value;
@@ -56,6 +56,7 @@ export default function SearchFilter({
           dropdownTextColor="text-gray-700"
           dropdownHoverBG="hover:bg-[#D6D6D6]"
           checkArrowColor="text-green-700"
+          defaultMode="first"
           onChange={(val) => onSortChange?.(val)}
         />
       </div>
