@@ -1,6 +1,6 @@
 "use client";
 
-import UploadButton from "./UploadButton";
+import UploadButton, { UploadButtonHandle } from "./UploadButton";
 import Button from "../../ReusableComponent/Buttons";
 import { Combobox } from "../../ReusableComponent/Combobox";
 import TagsFilter from "./TagsFilter";
@@ -83,6 +83,9 @@ export default function AddPosts({
   const [postType, setPostType] = useState<"announcement" | "highlight">(
     currentType ?? "announcement"
   );
+
+  // 🔹 Add ref to UploadButton
+  const uploadRef = useRef<UploadButtonHandle>(null);
 
   const collegeitems = [
     {
@@ -183,7 +186,6 @@ export default function AddPosts({
     setImages(urls);
   };
 
-  // allow removing a single image from the current images list
   const removeImage = (url: string) => {
     setImages((prev) => prev.filter((u) => u !== url));
   };
@@ -204,29 +206,29 @@ export default function AddPosts({
     if (onExternalClose) onExternalClose();
   };
 
+  // 🔹 Updated handleSubmit to await uploads
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
     setLoading(true);
 
-    const tagString = tags.length
-      ? " " + tags.map((t) => `#${t}`).join(" ")
-      : "";
-    const combinedDescription = description.trim() + tagString;
-    const uniqueImages = Array.from(new Set(images));
+    try {
+      // 🔹 Wait for uploads to complete and get real public URLs
+      const uploadedImages = uploadRef.current
+        ? await uploadRef.current.uploadFiles(null)
+        : images;
 
-    // ensure resolvedAuthorId is undefined or a string
-    const resolvedAuthorId = authorId ?? author?.id ?? undefined;
+      const uniqueImages = Array.from(new Set(uploadedImages));
 
-    // Update flow: delegate to parent
-    if (initialPost && onUpdatePost) {
-      if (!initialPost.id) {
-        alert("Post id missing. Cannot update.");
-        if (isMountedRef.current) setLoading(false);
-        return;
-      }
+      const tagString = tags.length
+        ? " " + tags.map((t) => `#${t}`).join(" ")
+        : "";
+      const combinedDescription = description.trim() + tagString;
 
-      const visibilityToStore =
+      const resolvedAuthorId = authorId ?? author?.id ?? undefined;
+      if (!resolvedAuthorId) throw new Error("Author not found");
+
+      const visibilityToStore: string | null =
         postType === "highlight"
           ? "global"
           : postType === "announcement"
@@ -235,87 +237,28 @@ export default function AddPosts({
             : visibleCollege ?? null
           : null;
 
-      const payload = {
-        id: initialPost.id,
+      const createPayload = {
         title,
         description: combinedDescription,
         images: uniqueImages,
         tags,
         type: postType,
-        visibility: visibilityToStore ?? null,
+        visibility: visibilityToStore,
+        author_id: resolvedAuthorId,
       };
 
-      try {
-        await onUpdatePost(payload);
-        resetForm();
-        router.refresh();
-      } catch (err: unknown) {
-        if (err instanceof Error) {
-          console.error("Failed to update via parent:", err.message);
-        } else {
-          console.error("Failed to update via parent:", err);
-        }
-        alert("Failed to update post.");
-      } finally {
-        if (isMountedRef.current) setLoading(false);
+      if (initialPost && onUpdatePost) {
+        if (!initialPost.id) throw new Error("Post id missing. Cannot update.");
+        await onUpdatePost({ ...createPayload, id: initialPost.id });
+      } else if (onAddPost) {
+        await onAddPost(createPayload);
       }
 
-      return;
-    }
-
-    // Create flow: delegate to parent
-    if (!onAddPost) {
-      alert("Add handler not provided.");
-      if (isMountedRef.current) setLoading(false);
-      return;
-    }
-
-    if (!resolvedAuthorId) {
-      alert("Author not found. Please make sure you're logged in.");
-      if (isMountedRef.current) setLoading(false);
-      return;
-    }
-
-    if (
-      postType === "announcement" &&
-      visibleTo === "college" &&
-      !visibleCollege
-    ) {
-      alert("Please select a college before publishing.");
-      if (isMountedRef.current) setLoading(false);
-      return;
-    }
-
-    const visibilityToStore: string | null =
-      postType === "highlight"
-        ? "global"
-        : postType === "announcement"
-        ? visibleTo === "global"
-          ? "global"
-          : visibleCollege ?? null
-        : null;
-
-    const createPayload = {
-      title,
-      description: combinedDescription,
-      images: uniqueImages,
-      tags,
-      type: postType,
-      visibility: visibilityToStore ?? null,
-      author_id: resolvedAuthorId as string, // validated above, safe to assert
-    };
-
-    try {
-      await onAddPost(createPayload);
       resetForm();
       router.refresh();
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        console.error("Failed to create via parent:", err.message);
-      } else {
-        console.error("Failed to create via parent:", err);
-      }
-      alert("Failed to create post.");
+    } catch (err) {
+      console.error("Failed to create/update post:", err);
+      alert("Failed to create/update post.");
     } finally {
       if (isMountedRef.current) setLoading(false);
     }
@@ -429,9 +372,10 @@ export default function AddPosts({
             </div>
           </div>
 
-          {/* Upload control */}
+          {/* Upload control with ref */}
           <UploadButton
             key={initialPost?.id ?? "new"}
+            ref={uploadRef} // 🔹 important
             onUpload={handleUpload}
             predefinedImages={images}
           />

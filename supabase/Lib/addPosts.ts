@@ -37,8 +37,6 @@ export async function addPost({
     payload.visibility = visibility;
   }
 
-  // 👇 Console log before inserting
-  console.log("🟣 [AddPost] Inserting payload:", payload);
 
   const { data, error } = await supabase
     .from("Posts")
