@@ -74,17 +74,19 @@ export default function AddPosts({
   const [visibleCollege, setVisibleCollege] = useState<string | null>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const isMountedRef = useRef(true); // guard to prevent setting state after unmount
+  const isMountedRef = useRef(true);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
-  const [images, setImages] = useState<string[]>([]);
   const [postType, setPostType] = useState<"announcement" | "highlight">(
     currentType ?? "announcement"
   );
 
-  // 🔹 Add ref to UploadButton
+  // State to hold initial images for editing, passed to the UploadButton
+  const [predefinedImages, setPredefinedImages] = useState<string[]>([]);
+
+  // Ref to UploadButton with the updated handle type
   const uploadRef = useRef<UploadButtonHandle>(null);
 
   const collegeitems = [
@@ -136,9 +138,11 @@ export default function AddPosts({
   useEffect(() => {
     if (typeof externalOpen === "boolean") setIsOpen(externalOpen);
   }, [externalOpen]);
+
   useEffect(() => {
     setPostType(currentType ?? "announcement");
   }, [currentType]);
+
   useEffect(() => {
     if (initialPost) {
       setTitle(initialPost.title || "");
@@ -146,7 +150,8 @@ export default function AddPosts({
         initialPost.description?.replace(/\s*#\S+/g, "").trim() || ""
       );
       setTags(initialPost.tags ?? []);
-      setImages(initialPost.images ?? []);
+      // Set the predefined images to be passed to the UploadButton component
+      setPredefinedImages(initialPost.images ?? []);
       setPostType(initialPost.type ?? currentType ?? "announcement");
       setVisibleTo(initialPost.visibleTo ?? "global");
       setVisibleCollege(initialPost.visibleCollege ?? null);
@@ -181,20 +186,11 @@ export default function AddPosts({
     setTags((prev) => prev.filter((t) => t !== tagToRemove));
   };
 
-  const handleUpload = (urls: string[]) => {
-    if (!Array.isArray(urls)) return;
-    setImages(urls);
-  };
-
-  const removeImage = (url: string) => {
-    setImages((prev) => prev.filter((u) => u !== url));
-  };
-
   const clearLocalForm = () => {
     setTitle("");
     setDescription("");
     setTags([]);
-    setImages([]);
+    setPredefinedImages([]); // Clear predefined images as well
     setTagInput("");
     setVisibleTo("global");
     setVisibleCollege(null);
@@ -206,19 +202,19 @@ export default function AddPosts({
     if (onExternalClose) onExternalClose();
   };
 
-  // 🔹 Updated handleSubmit to await uploads
+  // 🔹 Key Change: This is the updated submission logic
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
     setLoading(true);
 
     try {
-      // 🔹 Wait for uploads to complete and get real public URLs
-      const uploadedImages = uploadRef.current
-        ? await uploadRef.current.uploadFiles(null)
-        : images;
+      // 1. Trigger the upload in the child component and await the final URLs
+      const uploadedImageUrls = uploadRef.current
+        ? await uploadRef.current.uploadAndGetFinalUrls()
+        : [];
 
-      const uniqueImages = Array.from(new Set(uploadedImages));
+      const uniqueImages = Array.from(new Set(uploadedImageUrls));
 
       const tagString = tags.length
         ? " " + tags.map((t) => `#${t}`).join(" ")
@@ -240,13 +236,14 @@ export default function AddPosts({
       const createPayload = {
         title,
         description: combinedDescription,
-        images: uniqueImages,
+        images: uniqueImages, // ✅ Use the final, permanent URLs
         tags,
         type: postType,
         visibility: visibilityToStore,
         author_id: resolvedAuthorId,
       };
 
+      // 2. Proceed to update or create the post *after* uploads are done
       if (initialPost && onUpdatePost) {
         if (!initialPost.id) throw new Error("Post id missing. Cannot update.");
         await onUpdatePost({ ...createPayload, id: initialPost.id });
@@ -372,12 +369,11 @@ export default function AddPosts({
             </div>
           </div>
 
-          {/* Upload control with ref */}
+          {/* 🔹 Key Change: Pass the ref and predefinedImages to the component */}
           <UploadButton
             key={initialPost?.id ?? "new"}
-            ref={uploadRef} // 🔹 important
-            onUpload={handleUpload}
-            predefinedImages={images}
+            ref={uploadRef}
+            predefinedImages={predefinedImages}
           />
 
           <div className="flex justify-end gap-3 mt-6">
