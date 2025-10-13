@@ -169,7 +169,7 @@ export default function UploadButton({
         }`}
       >
         <span className="text-[#732626] font-medium">
-          Drag & drop or click to upload an images
+          Drag & drop or click to upload an imagesss
         </span>
         <input
           type="file"
