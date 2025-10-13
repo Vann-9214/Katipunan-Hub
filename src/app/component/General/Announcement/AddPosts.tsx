@@ -74,6 +74,7 @@ export default function AddPosts({
   const [visibleCollege, setVisibleCollege] = useState<string | null>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isMountedRef = useRef(true); // guard to prevent setting state after unmount
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState<string[]>([]);
@@ -122,6 +123,13 @@ export default function AddPosts({
   ];
 
   useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   useEffect(() => {
     if (typeof externalOpen === "boolean") setIsOpen(externalOpen);
   }, [externalOpen]);
@@ -214,7 +222,7 @@ export default function AddPosts({
     if (initialPost && onUpdatePost) {
       if (!initialPost.id) {
         alert("Post id missing. Cannot update.");
-        setLoading(false);
+        if (isMountedRef.current) setLoading(false);
         return;
       }
 
@@ -248,6 +256,8 @@ export default function AddPosts({
           console.error("Failed to update via parent:", err);
         }
         alert("Failed to update post.");
+      } finally {
+        if (isMountedRef.current) setLoading(false);
       }
 
       return;
@@ -256,13 +266,13 @@ export default function AddPosts({
     // Create flow: delegate to parent
     if (!onAddPost) {
       alert("Add handler not provided.");
-      setLoading(false);
+      if (isMountedRef.current) setLoading(false);
       return;
     }
 
     if (!resolvedAuthorId) {
       alert("Author not found. Please make sure you're logged in.");
-      setLoading(false);
+      if (isMountedRef.current) setLoading(false);
       return;
     }
 
@@ -272,7 +282,7 @@ export default function AddPosts({
       !visibleCollege
     ) {
       alert("Please select a college before publishing.");
-      setLoading(false);
+      if (isMountedRef.current) setLoading(false);
       return;
     }
 
@@ -301,11 +311,13 @@ export default function AddPosts({
       router.refresh();
     } catch (err: unknown) {
       if (err instanceof Error) {
-        console.error("Failed to update via parent:", err.message);
+        console.error("Failed to create via parent:", err.message);
       } else {
-        console.error("Failed to update via parent:", err);
+        console.error("Failed to create via parent:", err);
       }
-      alert("Failed to update post.");
+      alert("Failed to create post.");
+    } finally {
+      if (isMountedRef.current) setLoading(false);
     }
   };
 
