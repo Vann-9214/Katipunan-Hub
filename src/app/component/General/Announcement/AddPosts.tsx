@@ -142,7 +142,6 @@ export default function AddPosts({
       setDescription(
         initialPost.description?.replace(/\s*#\S+/g, "").trim() || ""
       );
-      // ensure we always set an array (may be null in DB)
       setTags(initialPost.tags ?? []);
       setImages(initialPost.images ?? []);
       setPostType(initialPost.type ?? currentType ?? "announcement");
@@ -151,6 +150,7 @@ export default function AddPosts({
       setIsOpen(true);
     }
   }, [initialPost, currentType]);
+
   useEffect(() => {
     if (isOpen && !initialPost) {
       clearLocalForm();

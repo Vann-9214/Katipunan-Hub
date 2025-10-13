@@ -58,9 +58,10 @@ export default function UploadButton({
 
       // build a path: uid/uuid.ext
       const randomId =
-        typeof crypto !== "undefined" && (crypto as any).randomUUID
-          ? (crypto as any).randomUUID()
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
           : `${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+
       const path = `${uid}/${randomId}.${ext}`;
 
       const { error: uploadError } = await supabase.storage
