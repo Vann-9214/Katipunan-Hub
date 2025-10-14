@@ -401,18 +401,41 @@ export default function AnnouncementPageContent() {
     }
 
     try {
-      const { error } = await supabase
+      // 1️⃣ Delete the post row in database
+      const { error: dbError } = await supabase
         .from("Posts")
         .delete()
         .eq("id", postToDelete.id);
 
-      if (error) {
-        console.error("Error deleting post:", error);
+      if (dbError) {
+        console.error("Error deleting post:", dbError);
         alert("Failed to delete post. Please try again.");
         return;
       }
 
-      // Update UI after delete
+      // 2️⃣ Delete any linked images from the Supabase Storage bucket
+      if (postToDelete.images && postToDelete.images.length > 0) {
+        // Extract file paths from the image URLs
+        const imagePaths = postToDelete.images
+          .map((url) => {
+            const parts = url.split("/"); // e.g. https://xxx.supabase.co/storage/v1/object/public/posts-images/folder/file.jpg
+            const idx = parts.indexOf("posts-images"); // your bucket name
+            return idx >= 0 ? parts.slice(idx + 1).join("/") : null;
+          })
+          .filter((path): path is string => !!path);
+
+        if (imagePaths.length > 0) {
+          const { error: storageError } = await supabase.storage
+            .from("posts-images") // bucket name
+            .remove(imagePaths);
+
+          if (storageError) {
+            console.error("Error deleting images from storage:", storageError);
+          }
+        }
+      }
+
+      // 3️⃣ Update the UI after deletion
       setPosts((prev) => prev.filter((p) => p.id !== id));
 
       // Reset editing state if same post was being edited
@@ -421,6 +444,8 @@ export default function AnnouncementPageContent() {
         setEditingPost(null);
         setEditorOpen(false);
       }
+
+      alert("Post deleted successfully.");
     } catch (err) {
       console.error("Unexpected error deleting post:", err);
       alert("An unexpected error occurred while deleting.");

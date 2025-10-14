@@ -33,10 +33,10 @@ export async function addPost({
     author_id: authorId,
   };
 
-  // only include visibility key if provided (so DB will be null otherwise)
   if (visibility !== undefined) {
     payload.visibility = visibility;
   }
+
 
   const { data, error } = await supabase
     .from("Posts")
@@ -44,8 +44,12 @@ export async function addPost({
     .select("*")
     .single();
 
+  // 👇 Console log after response
   if (error) {
+    console.error("🔴 [AddPost] Insert failed:", error);
     throw error;
+  } else {
+    console.log("🟢 [AddPost] Insert successful:", data);
   }
 
   return data;

@@ -1,6 +1,6 @@
 "use client";
 
-import UploadButton from "./UploadButton";
+import UploadButton, { UploadButtonHandle } from "./UploadButton";
 import Button from "../../ReusableComponent/Buttons";
 import { Combobox } from "../../ReusableComponent/Combobox";
 import TagsFilter from "./TagsFilter";
@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ImageButton } from "../../ReusableComponent/Buttons";
 import { useRouter } from "next/navigation";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
 interface PostShape {
   id?: string;
@@ -74,14 +75,22 @@ export default function AddPosts({
   const [visibleCollege, setVisibleCollege] = useState<string | null>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isMountedRef = useRef(true);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
-  const [images, setImages] = useState<string[]>([]);
   const [postType, setPostType] = useState<"announcement" | "highlight">(
     currentType ?? "announcement"
   );
+
+  // initial images to show in UploadButton when editing
+  const [predefinedImages, setPredefinedImages] = useState<string[]>([]);
+
+  // ref to UploadButton to call uploads and get removed URLs
+  const uploadRef = useRef<UploadButtonHandle>(null);
+
+  const supabase = createClientComponentClient();
 
   const collegeitems = [
     {
@@ -123,26 +132,36 @@ export default function AddPosts({
 
   useEffect(() => setMounted(true), []);
   useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
     if (typeof externalOpen === "boolean") setIsOpen(externalOpen);
   }, [externalOpen]);
+
   useEffect(() => {
     setPostType(currentType ?? "announcement");
   }, [currentType]);
+
   useEffect(() => {
     if (initialPost) {
       setTitle(initialPost.title || "");
       setDescription(
         initialPost.description?.replace(/\s*#\S+/g, "").trim() || ""
       );
-      // ensure we always set an array (may be null in DB)
       setTags(initialPost.tags ?? []);
-      setImages(initialPost.images ?? []);
+      // pass images to UploadButton to render existing images
+      setPredefinedImages(initialPost.images ?? []);
       setPostType(initialPost.type ?? currentType ?? "announcement");
       setVisibleTo(initialPost.visibleTo ?? "global");
       setVisibleCollege(initialPost.visibleCollege ?? null);
       setIsOpen(true);
     }
   }, [initialPost, currentType]);
+
   useEffect(() => {
     if (isOpen && !initialPost) {
       clearLocalForm();
@@ -170,21 +189,11 @@ export default function AddPosts({
     setTags((prev) => prev.filter((t) => t !== tagToRemove));
   };
 
-  const handleUpload = (urls: string[]) => {
-    if (!Array.isArray(urls)) return;
-    setImages(urls);
-  };
-
-  // allow removing a single image from the current images list
-  const removeImage = (url: string) => {
-    setImages((prev) => prev.filter((u) => u !== url));
-  };
-
   const clearLocalForm = () => {
     setTitle("");
     setDescription("");
     setTags([]);
-    setImages([]);
+    setPredefinedImages([]);
     setTagInput("");
     setVisibleTo("global");
     setVisibleCollege(null);
@@ -196,29 +205,58 @@ export default function AddPosts({
     if (onExternalClose) onExternalClose();
   };
 
+  // helper to extract storage path from public URL
+  const getFilePathFromPublicUrl = (url: string): string | null => {
+    // expected pattern: /storage/v1/object/public/<bucket>/<path>
+    const marker = "/storage/v1/object/public/posts/";
+    const idx = url.indexOf(marker);
+    if (idx !== -1) return url.substring(idx + marker.length);
+    // fallback: sometimes URL may be custom domain or different format - attempt to find 'posts/' part
+    const alt = url.split("/posts/").pop();
+    return alt ? alt : null;
+  };
+
+  // delete given public URLs from the 'posts' bucket
+  const deleteUrlsFromBucket = async (urls: string[]) => {
+    if (!urls || urls.length === 0) return;
+    const paths = urls
+      .map(getFilePathFromPublicUrl)
+      .filter((p): p is string => !!p);
+    if (paths.length === 0) return;
+    const { error } = await supabase.storage.from("posts").remove(paths);
+    if (error) {
+      console.error("Error deleting images from storage:", error);
+    } else {
+      console.log("Deleted images from storage:", paths);
+    }
+  };
+
+  // submission: upload new files via child, update/create post, then delete removed URLs
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
     setLoading(true);
 
-    const tagString = tags.length
-      ? " " + tags.map((t) => `#${t}`).join(" ")
-      : "";
-    const combinedDescription = description.trim() + tagString;
-    const uniqueImages = Array.from(new Set(images));
+    try {
+      // 1) ask child to upload files and return final URLs
+      const uploadedImageUrls = uploadRef.current
+        ? await uploadRef.current.uploadAndGetFinalUrls()
+        : [];
 
-    // ensure resolvedAuthorId is undefined or a string
-    const resolvedAuthorId = authorId ?? author?.id ?? undefined;
+      const uniqueImages = Array.from(new Set(uploadedImageUrls));
 
-    // Update flow: delegate to parent
-    if (initialPost && onUpdatePost) {
-      if (!initialPost.id) {
-        alert("Post id missing. Cannot update.");
-        setLoading(false);
-        return;
-      }
+      // 2) which existing URLs were removed by the user in the UI?
+      const removedUrls = uploadRef.current?.getRemovedUrls() ?? [];
 
-      const visibilityToStore =
+      const tagString = tags.length
+        ? " " + tags.map((t) => `#${t}`).join(" ")
+        : "";
+      const combinedDescription = description.trim() + tagString;
+
+      const resolvedAuthorId = authorId ?? author?.id ?? undefined;
+      if (!resolvedAuthorId) throw new Error("Author not found");
+
+      const visibilityToStore: string | null =
         postType === "highlight"
           ? "global"
           : postType === "announcement"
@@ -227,85 +265,35 @@ export default function AddPosts({
             : visibleCollege ?? null
           : null;
 
-      const payload = {
-        id: initialPost.id,
+      const createPayload = {
         title,
         description: combinedDescription,
         images: uniqueImages,
         tags,
         type: postType,
-        visibility: visibilityToStore ?? null,
+        visibility: visibilityToStore,
+        author_id: resolvedAuthorId,
       };
 
-      try {
-        await onUpdatePost(payload);
-        resetForm();
-        router.refresh();
-      } catch (err: unknown) {
-        if (err instanceof Error) {
-          console.error("Failed to update via parent:", err.message);
-        } else {
-          console.error("Failed to update via parent:", err);
-        }
-        alert("Failed to update post.");
+      // 3) update or create DB entry first
+      if (initialPost && onUpdatePost) {
+        if (!initialPost.id) throw new Error("Post id missing. Cannot update.");
+        await onUpdatePost({ ...createPayload, id: initialPost.id });
+        // 4) only after successful DB update, delete removed urls from bucket
+        await deleteUrlsFromBucket(removedUrls);
+      } else if (onAddPost) {
+        await onAddPost(createPayload);
+        // for creation, removedUrls should be empty, but call just in case (no-op)
+        await deleteUrlsFromBucket(removedUrls);
       }
 
-      return;
-    }
-
-    // Create flow: delegate to parent
-    if (!onAddPost) {
-      alert("Add handler not provided.");
-      setLoading(false);
-      return;
-    }
-
-    if (!resolvedAuthorId) {
-      alert("Author not found. Please make sure you're logged in.");
-      setLoading(false);
-      return;
-    }
-
-    if (
-      postType === "announcement" &&
-      visibleTo === "college" &&
-      !visibleCollege
-    ) {
-      alert("Please select a college before publishing.");
-      setLoading(false);
-      return;
-    }
-
-    const visibilityToStore: string | null =
-      postType === "highlight"
-        ? "global"
-        : postType === "announcement"
-        ? visibleTo === "global"
-          ? "global"
-          : visibleCollege ?? null
-        : null;
-
-    const createPayload = {
-      title,
-      description: combinedDescription,
-      images: uniqueImages,
-      tags,
-      type: postType,
-      visibility: visibilityToStore ?? null,
-      author_id: resolvedAuthorId as string, // validated above, safe to assert
-    };
-
-    try {
-      await onAddPost(createPayload);
       resetForm();
       router.refresh();
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        console.error("Failed to update via parent:", err.message);
-      } else {
-        console.error("Failed to update via parent:", err);
-      }
-      alert("Failed to update post.");
+    } catch (err) {
+      console.error("Failed to create/update post:", err);
+      alert("Failed to create/update post.");
+    } finally {
+      if (isMountedRef.current) setLoading(false);
     }
   };
 
@@ -417,11 +405,11 @@ export default function AddPosts({
             </div>
           </div>
 
-          {/* Upload control */}
+          {/* UploadButton: pass predefined images and ref so we can upload + get removed urls */}
           <UploadButton
             key={initialPost?.id ?? "new"}
-            onUpload={handleUpload}
-            predefinedImages={images}
+            ref={uploadRef}
+            predefinedImages={predefinedImages}
           />
 
           <div className="flex justify-end gap-3 mt-6">
