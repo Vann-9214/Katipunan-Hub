@@ -419,14 +419,14 @@ export default function AnnouncementPageContent() {
         const imagePaths = postToDelete.images
           .map((url) => {
             const parts = url.split("/"); // e.g. https://xxx.supabase.co/storage/v1/object/public/posts-images/folder/file.jpg
-            const idx = parts.indexOf("posts-images"); // your bucket name
+            const idx = parts.indexOf("posts"); // your bucket name
             return idx >= 0 ? parts.slice(idx + 1).join("/") : null;
           })
           .filter((path): path is string => !!path);
 
         if (imagePaths.length > 0) {
           const { error: storageError } = await supabase.storage
-            .from("posts-images") // bucket name
+            .from("posts") // bucket name
             .remove(imagePaths);
 
           if (storageError) {
