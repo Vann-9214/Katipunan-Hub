@@ -13,43 +13,50 @@ import { X } from "lucide-react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
 export interface UploadButtonProps {
-  onUpload?: (files: string[]) => void; // This prop is now less critical but kept for flexibility
-  predefinedImages?: string[];
+  onUpload?: (files: string[]) => void; // optional callback
+  predefinedImages?: string[]; // existing server URLs to show initially
 }
 
-// 🔄 CHANGED: The handle interface is simplified.
+// exports both methods for parent to call
 export interface UploadButtonHandle {
   uploadAndGetFinalUrls: () => Promise<string[]>;
+  getRemovedUrls: () => string[];
 }
 
 const UploadButton = forwardRef<UploadButtonHandle, UploadButtonProps>(
   ({ onUpload, predefinedImages = [] }, ref) => {
     const supabase = createClientComponentClient();
-    // ✨ NEW: We now store a mix of existing URL strings and new File objects.
-    const [imageSources, setImageSources] = useState<(string | File)[]>([]);
+    // store mixed strings (existing URLs) and File objects (new uploads)
+    const [imageSources, setImageSources] = useState<(string | File)[]>(
+      predefinedImages ?? []
+    );
     const [isDragging, setIsDragging] = useState(false);
 
-    // ✨ NEW: A map to hold temporary blob URLs for previewing File objects.
+    // map for blob URLs for previewing File objects
     const fileToUrlMap = useRef<Map<File, string>>(new Map());
 
+    // track which existing URLs the user removed (so parent can delete from bucket on save)
+    const removedUrlsRef = useRef<string[]>([]);
+
     useEffect(() => {
-      // Initialize with predefined images when the component loads or props change.
       setImageSources(predefinedImages ?? []);
+      // reset removedUrls when predefined images change (editing a different post)
+      removedUrlsRef.current = [];
     }, [predefinedImages]);
 
-    // Effect for cleaning up blob URLs to prevent memory leaks.
     useEffect(() => {
       return () => {
+        // cleanup blob URLs when unmounting
         fileToUrlMap.current.forEach((url) => URL.revokeObjectURL(url));
         fileToUrlMap.current.clear();
       };
     }, []);
 
-    // 🔄 RENAMED & REFACTORED: This function just handles file selection now, no uploading.
     const handleFileSelection = (files: FileList | null) => {
       if (!files) return;
       const newFiles = Array.from(files);
       setImageSources((prev) => [...prev, ...newFiles]);
+      // we don't upload here; parent will call uploadAndGetFinalUrls when saving
     };
 
     const handleDrop = (e: DragEvent<HTMLDivElement>) => {
@@ -60,11 +67,15 @@ const UploadButton = forwardRef<UploadButtonHandle, UploadButtonProps>(
 
     const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
       handleFileSelection(e.target.files);
-      e.currentTarget.value = ""; // Reset file input
+      e.currentTarget.value = ""; // reset input so same file can be reselected if needed
     };
 
     const handleRemove = (source: string | File) => {
-      // If it's a file, revoke its blob URL before removing.
+      // if removing an existing URL, record it for deletion later
+      if (typeof source === "string") {
+        removedUrlsRef.current.push(source);
+      }
+      // if removing a File, revoke its blob URL if present
       if (source instanceof File && fileToUrlMap.current.has(source)) {
         const blobUrl = fileToUrlMap.current.get(source)!;
         URL.revokeObjectURL(blobUrl);
@@ -72,15 +83,12 @@ const UploadButton = forwardRef<UploadButtonHandle, UploadButtonProps>(
       }
       const filtered = imageSources.filter((s) => s !== source);
       setImageSources(filtered);
+      // notify parent with current string-URLs (useful for live-preview in parent)
       onUpload?.(filtered.filter((s): s is string => typeof s === "string"));
     };
 
-    // ✨ NEW HELPER: Generates a preview URL for rendering.
     const getPreviewUrl = (source: string | File) => {
-      if (typeof source === "string") {
-        return source; // It's already a URL.
-      }
-      // It's a File object, let's get or create a blob URL for it.
+      if (typeof source === "string") return source;
       if (!fileToUrlMap.current.has(source)) {
         const url = URL.createObjectURL(source);
         fileToUrlMap.current.set(source, url);
@@ -120,36 +128,30 @@ const UploadButton = forwardRef<UploadButtonHandle, UploadButtonProps>(
       }
     }
 
-    // 🔄 REFACTORED: The main logic is now here. This is called by the parent on submit.
     useImperativeHandle(ref, () => ({
+      // uploads any File objects and returns combined final URLs (existing + new)
       uploadAndGetFinalUrls: async (): Promise<string[]> => {
         const uploadPromises: Promise<string | null>[] = [];
         const finalUrls: string[] = [];
 
         imageSources.forEach((source) => {
           if (typeof source === "string") {
-            // It's a pre-existing URL, just add it to our final list.
             finalUrls.push(source);
           } else {
-            // It's a new File object that needs to be uploaded.
             uploadPromises.push(uploadFileAndGetPublicUrl(source));
           }
         });
 
-        // Wait for all new uploads to complete.
         const newUrls = await Promise.all(uploadPromises);
-
-        // Combine pre-existing URLs with newly uploaded URLs.
         const allUrls = [
           ...finalUrls,
           ...newUrls.filter((url): url is string => !!url),
         ];
-
-        // Notify parent if needed.
         onUpload?.(allUrls);
-
         return allUrls;
       },
+      // return the list of existing URLs the user removed during editing
+      getRemovedUrls: () => removedUrlsRef.current.slice(),
     }));
 
     return (
@@ -197,7 +199,7 @@ const UploadButton = forwardRef<UploadButtonHandle, UploadButtonProps>(
           }`}
         >
           <span className="text-[#732626] font-medium">
-            Drag & drop or click to upload imageses
+            Drag & drop or click to upload images
           </span>
           <input
             type="file"

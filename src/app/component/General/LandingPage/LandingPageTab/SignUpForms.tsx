@@ -115,10 +115,6 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
         password,
       });
 
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
       if (error) {
         alert(error.message);
         return;

@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ImageButton } from "../../ReusableComponent/Buttons";
 import { useRouter } from "next/navigation";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
 interface PostShape {
   id?: string;
@@ -83,11 +84,13 @@ export default function AddPosts({
     currentType ?? "announcement"
   );
 
-  // State to hold initial images for editing, passed to the UploadButton
+  // initial images to show in UploadButton when editing
   const [predefinedImages, setPredefinedImages] = useState<string[]>([]);
 
-  // Ref to UploadButton with the updated handle type
+  // ref to UploadButton to call uploads and get removed URLs
   const uploadRef = useRef<UploadButtonHandle>(null);
+
+  const supabase = createClientComponentClient();
 
   const collegeitems = [
     {
@@ -150,7 +153,7 @@ export default function AddPosts({
         initialPost.description?.replace(/\s*#\S+/g, "").trim() || ""
       );
       setTags(initialPost.tags ?? []);
-      // Set the predefined images to be passed to the UploadButton component
+      // pass images to UploadButton to render existing images
       setPredefinedImages(initialPost.images ?? []);
       setPostType(initialPost.type ?? currentType ?? "announcement");
       setVisibleTo(initialPost.visibleTo ?? "global");
@@ -190,7 +193,7 @@ export default function AddPosts({
     setTitle("");
     setDescription("");
     setTags([]);
-    setPredefinedImages([]); // Clear predefined images as well
+    setPredefinedImages([]);
     setTagInput("");
     setVisibleTo("global");
     setVisibleCollege(null);
@@ -202,19 +205,48 @@ export default function AddPosts({
     if (onExternalClose) onExternalClose();
   };
 
-  // 🔹 Key Change: This is the updated submission logic
+  // helper to extract storage path from public URL
+  const getFilePathFromPublicUrl = (url: string): string | null => {
+    // expected pattern: /storage/v1/object/public/<bucket>/<path>
+    const marker = "/storage/v1/object/public/posts/";
+    const idx = url.indexOf(marker);
+    if (idx !== -1) return url.substring(idx + marker.length);
+    // fallback: sometimes URL may be custom domain or different format - attempt to find 'posts/' part
+    const alt = url.split("/posts/").pop();
+    return alt ? alt : null;
+  };
+
+  // delete given public URLs from the 'posts' bucket
+  const deleteUrlsFromBucket = async (urls: string[]) => {
+    if (!urls || urls.length === 0) return;
+    const paths = urls
+      .map(getFilePathFromPublicUrl)
+      .filter((p): p is string => !!p);
+    if (paths.length === 0) return;
+    const { error } = await supabase.storage.from("posts").remove(paths);
+    if (error) {
+      console.error("Error deleting images from storage:", error);
+    } else {
+      console.log("Deleted images from storage:", paths);
+    }
+  };
+
+  // submission: upload new files via child, update/create post, then delete removed URLs
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
     setLoading(true);
 
     try {
-      // 1. Trigger the upload in the child component and await the final URLs
+      // 1) ask child to upload files and return final URLs
       const uploadedImageUrls = uploadRef.current
         ? await uploadRef.current.uploadAndGetFinalUrls()
         : [];
 
       const uniqueImages = Array.from(new Set(uploadedImageUrls));
+
+      // 2) which existing URLs were removed by the user in the UI?
+      const removedUrls = uploadRef.current?.getRemovedUrls() ?? [];
 
       const tagString = tags.length
         ? " " + tags.map((t) => `#${t}`).join(" ")
@@ -236,19 +268,23 @@ export default function AddPosts({
       const createPayload = {
         title,
         description: combinedDescription,
-        images: uniqueImages, // ✅ Use the final, permanent URLs
+        images: uniqueImages,
         tags,
         type: postType,
         visibility: visibilityToStore,
         author_id: resolvedAuthorId,
       };
 
-      // 2. Proceed to update or create the post *after* uploads are done
+      // 3) update or create DB entry first
       if (initialPost && onUpdatePost) {
         if (!initialPost.id) throw new Error("Post id missing. Cannot update.");
         await onUpdatePost({ ...createPayload, id: initialPost.id });
+        // 4) only after successful DB update, delete removed urls from bucket
+        await deleteUrlsFromBucket(removedUrls);
       } else if (onAddPost) {
         await onAddPost(createPayload);
+        // for creation, removedUrls should be empty, but call just in case (no-op)
+        await deleteUrlsFromBucket(removedUrls);
       }
 
       resetForm();
@@ -369,7 +405,7 @@ export default function AddPosts({
             </div>
           </div>
 
-          {/* 🔹 Key Change: Pass the ref and predefinedImages to the component */}
+          {/* UploadButton: pass predefined images and ref so we can upload + get removed urls */}
           <UploadButton
             key={initialPost?.id ?? "new"}
             ref={uploadRef}
