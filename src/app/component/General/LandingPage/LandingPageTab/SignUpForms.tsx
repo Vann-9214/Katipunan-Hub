@@ -78,76 +78,77 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
   const [selectedYear, setSelectedYear] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // ✅ FIXED handleSubmit (safe for RLS + session wait)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Basic validation
-    if (
-      !firstName.trim() ||
-      !email.trim() ||
-      !studentID.trim() ||
-      !selectedCourse ||
-      !selectedYear
-    ) {
-      alert("Please fill in all required fields.");
-      return;
-    }
-
-    // ✅ CIT Email Validation
-    if (!email.toLowerCase().endsWith("@cit.edu")) {
-      alert(
-        "Please use your valid CIT email address (must end with @cit.edu)."
-      );
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      alert("Passwords do not match!");
-      return;
-    }
-
     setLoading(true);
 
     try {
-      // Sign up with Supabase (v2)
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-
-      if (error) {
-        alert(error.message);
+      if (
+        !firstName.trim() ||
+        !email.trim() ||
+        !studentID.trim() ||
+        !selectedCourse ||
+        !selectedYear
+      ) {
+        alert("Please fill in all required fields.");
         return;
       }
 
-      // Safely type the shape we expect from supabase signUp data
-      const typedData = data as { user?: { id?: string } } | null;
-      const userId = typedData?.user?.id ?? null;
-
-      if (!userId) {
+      if (!email.toLowerCase().endsWith("@cit.edu")) {
         alert(
-          "Sign-up succeeded — check your email to confirm your account. After confirming, sign in and your profile will be created."
+          "Please use your valid CIT email address (must end with @cit.edu)."
         );
         return;
       }
 
-      // Insert profile row into Accounts table
+      if (password !== confirmPassword) {
+        alert("Passwords do not match!");
+        return;
+      }
+
+      // Step 1: Sign up the user
+      const { data: signUpData, error: signUpError } =
+        await supabase.auth.signUp({
+          email,
+          password,
+        });
+
+      if (signUpError) {
+        alert(signUpError.message);
+        return;
+      }
+
+      // Step 2: Wait for the user session to initialize
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      // Step 3: Handle email confirmation case
+      if (!user) {
+        alert(
+          "Sign-up succeeded — please check your CIT email to confirm your account. Once confirmed, you can sign in."
+        );
+        return;
+      }
+
+      // Step 4: Insert profile row into Accounts table
       const { error: insertError } = await supabase.from("Accounts").insert([
         {
-          id: userId,
+          id: user.id,
           fullName: firstName,
           studentID,
           course: selectedCourse,
           year: selectedYear,
           avatarURL: "",
-          role: "Student, ",
+          role: "Student",
         },
       ]);
 
       if (insertError) {
         console.error("Insert error:", insertError);
         alert(
-          "Account created, but saving profile failed. Check RLS policies or DB constraints. (See console for details.)"
+          "Account created, but saving profile failed. Please check your database policies."
         );
         return;
       }
@@ -160,7 +161,7 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
       } else {
         console.error("Sign up error (non-Error):", err);
       }
-      alert("Unexpected error during sign-up. See console for details.");
+      alert("Unexpected error during sign-up. Check console for details.");
     } finally {
       setLoading(false);
     }
@@ -172,7 +173,7 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
-      className="flex justify-center items-center fixed inset-0 z-1 bg-black/50 backdrop-blur-sm"
+      className="flex justify-center items-center fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}

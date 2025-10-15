@@ -167,7 +167,24 @@ export default function AnnouncementPageContent() {
       created_at?: string | null;
     }[]
   >([]);
+  const supabase = createClientComponentClient();
 
+  // 🧩 Step 1 — Check session validity
+  useEffect(() => {
+    const checkSession = async () => {
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
+      console.log(
+        "🟩 Supabase Auth Session:",
+        user ? "Authenticated" : "No session"
+      );
+      console.log("🧭 User ID from supabase.auth.getUser():", user?.id);
+      if (error) console.error("Auth session error:", error);
+    };
+    checkSession();
+  }, [supabase]);
   // Post editor control
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);

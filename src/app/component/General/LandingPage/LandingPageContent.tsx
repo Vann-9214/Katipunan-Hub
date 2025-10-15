@@ -6,10 +6,16 @@ import SignUpForm from "./LandingPageTab/SignUpForms";
 import SignInForm from "./LandingPageTab/SignInForms";
 import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
+import { createPortal } from "react-dom";
 
 export default function LandingPageContent() {
   // controls which modal is open
   const [mode, setMode] = useState<"none" | "signup" | "signin">("none");
+
+  const ModalWrapper = ({ children }: { children: React.ReactNode }) => {
+    if (typeof document === "undefined") return null; // SSR safety
+    return createPortal(children, document.body);
+  };
 
   return (
     <div className="bg-gold h-screen w-full relative flex">
@@ -50,11 +56,13 @@ export default function LandingPageContent() {
       {/* Modals */}
       <AnimatePresence mode="wait">
         {mode === "signup" && (
-          <SignUpForm
-            key="signup"
-            onClose={() => setMode("none")}
-            onSwitch={() => setMode("signin")}
-          />
+          <ModalWrapper>
+            <SignUpForm
+              key="signup"
+              onClose={() => setMode("none")}
+              onSwitch={() => setMode("signin")}
+            />
+          </ModalWrapper>
         )}
         {mode === "signin" && (
           <SignInForm
