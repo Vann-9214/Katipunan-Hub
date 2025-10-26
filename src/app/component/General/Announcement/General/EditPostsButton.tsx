@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ImageButton } from "../../ReusableComponent/Buttons";
+import { ImageButton } from "@/app/component/ReusableComponent/Buttons";
 import clsx from "clsx";
 
 interface EditPostsButtonProps {

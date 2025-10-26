@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Search } from "lucide-react";
-import { Combobox } from "../../ReusableComponent/Combobox";
+import { Combobox } from "@/app/component/ReusableComponent/Combobox";
 
 export default function SearchFilter({
   onSearchChange,

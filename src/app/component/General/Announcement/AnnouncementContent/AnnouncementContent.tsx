@@ -1,152 +1,21 @@
+// AnnouncementPageContent/index.tsx
 "use client";
 
-import AddPosts from "./AddPosts";
-import TagsFilter from "./TagsFilter";
-import ButtonFIlter from "@/app/component/General/Announcement/ButtonFilter";
+import AddPosts from "../AddPosts/addPosts";
+import TagsFilter from "../General/TagsFilter";
+import ButtonFIlter from "../General/ButtonFilter";
 import HomepageTab from "@/app/component/ReusableComponent/HomepageTab";
 import ToggleButton from "@/app/component/ReusableComponent/ToggleButton";
-import SearchFilter from "@/app/component/General/Announcement/SearchFilter";
+import SearchFilter from "../General/SearchFilter";
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { getCurrentUserDetails } from "../../../../../supabase/Lib/getUser";
-import Posts from "./Posts";
+import { getCurrentUserDetails } from "../../../../../../supabase/Lib/General/getUser";
+import Posts from "../General/Posts";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
-// shape of a DB row returned by Supabase for the Posts table
-type DBPostRow = {
-  id?: string;
-  title?: string | null;
-  description?: string | null;
-  created_at?: string | null;
-  createdAt?: string | null; // sometimes createdAt
-  images?: string[] | null;
-  tags?: string[] | null;
-  type?: "announcement" | "highlight" | string | null;
-  visibility?: string | null;
-  author_id?: string | null;
-};
-
-// shape used by the UI (your posts state)
-type PostUI = {
-  id?: string;
-  title: string;
-  description: string;
-  date: string;
-  images: string[];
-  tags: string[];
-  type: "announcement" | "highlight";
-  visibility?: string | null;
-  author_id?: string;
-  created_at?: string | null;
-};
-
-// shape of the current user object returned by getCurrentUserDetails()
-type CurrentUser = {
-  id?: string;
-  email?: string | null;
-  fullName?: string | null;
-  role?: string | string[] | null;
-  course?: string | null;
-  studentID?: string | null;
-  year?: string | null;
-  avatarURL?: string | null;
-};
-
-const supabase = createClientComponentClient();
-
-// small visibility constants for easy reuse
-const VISIBILITY = {
-  GLOBAL: "global",
-};
-
-// ----------------------
-// Program -> College map
-// keys are the program slugs you provided (e.g. "bs-computer-science")
-// values are the college codes used in your Combobox (e.g. "ccs", "cea", "cba")
-const programToCollege: Record<string, string> = {
-  // Business / Accountancy
-  "bs-accountancy": "cba",
-  bsba: "cba",
-  bsoa: "cba",
-
-  // Arts & Sciences
-  "ba-english": "cas",
-  "ba-political-science": "cas",
-  "bs-psychology": "cas",
-  "bs-biology": "cas",
-  "bs-mathematics": "cas",
-
-  // Computer / IT / CCS
-  "bs-computer-science": "ccs",
-  "bs-information-technology": "ccs",
-
-  // Engineering (CEA)
-  "bs-computer-engineering": "cea",
-  bsee: "cea",
-  bsie: "cea",
-  bsce: "cea",
-  bsme: "cea",
-  bsmining: "cea",
-  "bs-chemeng": "cea",
-  bsece: "cea",
-  "bs-architecture": "cea",
-
-  // Education
-  beed: "coed",
-  bsed: "coed",
-
-  // Nursing / Allied
-  bsn: "con",
-  midwifery: "con",
-
-  // Hospitality & Tourism
-  "bs-hrm": "chtm",
-  bstm: "chtm",
-
-  // Industrial Technology
-  cit: "cit",
-
-  // Agriculture
-  "bs-agriculture": "cagr",
-  // add more if needed
-};
-// ----------------------
-
-function formatDateWithAmPm(ts: string | null | undefined) {
-  if (!ts) return "";
-  const d = new Date(ts);
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-
-  let hours = d.getHours();
-  const ampm = hours >= 12 ? "PM" : "AM";
-  hours = hours % 12;
-  if (hours === 0) hours = 12;
-  const hh = String(hours).padStart(2, "0");
-  const mins = String(d.getMinutes()).padStart(2, "0");
-
-  return `${yyyy}-${mm}-${dd} ${hh}:${mins} ${ampm}`;
-}
-
-// Helper to shape a DB record into the UI post object
-const shapePostForUI = (r: DBPostRow | null): PostUI | null => {
-  if (!r) return null;
-  return {
-    id: r.id,
-    title: r.title ?? "",
-    description: r.description ?? "",
-    date: formatDateWithAmPm(r.created_at ?? r.createdAt ?? null),
-    images: Array.isArray(r.images) ? r.images : [],
-    tags: Array.isArray(r.tags) ? r.tags : [],
-    type:
-      r.type === "announcement" || r.type === "highlight"
-        ? (r.type as "announcement" | "highlight")
-        : "announcement",
-    visibility: r.visibility ?? null,
-    author_id: r.author_id ?? undefined,
-    created_at: r.created_at ?? null,
-  };
-};
+// Import from our new organized files
+import { type DBPostRow, type PostUI, type CurrentUser } from "../types";
+import { VISIBILITY, programToCollege } from "../constants";
+import { formatDateWithAmPm, shapePostForUI } from "./utils";
 
 export default function AnnouncementPageContent() {
   // --- ALL hooks declared up front (stable order) ---

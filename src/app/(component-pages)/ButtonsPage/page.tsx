@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import UploadButton from "@/app/component/General/Announcement/UploadButton";
+import UploadButton from "@/app/component/General/Announcement/UploadButton/UploadButton";
 import Button, {
   ImageButton,
   TextButton,

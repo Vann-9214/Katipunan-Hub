@@ -1,60 +1,19 @@
 "use client";
 
-import UploadButton, { UploadButtonHandle } from "./UploadButton";
-import Button from "../../ReusableComponent/Buttons";
-import { Combobox } from "../../ReusableComponent/Combobox";
-import TagsFilter from "./TagsFilter";
+import UploadButton, {
+  type UploadButtonHandle,
+} from "../UploadButton/uploadButton";
+import Button from "@/app/component/ReusableComponent/Buttons";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ImageButton } from "../../ReusableComponent/Buttons";
+import { ImageButton } from "@/app/component/ReusableComponent/Buttons";
 import { useRouter } from "next/navigation";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
-interface PostShape {
-  id?: string;
-  title: string;
-  description: string;
-  images: string[];
-  tags: string[];
-  type: "announcement" | "highlight";
-  visibleTo?: "global" | "college";
-  visibleCollege?: string | null;
-  author_id?: string;
-  visibility?: string | null;
-}
+import VisibilitySettings from "./visibilitySettings";
+import TagEditor from "./tagEditor";
 
-interface UserSummary {
-  id: string;
-  fullName?: string | null;
-  avatarURL?: string | null;
-}
-
-interface AddPostsProps {
-  onAddPost?: (post: {
-    title: string;
-    description: string;
-    images: string[];
-    tags: string[];
-    type: "announcement" | "highlight";
-    visibility?: string | null;
-    author_id?: string | undefined;
-  }) => Promise<void> | void;
-  externalOpen?: boolean;
-  onExternalClose?: () => void;
-  initialPost?: PostShape | null;
-  onUpdatePost?: (updated: {
-    id: string;
-    title: string;
-    description: string;
-    images: string[];
-    tags: string[];
-    type: "announcement" | "highlight";
-    visibility?: string | null;
-  }) => Promise<void> | void;
-  currentType?: "announcement" | "highlight";
-  author?: UserSummary | null;
-  authorId?: string | null;
-}
+import { deleteUrlsFromBucket } from "../../../../../../supabase/Lib/Announcement/AddPosts/storage";
+import { type AddPostsProps, type PostShape, type UserSummary } from "../types";
 
 export default function AddPosts({
   onAddPost,
@@ -79,56 +38,15 @@ export default function AddPosts({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState("");
+  // const [tagInput, setTagInput] = useState(""); // <-- MOVED to TagEditor
   const [postType, setPostType] = useState<"announcement" | "highlight">(
     currentType ?? "announcement"
   );
 
-  // initial images to show in UploadButton when editing
   const [predefinedImages, setPredefinedImages] = useState<string[]>([]);
-
-  // ref to UploadButton to call uploads and get removed URLs
   const uploadRef = useRef<UploadButtonHandle>(null);
 
-  const supabase = createClientComponentClient();
-
-  const collegeitems = [
-    {
-      value: "cea",
-      label: "Engineering and Architecture (CEA)",
-      selectedPlaceholder: "CEA",
-    },
-    {
-      value: "cba",
-      label: "Business Administration (CBA)",
-      selectedPlaceholder: "CBA",
-    },
-    {
-      value: "cas",
-      label: "Arts and Sciences (CAS)",
-      selectedPlaceholder: "CAS",
-    },
-    {
-      value: "ccs",
-      label: "Computer Studies (CCS)",
-      selectedPlaceholder: "CCS",
-    },
-    { value: "coed", label: "Education (COED)", selectedPlaceholder: "COED" },
-    { value: "con", label: "Nursing (CON)", selectedPlaceholder: "CON" },
-    {
-      value: "chtm",
-      label: "Hospitality and Tourism Management (CHTM)",
-      selectedPlaceholder: "CHTM",
-    },
-    { value: "claw", label: "Law (CLAW)", selectedPlaceholder: "CLAW" },
-    { value: "cah", label: "Allied Health (CAH)", selectedPlaceholder: "CAH" },
-    {
-      value: "cit",
-      label: "Industrial Technology (CIT)",
-      selectedPlaceholder: "CIT",
-    },
-    { value: "cagr", label: "Agriculture (CAGR)", selectedPlaceholder: "CAGR" },
-  ];
+  // const supabase = createClientComponentClient(); // <-- REMOVED (no longer needed)
 
   useEffect(() => setMounted(true), []);
   useEffect(() => {
@@ -153,7 +71,6 @@ export default function AddPosts({
         initialPost.description?.replace(/\s*#\S+/g, "").trim() || ""
       );
       setTags(initialPost.tags ?? []);
-      // pass images to UploadButton to render existing images
       setPredefinedImages(initialPost.images ?? []);
       setPostType(initialPost.type ?? currentType ?? "announcement");
       setVisibleTo(initialPost.visibleTo ?? "global");
@@ -178,11 +95,10 @@ export default function AddPosts({
     el.style.overflowY = el.scrollHeight > 210 ? "auto" : "hidden";
   };
 
-  const addTag = (raw: string) => {
-    const t = raw.trim();
-    if (!t || tags.includes(t)) return;
+  // This function now receives the tag from the child
+  const addTag = (t: string) => {
+    if (tags.includes(t)) return; // Check for duplicates
     setTags((prev) => [...prev, t]);
-    setTagInput("");
   };
 
   const removeTag = (tagToRemove: string) => {
@@ -194,7 +110,7 @@ export default function AddPosts({
     setDescription("");
     setTags([]);
     setPredefinedImages([]);
-    setTagInput("");
+    // setTagInput(""); // <-- MOVED
     setVisibleTo("global");
     setVisibleCollege(null);
   };
@@ -205,47 +121,21 @@ export default function AddPosts({
     if (onExternalClose) onExternalClose();
   };
 
-  // helper to extract storage path from public URL
-  const getFilePathFromPublicUrl = (url: string): string | null => {
-    // expected pattern: /storage/v1/object/public/<bucket>/<path>
-    const marker = "/storage/v1/object/public/posts/";
-    const idx = url.indexOf(marker);
-    if (idx !== -1) return url.substring(idx + marker.length);
-    // fallback: sometimes URL may be custom domain or different format - attempt to find 'posts/' part
-    const alt = url.split("/posts/").pop();
-    return alt ? alt : null;
-  };
+  // --- These functions are now GONE ---
+  // const getFilePathFromPublicUrl = ...
+  // const deleteUrlsFromBucket = ...
+  // ------------------------------------
 
-  // delete given public URLs from the 'posts' bucket
-  const deleteUrlsFromBucket = async (urls: string[]) => {
-    if (!urls || urls.length === 0) return;
-    const paths = urls
-      .map(getFilePathFromPublicUrl)
-      .filter((p): p is string => !!p);
-    if (paths.length === 0) return;
-    const { error } = await supabase.storage.from("posts").remove(paths);
-    if (error) {
-      console.error("Error deleting images from storage:", error);
-    } else {
-      console.log("Deleted images from storage:", paths);
-    }
-  };
-
-  // submission: upload new files via child, update/create post, then delete removed URLs
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
     setLoading(true);
 
     try {
-      // 1) ask child to upload files and return final URLs
       const uploadedImageUrls = uploadRef.current
         ? await uploadRef.current.uploadAndGetFinalUrls()
         : [];
-
       const uniqueImages = Array.from(new Set(uploadedImageUrls));
-
-      // 2) which existing URLs were removed by the user in the UI?
       const removedUrls = uploadRef.current?.getRemovedUrls() ?? [];
 
       const tagString = tags.length
@@ -275,16 +165,13 @@ export default function AddPosts({
         author_id: resolvedAuthorId,
       };
 
-      // 3) update or create DB entry first
       if (initialPost && onUpdatePost) {
         if (!initialPost.id) throw new Error("Post id missing. Cannot update.");
         await onUpdatePost({ ...createPayload, id: initialPost.id });
-        // 4) only after successful DB update, delete removed urls from bucket
-        await deleteUrlsFromBucket(removedUrls);
+        await deleteUrlsFromBucket(removedUrls); // <-- Use imported function
       } else if (onAddPost) {
         await onAddPost(createPayload);
-        // for creation, removedUrls should be empty, but call just in case (no-op)
-        await deleteUrlsFromBucket(removedUrls);
+        await deleteUrlsFromBucket(removedUrls); // <-- Use imported function
       }
 
       resetForm();
@@ -331,81 +218,19 @@ export default function AddPosts({
             required
           />
 
+          {/* ===> USE THE NEW COMPONENT <=== */}
           {postType === "announcement" && (
-            <>
-              <h2 className="text-[24px] font-montserrat">Visible To</h2>
-              <div className="grid grid-cols-3 gap-4 items-center">
-                <Button
-                  text="Global"
-                  bg={visibleTo === "global" ? "bg-maroon" : "bg-gray-200"}
-                  textcolor={
-                    visibleTo === "global" ? "text-white" : "text-black"
-                  }
-                  height="h-[45px]"
-                  rounded="rounded-[30px]"
-                  onClick={() => {
-                    setVisibleTo("global");
-                    setVisibleCollege(null);
-                  }}
-                  width="w-full"
-                  className="border border-black"
-                />
-                <Button
-                  text="College"
-                  bg={visibleTo === "college" ? "bg-maroon" : "bg-gray-200"}
-                  textcolor={
-                    visibleTo === "college" ? "text-white" : "text-black"
-                  }
-                  height="h-[45px]"
-                  rounded="rounded-[30px]"
-                  onClick={() => setVisibleTo("college")}
-                  width="w-full"
-                  className="border border-black"
-                />
-                <Combobox
-                  items={collegeitems}
-                  placeholder="Select College"
-                  buttonHeight="h-[45px]"
-                  disabled={visibleTo !== "college"}
-                  width="w-full"
-                  onChange={(val) => setVisibleCollege(val || null)}
-                />
-              </div>
-            </>
+            <VisibilitySettings
+              visibleTo={visibleTo}
+              visibleCollege={visibleCollege}
+              onVisibleToChange={setVisibleTo}
+              onVisibleCollegeChange={setVisibleCollege}
+            />
           )}
 
-          <div className="flex flex-col">
-            <div className="flex mb-2 gap-4">
-              <h2 className="text-[24px] font-montserrat text-black">Tags</h2>
-              <div className="flex items-center gap-3">
-                <input
-                  type="text"
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      addTag(tagInput);
-                    }
-                  }}
-                  placeholder="Add tags..."
-                  className="w-[300px] h-10 rounded-full border border-gray-300 px-4 text-[16px] placeholder-gray-400 focus:outline-none focus:ring-1"
-                />
-                <button
-                  type="button"
-                  onClick={() => addTag(tagInput)}
-                  className="h-10 w-10 rounded-full border border-black inline-flex items-center justify-center bg-white text-[20px] font-semibold hover:scale-105 transition"
-                >
-                  +
-                </button>
-              </div>
-            </div>
-            <div className="mt-3">
-              <TagsFilter mode="edit" tags={tags} onTagRemove={removeTag} />
-            </div>
-          </div>
+          {/* ===> USE THE NEW COMPONENT <=== */}
+          <TagEditor tags={tags} onTagAdd={addTag} onTagRemove={removeTag} />
 
-          {/* UploadButton: pass predefined images and ref so we can upload + get removed urls */}
           <UploadButton
             key={initialPost?.id ?? "new"}
             ref={uploadRef}

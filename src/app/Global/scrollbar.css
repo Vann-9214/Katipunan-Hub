@@ -1,0 +1,53 @@
+/* src/app/Global/scrollbar.css */
+
+/* --- Auto-Hiding Scrollbar Logic (CSS-Only) --- */
+
+/* For Firefox: Make scrollbar thin and transparent by default for ALL elements */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent; /* (thumb color) (track color) */
+  transition: scrollbar-color 0.3s ease-out;
+}
+
+/* For Firefox: Show the scrollbar thumb when hovering ANY scrollable element */
+*:hover {
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+/* For WebKit (Chrome, Safari, Edge) - applies to ALL elements */
+::-webkit-scrollbar {
+  width: 8px; /* slim scrollbar */
+}
+
+::-webkit-scrollbar-track {
+  background: transparent; /* no visible track */
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: transparent; /* 1. Thumb is transparent BY DEFAULT */
+  border-radius: 10px;
+
+  /* 2. Add a transition to fade it in and out smoothly */
+  transition: background-color 0.3s ease-out;
+}
+
+/* 3. When hovering ANY scrollable element, make the thumb visible */
+*:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+/* 4. Make it darker when you hover the thumb itself (while it's visible) */
+*:hover::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.35);
+}
+/* --- End of New Logic --- */
+
+/* --- Your utility class for hiding scrollbars on *specific* elements --- */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

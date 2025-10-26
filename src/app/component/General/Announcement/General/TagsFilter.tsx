@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import Button from "../../ReusableComponent/Buttons";
+import Button from "@/app/component/ReusableComponent/Buttons";
 
 interface TagsDisplayProps {
   tags?: string[];

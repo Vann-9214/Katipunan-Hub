@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/popover";
 
 interface ComboboxProps {
-  items: { value: string; label: string; selectedPlaceholder?: string }[]; // per-item placeholder
+  items: { value: string; label: string; selectedPlaceholder?: string }[];
   placeholder?: string;
   emptyText?: string;
 
@@ -46,7 +46,7 @@ interface ComboboxProps {
 
   selectedTextColor?: string;
 
-  disabled?: boolean; // new prop
+  disabled?: boolean;
   onChange?: (value: string) => void;
 
   /**
@@ -73,15 +73,15 @@ export function Combobox({
 
   buttonBG = "bg-white",
   borderColor = "border border-black",
-  textColor = "text-customgray",
-  hoverBG = "hover:bg-gray-50",
-  hoverTextColor = "hover:text-black/70",
+  textColor = "text-black/100",
+  hoverBG = "hover:bg-gray-100",
+  hoverTextColor = "hover:text-black/80",
   activeHoverBG = "bg-white",
   activeHoverTextColor = "text-black",
   checkArrowColor = "text-green-600",
 
   dropdownBG = "bg-white",
-  dropdownTextColor = "text-customgray",
+  dropdownTextColor = "text-black/70",
   dropdownHoverBG = "hover:bg-gray-200",
   dropdownHoverTextColor = "hover:text-black",
   dropdownBorderColor = "border border-gray-200",

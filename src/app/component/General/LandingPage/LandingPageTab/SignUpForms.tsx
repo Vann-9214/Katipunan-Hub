@@ -7,7 +7,7 @@ import Button, { TextButton } from "@/app/component/ReusableComponent/Buttons";
 import Logo from "@/app/component/ReusableComponent/Logo";
 import TextBox from "@/app/component/ReusableComponent/Textbox";
 import { Combobox } from "@/app/component/ReusableComponent/Combobox";
-import { supabase } from "../../../../../../supabase/Lib/supabaseClient";
+import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
 
 interface SignUpFormProps {
   onClose?: () => void;

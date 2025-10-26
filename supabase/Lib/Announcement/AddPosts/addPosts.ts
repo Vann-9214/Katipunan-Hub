@@ -1,5 +1,5 @@
 // supabase/Lib/addPosts.ts
-import { supabase } from "../../lib/supabaseClient";
+import { supabase } from "../../General/supabaseClient";
 
 export type AddPostParams = {
   title: string;

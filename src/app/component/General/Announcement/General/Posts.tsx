@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import ImageAttachments from "./ImageAttachments";
-import { TextButton } from "../../ReusableComponent/Buttons";
+import ImageAttachments from "../ImageAttachment/ImageAttachments";
+import { TextButton } from "../../../ReusableComponent/Buttons";
 import EditPostsButton from "./EditPostsButton";
 
 interface PostsProps {
@@ -69,7 +69,9 @@ export default function Posts({
           </div>
 
           {/* Images */}
-          <ImageAttachments images={images} />
+          <div className="select-none">
+            <ImageAttachments images={images} />
+          </div>
         </div>
 
         {/* Bottom buttons */}

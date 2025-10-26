@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import UploadButton from "@/app/component/General/Announcement/UploadButton";
-import Posts from "@/app/component/General/Announcement/Posts";
+import UploadButton from "@/app/component/General/Announcement/UploadButton/UploadButton";
+import Posts from "@/app/component/General/Announcement/General/Posts";
 // Warning: 'image' is defined but never used. @typescript-eslint/no-unused-vars - REMOVED
 
 export default function PostsPage() {
