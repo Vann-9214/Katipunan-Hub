@@ -1,5 +1,5 @@
 // AnnouncementPageContent/utils.ts
-import { type DBPostRow, PostUI } from "../types";
+import { type DBPostRow, PostUI } from "../Utils/types";
 
 export function formatDateWithAmPm(ts: string | null | undefined) {
   if (!ts) return "";

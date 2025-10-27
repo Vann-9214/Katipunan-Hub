@@ -14,7 +14,7 @@ export default function ImageAttachments({ images }: ImageAttachmentsProps) {
   // No images: render nothing
   if (count === 0) return <></>;
 
-  const gridBase = "w-full h-[450px] mt-2 overflow-hidden";
+  const gridBase = "w-full h-[450px] overflow-hidden";
 
   // 1 image -> use ColorBackedImage with styles for a single image
   if (count === 1) {
@@ -22,7 +22,7 @@ export default function ImageAttachments({ images }: ImageAttachmentsProps) {
       <ColorBackedImage
         src={images[0]}
         alt="Attachment"
-        containerClassName="w-full mt-2 flex items-center justify-center overflow-hidden min-h-[200px] transition-colors duration-500"
+        containerClassName="w-full flex items-center justify-center overflow-hidden min-h-[200px] transition-colors duration-500"
         imageClassName="w-full h-auto object-contain max-h-[80vh] block"
       />
     );
@@ -31,7 +31,7 @@ export default function ImageAttachments({ images }: ImageAttachmentsProps) {
   // 2 images -> use ColorBackedImage with styles for a grid
   if (count === 2) {
     return (
-      <div className="grid grid-cols-2 gap-[1.6px] w-full mt-2">
+      <div className="grid grid-cols-2 gap-[1.6px] w-full">
         {images.slice(0, 2).map((src, idx) => (
           <ColorBackedImage
             key={idx}

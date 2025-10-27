@@ -2,7 +2,7 @@
 
 import { forwardRef, useImperativeHandle } from "react";
 // 1. FIX: Import from your 'types.ts' file (or whatever you named it)
-import { UploadButtonProps, UploadButtonHandle } from "../types";
+import { UploadButtonProps, UploadButtonHandle } from "../Utils/types";
 import { useImageUploader } from "../../../../../../supabase/Lib/Announcement/UploadButton/useImageUploader";
 import { ImagePreview } from "./imagePreviewer"; // Using your file name
 import { Dropzone } from "./dropzone"; // Using your file name

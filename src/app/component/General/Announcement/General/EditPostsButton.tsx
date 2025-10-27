@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState, useRef, useEffect } from "react";
 import { ImageButton } from "@/app/component/ReusableComponent/Buttons";
 import clsx from "clsx";
@@ -13,12 +14,12 @@ interface EditPostsButtonProps {
 export default function EditPostsButton({
   onEdit,
   onRemove,
-  size = 50,
+  size = 28,
 }: EditPostsButtonProps) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Close when clicking outside
+  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -47,26 +48,44 @@ export default function EditPostsButton({
         width={size}
         height={size}
         onClick={() => setOpen((prev) => !prev)}
+        className="invert brightness-0"
       />
 
       {/* Dropdown */}
       {open && (
         <div
           className={clsx(
-            "absolute right-0 mt-2 w-[190px] rounded-[10px] bg-[#D9D9D9] shadow-md border border-gray-300 p-2 z-50"
+            "absolute right-0 mt-2 w-[190px] rounded-[10px] bg-[#D9D9D9] shadow-md border border-gray-300 p-1 z-50"
           )}
         >
+          {/* Edit Post */}
           <button
-            className="w-full text-left px-3 py-2 rounded-md hover:bg-gray-200 transition font-montserrat text-[16px] text-[#333]"
             onClick={handleEdit}
+            className="flex items-center gap-2 w-full text-left px-2 py-1 mb-1 rounded-md hover:bg-gray-200 transition font-montserrat font-medium text-[16px] text-[#333]"
           >
-            Edit Post
+            <Image
+              src="/Edit.svg"
+              alt="Edit Icon"
+              width={20}
+              height={20}
+              draggable={false}
+            />
+            <span>Edit Post</span>
           </button>
+
+          {/* Remove Post */}
           <button
-            className="w-full text-left px-3 py-2 rounded-md hover:bg-gray-200 transition font-montserrat text-[16px] text-[#333]"
             onClick={handleRemove}
+            className="flex items-center gap-2 w-full text-left px-2 py-1 rounded-md hover:bg-gray-200 transition font-montserrat font-medium text-[16px] text-[#333]"
           >
-            Remove Post
+            <Image
+              src="/Trash.svg"
+              alt="Trash Icon"
+              width={20}
+              height={20}
+              draggable={false}
+            />
+            <span>Remove Post</span>
           </button>
         </div>
       )}

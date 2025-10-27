@@ -9,13 +9,15 @@ import ToggleButton from "@/app/component/ReusableComponent/ToggleButton";
 import SearchFilter from "../General/SearchFilter";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { getCurrentUserDetails } from "../../../../../../supabase/Lib/General/getUser";
-import Posts from "../General/Posts";
+import Posts from "../Posts/Posts";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
 // Import from our new organized files
-import { type DBPostRow, type PostUI, type CurrentUser } from "../types";
-import { VISIBILITY, programToCollege } from "../constants";
-import { formatDateWithAmPm, shapePostForUI } from "./utils";
+import { type DBPostRow, type PostUI, type CurrentUser } from "../Utils/types";
+import { VISIBILITY, programToCollege } from "../Utils/constants";
+import { shapePostForUI } from "./utils";
+// <-- Import your utility formatter (adjust path if needed)
+import formatPostDate from "../Utils/formatDate";
 
 export default function AnnouncementPageContent() {
   // --- ALL hooks declared up front (stable order) ---
@@ -453,9 +455,12 @@ export default function AnnouncementPageContent() {
             filteredPosts.map((post, i) => (
               <Posts
                 key={`${post.id}-${i}`} // Use unique ID for key
+                postId={post.id!} // <<<--- Pass post.id as postId
+                userId={id} // <<<--- Pass current user's id as userId
                 title={post.title}
                 description={post.description}
-                date={post.date}
+                // <-- Use formatted date string for display
+                date={formatPostDate(post.created_at || post.date)}
                 images={post.images}
                 onDelete={() => handleDelete(post.id!)}
                 onEdit={() => handleEdit(post.id!)}

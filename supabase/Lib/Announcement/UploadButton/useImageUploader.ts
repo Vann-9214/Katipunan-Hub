@@ -1,34 +1,48 @@
-// src/hooks/useImageUploader.ts
+// supabase/Lib/Announcement/UploadButton/useImageUploader.ts
+
+"use client";
 
 import { useState, useEffect, useRef, DragEvent, ChangeEvent } from "react";
-import { uploadFileAndGetPublicUrl } from "./supabaseUpload";
+// Make sure this path is correct for your project
+import { uploadFileAndGetPublicUrl } from "./supabaseUpload"; 
 
 interface UseImageUploaderProps {
   predefinedImages?: string[];
   onUpload?: (files: string[]) => void;
 }
 
+// 1. Create a stable, empty array OUTSIDE the hook.
+//    This is the most important part of the fix.
+const EMPTY_ARRAY: string[] = [];
+
 export const useImageUploader = ({
-  predefinedImages = [],
+  predefinedImages = EMPTY_ARRAY, // 2. Use the stable constant as the default
   onUpload,
 }: UseImageUploaderProps) => {
-  // store mixed strings (existing URLs) and File objects (new uploads)
+  // 3. This initializer will now be stable when no prop is passed
   const [imageSources, setImageSources] = useState<(string | File)[]>(
-    predefinedImages ?? []
+    predefinedImages ?? [],
   );
   const [isDragging, setIsDragging] = useState(false);
 
-  // map for blob URLs for previewing File objects
   const fileToUrlMap = useRef<Map<File, string>>(new Map());
-
-  // track which existing URLs the user removed
   const removedUrlsRef = useRef<string[]>([]);
 
+  // 4. This effect is now safe. It will only run when the
+  //    predefinedImages prop *actually* changes from the parent,
+  //    not from the default value re-creating itself.
   useEffect(() => {
-    setImageSources(predefinedImages ?? []);
-    // reset removedUrls when predefined images change
+  // Avoid resetting state if nothing actually changed
+  setImageSources((prev) => {
+    const newImages = predefinedImages ?? [];
+    const same =
+      prev.length === newImages.length &&
+      prev.every((p, i) => p === newImages[i]);
+    if (same) return prev;
     removedUrlsRef.current = [];
-  }, [predefinedImages]);
+    return newImages;
+  });
+}, [predefinedImages]);
 
   useEffect(() => {
     return () => {
@@ -96,6 +110,7 @@ export const useImageUploader = ({
       if (typeof source === "string") {
         finalUrls.push(source);
       } else {
+        // Assuming uploadFileAndGetPublicUrl exists and works
         uploadPromises.push(uploadFileAndGetPublicUrl(source));
       }
     });

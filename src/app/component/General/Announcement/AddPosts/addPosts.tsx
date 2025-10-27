@@ -13,7 +13,11 @@ import VisibilitySettings from "./visibilitySettings";
 import TagEditor from "./tagEditor";
 
 import { deleteUrlsFromBucket } from "../../../../../../supabase/Lib/Announcement/AddPosts/storage";
-import { type AddPostsProps, type PostShape, type UserSummary } from "../types";
+import {
+  type AddPostsProps,
+  type PostShape,
+  type UserSummary,
+} from "../Utils/types";
 
 export default function AddPosts({
   onAddPost,

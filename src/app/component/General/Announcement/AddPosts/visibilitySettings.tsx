@@ -3,7 +3,7 @@
 
 import Button from "@/app/component/ReusableComponent/Buttons";
 import { Combobox } from "@/app/component/ReusableComponent/Combobox";
-import { collegeitems } from "../constants";
+import { collegeitems } from "../Utils/constants";
 
 interface VisibilitySettingsProps {
   visibleTo: "global" | "college";
