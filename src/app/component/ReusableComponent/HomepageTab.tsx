@@ -1,7 +1,7 @@
 "use client";
 
 import Logo from "./Logo";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Bell, MessageCircle, User, Settings } from "lucide-react";
 
 const navItems = [
@@ -15,14 +15,14 @@ const navItems = [
 
 export default function HomepageTab() {
   const pathname = usePathname();
+  const router = useRouter();
 
   const handleClick = (href: string) => {
-    // ✅ Always behaves like <a>
-    window.location.href = href;
+    router.push(href); // ✅ Safe for client navigation — no SSR mismatch
   };
 
   return (
-    <header className="fixed top-0 left-0 w-full z-1 shadow-md">
+    <header className="fixed top-0 left-0 w-full z-[1] shadow-md">
       {/* Top Gradient Bar */}
       <div className="flex justify-between items-center h-[80px] px-8 py-2 bg-[linear-gradient(to_right,#FFFFFF_0%,#EFBF04_60%,#8B0E0E_87%,#4E0505_100%)]">
         {/* Left: Logo */}
@@ -35,7 +35,7 @@ export default function HomepageTab() {
           <User className="w-[50px] h-[50px] cursor-pointer hover:scale-110 transition" />
           <Settings
             className="w-[50px] h-[50px] cursor-pointer hover:scale-110 transition"
-            onClick={() => (window.location.href = "/")}
+            onClick={() => router.push("/")}
           />
         </div>
       </div>
