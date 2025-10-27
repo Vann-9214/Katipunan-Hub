@@ -106,14 +106,15 @@ export default function Posts({
         </div>
 
         {/* Bottom buttons */}
-        <div className="flex justify-between px-5 items-center">
+        <div className="px-5 py-1 flex items-center">
           {/* --- 3. Use the new ReactionSummary component --- */}
-          <ReactionSummary
-            topReactions={topReactions}
-            totalCount={reactionCount}
-            isLoading={isInitialLoading}
-          />
-
+          <div className="mr-auto">
+            <ReactionSummary
+              topReactions={topReactions}
+              totalCount={reactionCount}
+              isLoading={isInitialLoading}
+            />
+          </div>
           <TextButton
             text="Comment"
             textSize="text-[22px]"

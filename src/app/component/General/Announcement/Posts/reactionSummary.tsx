@@ -27,7 +27,7 @@ export default function ReactionSummary({
   const formattedCount = formatCompactNumber(totalCount);
 
   if (totalCount === 0 || totalCount === null) {
-    return <span className="text-black font-ptsans text-[20px]">0</span>;
+    return;
   }
 
   const topThree = topReactions.slice(0, 3);

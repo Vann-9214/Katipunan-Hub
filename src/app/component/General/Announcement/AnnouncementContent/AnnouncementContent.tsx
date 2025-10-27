@@ -439,12 +439,9 @@ export default function AnnouncementPageContent() {
   return (
     <div className="p-[25px] flex-col">
       <HomepageTab />
-
-      <h1 className="font-bold font-montserrat text-[32px] text-maroon mt-[130px]">
-        {activeTab === "announcement" ? "Announcement" : "Highlights"}
-      </h1>
-
-      <div className="flex gap-10">
+      <div className="bg-gray-200 w-[350px] left-0 top-0 fixed h-full"></div>
+      <div className="bg-gray-200 w-[350px] right-0 top-0 fixed h-full"></div>
+      <div className="flex items-center justify-center mt-20 gap-10">
         {/* Left: Display Area for Filtered Posts */}
         <div className="space-y-8">
           {filteredPosts.length === 0 ? (

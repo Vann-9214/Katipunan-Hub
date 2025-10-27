@@ -1,64 +1,68 @@
 "use client";
 
+import Link from "next/link";
+import NavigationButton from "./navigationButtons";
 import Logo from "./Logo";
-import { usePathname, useRouter } from "next/navigation";
-import { Bell, MessageCircle, User, Settings } from "lucide-react";
+import { usePathname } from "next/navigation";
+import {
+  Bell,
+  MessageCircle,
+  User,
+  Megaphone,
+  Newspaper,
+  BookOpenText,
+  CalendarDays,
+  Package,
+} from "lucide-react";
 
 const navItems = [
-  { name: "Announcement", href: "/Announcement" },
-  { name: "Feeds", href: "/Feeds" },
-  { name: "Groups", href: "/Groups" },
-  { name: "PLC", href: "/PLC" },
-  { name: "Calendar", href: "/Calendar" },
-  { name: "Lost & Found", href: "/LostandFound" },
+  { href: "/Announcement", icon: Megaphone, name: "Announcement" },
+  { href: "/Feeds", icon: Newspaper, name: "Feeds" },
+  { href: "/PLC", icon: BookOpenText, name: "PLC" },
+  { href: "/Calendar", icon: CalendarDays, name: "Calendar" },
+  { href: "/LostandFound", icon: Package, name: "Lost & Found" },
 ];
 
 export default function HomepageTab() {
-  const pathname = usePathname();
-  const router = useRouter();
+  const pathname = usePathname() ?? "/";
 
-  const handleClick = (href: string) => {
-    router.push(href); // ✅ Safe for client navigation — no SSR mismatch
-  };
+  // Normalize path (remove trailing slash)
+  const normalize = (p: string) =>
+    p.endsWith("/") && p !== "/" ? p.slice(0, -1) : p;
+
+  const currentPath = normalize(pathname);
 
   return (
-    <header className="fixed top-0 left-0 w-full z-[1] shadow-md">
-      {/* Top Gradient Bar */}
-      <div className="flex justify-between items-center h-[80px] px-8 py-2 bg-[linear-gradient(to_right,#FFFFFF_0%,#EFBF04_60%,#8B0E0E_87%,#4E0505_100%)]">
-        {/* Left: Logo */}
-        <Logo href="/Announcement" />
+    <header className="h-[80px] w-full fixed top-0 left-0 z-10 flex items-center justify-between px-8 bg-gradient-to-r from-[#FFF7CD] to-[#FFC9C9] shadow-md">
+      {/* Left: Logo */}
+      <Logo width={50} height={55} href="/Announcement" />
 
-        {/* Right: Icons */}
-        <div className="flex gap-10 text-gold">
-          <MessageCircle className="w-[50px] h-[50px] cursor-pointer hover:scale-110 transition" />
-          <Bell className="w-[50px] h-[50px] cursor-pointer hover:scale-110 transition" />
-          <User className="w-[50px] h-[50px] cursor-pointer hover:scale-110 transition" />
-          <Settings
-            className="w-[50px] h-[50px] cursor-pointer hover:scale-110 transition"
-            onClick={() => router.push("/")}
-          />
-        </div>
-      </div>
-
-      {/* Bottom Navigation Tabs */}
-      <nav className="bg-white h-[70px] flex justify-around items-center py-2 shadow-sm">
+      {/* Middle: Navigation Icons */}
+      <nav className="flex gap-4">
         {navItems.map((item) => {
-          const isActive = pathname === item.href;
+          const itemPath = normalize(item.href);
+          const isActive = currentPath === itemPath;
+
           return (
-            <button
+            <NavigationButton
               key={item.name}
-              onClick={() => handleClick(item.href)}
-              className={`font-montserrat text-[24px] font-medium transition-all ${
-                isActive
-                  ? "text-maroon border-maroon drop-shadow-[0_0_0.75px_#8B0E0E] cursor-pointer"
-                  : "text-black drop-shadow-[0_0_0.5px_#00000099] hover:text-maroon hover:drop-shadow-[0_0_0.75px_#8B0E0E] cursor-pointer"
-              }`}
-            >
-              {item.name}
-            </button>
+              label={item.name}
+              icon={item.icon}
+              href={item.href}
+              isActive={isActive}
+            />
           );
         })}
       </nav>
+
+      {/* Right: User Icons */}
+      <div className="flex gap-8 items-center text-black">
+        <MessageCircle className="w-8 h-8 cursor-pointer transition-colors hover:text-[#8B0E0E]" />
+        <Bell className="w-8 h-8 cursor-pointer transition-colors hover:text-[#8B0E0E]" />
+        <Link href="/">
+          <User className="w-8 h-8 cursor-pointer transition-colors hover:text-[#8B0E0E]" />
+        </Link>
+      </div>
     </header>
   );
 }
