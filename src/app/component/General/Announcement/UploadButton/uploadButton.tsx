@@ -35,7 +35,7 @@ const UploadButton = forwardRef<UploadButtonHandle, UploadButtonProps>(
         onDragLeave={handleDragLeave}
         className={`w-full border-2 rounded-md transition-all bg-customgray border-black p-[5px] ${
           isDragging ? "border-yellow-600 bg-yellow-50" : ""
-        } max-h-[330px] overflow-y-auto`}
+        } max-h-[450px] overflow-y-auto`}
       >
         <ImagePreview
           imageSources={imageSources}

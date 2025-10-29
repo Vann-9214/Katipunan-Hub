@@ -23,6 +23,45 @@
   }
 }
 
+/* globals.css */
+
+/* Primary lock — hide scrolling on html/body when modal is open */
+html.modal-open,
+body.modal-open {
+  overflow: hidden !important;
+  height: 100% !important;
+}
+
+/* Hide overflow for most app containers while modal open,
+   but explicitly exclude elements marked `.modal-scroll`. */
+body.modal-open .fixed.h-full,
+body.modal-open .overflow-auto:not(.modal-scroll),
+body.modal-open .overflow-y-auto:not(.modal-scroll),
+body.modal-open .overflow-scroll:not(.modal-scroll) {
+  overflow: hidden !important;
+  -ms-overflow-style: none; /* IE 10+ */
+  scrollbar-width: none; /* Firefox */
+}
+
+/* Allow scroll inside modal scrollable area */
+body.modal-open .modal-scroll {
+  overflow: auto !important;
+  -webkit-overflow-scrolling: touch; /* smooth scrolling on mobile */
+}
+
+/* Don't hide the webkit scrollbar for the modal scroll area */
+body.modal-open .modal-scroll::-webkit-scrollbar {
+  display: initial;
+}
+
+/* For other elements we still want to hide webkit scrollbars (non-modal) */
+body.modal-open .fixed.h-full::-webkit-scrollbar,
+body.modal-open .overflow-y-auto:not(.modal-scroll)::-webkit-scrollbar,
+body.modal-open .overflow-auto:not(.modal-scroll)::-webkit-scrollbar,
+body.modal-open .overflow-scroll:not(.modal-scroll)::-webkit-scrollbar {
+  display: none;
+}
+
 /* 6. Keep your global styles */
 html,
 body {

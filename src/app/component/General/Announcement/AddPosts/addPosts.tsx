@@ -4,36 +4,36 @@ import Image from "next/image";
 import UploadButton, {
   type UploadButtonHandle,
 } from "../UploadButton/uploadButton";
-// import Button from "@/app/component/ReusableComponent/Buttons"; // 1. Removed broken import
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-// import { ImageButton } from "@/app/component/ReusableComponent/Buttons"; // 2. Removed broken import
 import { useRouter } from "next/navigation";
+import { X, ChevronDown } from "lucide-react";
+import PostAudienceSelector from "./postAudience"; // This is already imported
 
-import VisibilitySettings from "./visibilitySettings";
+// Re-importing TagEditor
 import TagEditor from "./tagEditor";
 
 import { deleteUrlsFromBucket } from "../../../../../../supabase/Lib/Announcement/AddPosts/storage";
 
-// 3. Import the universal types
+// Import the universal types
 import {
   type PostUI,
   type NewPostPayload,
   type UpdatePostPayload,
 } from "../Utils/types";
 
-// 4. Define props based on universal types
+// Define props based on universal types
 export interface AddPostsProps {
   onAddPost?: (post: NewPostPayload) => Promise<void> | void;
   onUpdatePost?: (post: UpdatePostPayload) => Promise<void> | void;
   externalOpen?: boolean;
   onExternalClose?: () => void;
-  initialPost?: PostUI | null; // 5. Changed from PostShape to PostUI
+  initialPost?: PostUI | null;
   currentType?: "announcement" | "highlight";
   authorId?: string | null;
 }
 
-// 6. Helper to check if a string is a known college code (avoids "global")
+// Helper to check if a string is a known college code (avoids "global")
 const isCollegeCode = (vis: string | null | undefined): boolean => {
   if (!vis) return false;
   return vis !== "global";
@@ -56,6 +56,7 @@ export default function AddPosts({
   // Visibility state
   const [visibleTo, setVisibleTo] = useState<"global" | "college">("global");
   const [visibleCollege, setVisibleCollege] = useState<string | null>(null);
+  const [isAudienceSelectorOpen, setIsAudienceSelectorOpen] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isMountedRef = useRef(true);
@@ -85,11 +86,10 @@ export default function AddPosts({
     setPostType(currentType ?? "announcement");
   }, [currentType]);
 
-  // 7. Rewritten logic to handle `initialPost` of type `PostUI`
+  // Logic to populate form when editing
   useEffect(() => {
     if (initialPost) {
       setTitle(initialPost.title || "");
-      // This logic now correctly strips tags from the description for the editor
       const descWithoutTags =
         initialPost.description?.replace(/\s*#\S+/g, "").trim() || "";
       setDescription(descWithoutTags);
@@ -97,7 +97,6 @@ export default function AddPosts({
       setPredefinedImages(initialPost.images ?? []);
       setPostType(initialPost.type ?? currentType ?? "announcement");
 
-      // Parse the `visibility` string
       const vis = initialPost.visibility;
       if (isCollegeCode(vis)) {
         setVisibleTo("college");
@@ -110,6 +109,20 @@ export default function AddPosts({
     }
   }, [initialPost, currentType]);
 
+  const openAudienceSelector = () => {
+    setIsAudienceSelectorOpen(true);
+  };
+
+  // Function to handle selection FROM the audience selector
+  const handleAudienceSelect = (
+    newVisibleTo: "global" | "college",
+    newCollege: string | null
+  ) => {
+    setVisibleTo(newVisibleTo);
+    setVisibleCollege(newCollege);
+  };
+
+  // Logic to reset form when opening for a new post
   useEffect(() => {
     if (isOpen && !initialPost) {
       clearLocalForm();
@@ -117,18 +130,22 @@ export default function AddPosts({
     }
   }, [isOpen, initialPost, currentType]);
 
+  // Auto-resize textarea
   const handleInput = () => {
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "auto";
-    const newHeight = Math.min(el.scrollHeight, 210);
+    const newHeight = Math.min(el.scrollHeight, 210); // Max height 210px
     el.style.height = `${newHeight}px`;
     el.style.overflowY = el.scrollHeight > 210 ? "auto" : "hidden";
   };
 
+  // addTag and removeTag are passed as props to TagEditor
   const addTag = (t: string) => {
-    if (tags.includes(t)) return;
-    setTags((prev) => [...prev, t]);
+    const newTag = t.trim().replace(/\s+/g, "-"); // Ensure single-word tags
+    if (newTag && !tags.includes(newTag)) {
+      setTags((prev) => [...prev, newTag]);
+    }
   };
 
   const removeTag = (tagToRemove: string) => {
@@ -146,10 +163,12 @@ export default function AddPosts({
 
   const resetForm = () => {
     setIsOpen(false);
+    setIsAudienceSelectorOpen(false); // Also reset audience selector on close
     clearLocalForm();
     if (onExternalClose) onExternalClose();
   };
 
+  // Main submit logic (unchanged)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
@@ -165,19 +184,17 @@ export default function AddPosts({
       const tagString = tags.length
         ? " " + tags.map((t) => `#${t}`).join(" ")
         : "";
-      // Save description with tags appended
       const combinedDescription = description.trim() + tagString;
 
       if (!authorId) throw new Error("Author ID not found");
 
-      // Determine the final visibility string to save
       const visibilityToStore: string | null =
         postType === "highlight"
-          ? "global" // Highlights are always global
+          ? "global"
           : postType === "announcement"
           ? visibleTo === "global"
             ? "global"
-            : visibleCollege ?? null // Save college code or null
+            : visibleCollege ?? null
           : null;
 
       const payload = {
@@ -201,7 +218,7 @@ export default function AddPosts({
       } else if (onAddPost) {
         const createPayload: NewPostPayload = {
           ...payload,
-          author_id: authorId, // Author ID only needed for new posts
+          author_id: authorId,
         };
         await onAddPost(createPayload);
         await deleteUrlsFromBucket(removedUrls);
@@ -217,88 +234,174 @@ export default function AddPosts({
     }
   };
 
+  // Determine modal title
   const modalTitle = initialPost
     ? `Edit ${postType === "announcement" ? "Announcement" : "Highlight"}`
-    : `New ${postType === "announcement" ? "Announcement" : "Highlight"}`;
+    : `Add ${postType === "announcement" ? "Announcement" : "Highlight"}`;
 
+  // ---
+  // --- NEW MODAL UI (WITH CONDITIONAL RENDERING) ---
+  // ---
   const modalContent = (
-    <div className="fixed inset-0 z-50 flex justify-center items-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-[30px] w-[90%] max-w-[850px] h-[90%] max-h-[930px] p-8 overflow-y-auto">
-        <h1 className="font-montserrat text-[40px] mb-4">{modalTitle}</h1>
-
-        <form
-          onSubmit={handleSubmit}
-          className="flex flex-col gap-4 font-montserrat"
-        >
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Enter highlight title…"
-            className="border border-black placeholder-white/80 px-5 bg-maroon text-white rounded-[20px] h-[55px] w-full p-2 focus:outline-none focus:ring-1"
-            required
+    <div className="fixed inset-0 z-50 flex justify-center items-center bg-black/50 backdrop-blur-sm p-4 modal-root">
+      {/* This is the main change. The content of the modal
+        is now conditional based on `isAudienceSelectorOpen`
+      */}
+      <div className="bg-white rounded-2xl w-[700px] shadow-xl max-h-[90vh]">
+        {isAudienceSelectorOpen ? (
+          // --- STATE 1: SHOW AUDIENCE SELECTOR ---
+          <PostAudienceSelector
+            currentVisibleTo={visibleTo}
+            currentVisibleCollege={visibleCollege}
+            onSelectAudience={handleAudienceSelect}
+            onClose={() => setIsAudienceSelectorOpen(false)} // For the back arrow
           />
+        ) : (
+          // --- STATE 2: SHOW POST FORM ---
+          <>
+            {/* 1. Header */}
+            <div className="flex justify-between items-center p-[10px] border-b border-gray-200">
+              <h1 className="flex-1 font-montserrat text-[40px] text-center font-semibold text-black">
+                {modalTitle}
+              </h1>
+              <button
+                type="button"
+                onClick={resetForm}
+                className="text-black cursor-pointer"
+              >
+                <X size={40} />
+              </button>
+            </div>
 
-          <textarea
-            ref={textareaRef}
-            value={description}
-            onChange={(e) => {
-              setDescription(e.target.value);
-              handleInput();
-            }}
-            placeholder="Enter detailed information to be shared with the community..."
-            className="border border-black placeholder-white/80 px-5 bg-maroon text-white rounded-[20px] min-h-[100px] max-h-[210px] w-full p-2 focus:outline-none focus:ring-1 resize-none overflow-hidden"
-            required
-          />
-
-          {postType === "announcement" && (
-            <VisibilitySettings
-              visibleTo={visibleTo}
-              visibleCollege={visibleCollege}
-              onVisibleToChange={setVisibleTo}
-              onVisibleCollegeChange={setVisibleCollege}
-            />
-          )}
-
-          <TagEditor
-            width="w-full"
-            tags={tags}
-            onTagAdd={addTag}
-            onTagRemove={removeTag}
-          />
-
-          <UploadButton
-            key={initialPost?.id ?? "new"}
-            ref={uploadRef}
-            predefinedImages={predefinedImages}
-          />
-
-          <div className="flex justify-end gap-3">
-            {/* 8. Replaced custom <Button> with standard <button> */}
-            <button
-              type="button"
-              onClick={resetForm}
-              className="text-[18px] rounded-[20px] w-[170px] h-[45px] border border-black text-black bg-gray-200 hover:bg-gray-300 transition-colors"
+            {/* 2. Scrollable Form Area */}
+            <form
+              id="add-post-form"
+              onSubmit={handleSubmit}
+              className="flex flex-col gap-5 p-6 overflow-y-auto max-h-[calc(90vh-160px)]" // 160px = header + footer height
             >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="text-[18px] rounded-[20px] w-[170px] h-[45px] border border-black bg-maroon text-white hover:bg-maroon/90 transition-colors disabled:bg-gray-400"
-            >
-              {loading
-                ? "Publishing..."
-                : initialPost
-                ? "Save changes"
-                : "Publish"}
-            </button>
-          </div>
-        </form>
+              {/* User Info & Visibility */}
+              <div className="flex items-center gap-3">
+                <Image
+                  src="/Cit Logo.svg" // Make sure this path is correct
+                  alt="Author"
+                  width={50}
+                  height={50}
+                  className="rounded-full"
+                />
+                <div>
+                  <span className="font-medium text-[20px] text-gray-900">
+                    Cebu Institute of Technology - University
+                  </span>
+                  {postType === "announcement" && (
+                    <button
+                      type="button"
+                      onClick={openAudienceSelector} // This triggers the change
+                      className="cursor-pointer flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
+                    >
+                      <span>
+                        {visibleTo === "global"
+                          ? "Global"
+                          : `College (${
+                              visibleCollege?.toUpperCase() || "Select"
+                            })`}
+                      </span>
+                      <ChevronDown size={16} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* The old college text input is REMOVED from here,
+                as the PostAudienceSelector now handles it.
+              */}
+
+              {/* Title */}
+              <div>
+                <label
+                  htmlFor="title"
+                  className="block mb-2 text-[20px] font-medium text-black font-montserrat"
+                >
+                  Title (Optional)
+                </label>
+                <input
+                  type="text"
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Enter posts title..."
+                  className="bg-[#E0E0E0] border font-montserrat h-[55px] border-transparent text-black text-[16px] font-medium rounded-[10px]  focus:border-black focus:outline-none block w-full p-5"
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label
+                  htmlFor="description"
+                  className="block mb-2 text-[20px] font-medium text-black font-montserrat"
+                >
+                  Description
+                </label>
+                <textarea
+                  id="description"
+                  ref={textareaRef}
+                  value={description}
+                  onChange={(e) => {
+                    setDescription(e.target.value);
+                    handleInput();
+                  }}
+                  placeholder="Enter detailed information to be shared with the community..."
+                  className="bg-[#E0E0E0] border text-black font-medium font-montserrat text-[16px] rounded-[10px] focus:border-black focus:outline-none block w-full p-3 min-h-[120px] max-h-[210px] resize-none overflow-hidden border-transparent"
+                  required
+                />
+              </div>
+
+              {/* Tag Editor */}
+              <div>
+                <TagEditor
+                  width="w-full"
+                  tags={tags}
+                  onTagAdd={addTag}
+                  onTagRemove={removeTag}
+                />
+              </div>
+
+              {/* Attachment */}
+              <div>
+                <label className="block mb-2 text-[20px] font-medium text-black font-montserrat">
+                  Attachment (Optional)
+                </label>
+                <UploadButton
+                  key={initialPost?.id ?? "new"}
+                  ref={uploadRef}
+                  predefinedImages={predefinedImages}
+                />
+              </div>
+            </form>
+
+            {/* 3. Footer */}
+            <div className="p-6 border-t border-gray-200">
+              <button
+                type="submit"
+                form="add-post-form"
+                disabled={loading}
+                className="w-full text-white bg-maroon hover:bg-maroon/90 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-3 text-center disabled:bg-gray-400"
+              >
+                {loading
+                  ? "Publishing..."
+                  : initialPost
+                  ? "Save Changes"
+                  : "Publish"}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
 
+  // ---
+  // --- EXISTING MODAL TRIGGER ---
+  // ---
   return (
     <>
       <div className="relative bg-gold w-[590px] h-[80px] rounded-[15px] p-[5px]">
@@ -311,6 +414,7 @@ export default function AddPosts({
             draggable={false}
           />
           <button
+            type="button"
             className="w-[490px] h-[45px] rounded-[20px] mx-[10px] bg-[#E0E0E0] cursor-pointer hover:brightness-105"
             onClick={() => {
               onExternalClose?.();
