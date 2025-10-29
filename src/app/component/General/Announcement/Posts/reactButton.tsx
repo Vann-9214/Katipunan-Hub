@@ -4,7 +4,7 @@
 import Image from "next/image";
 import { useState, useRef, useEffect } from "react";
 // --- 1. Import from your new config file ---
-import { reactionsList, getReactionIcon, ReactionInfo } from "./General/config";
+import { reactionsList, getReactionIcon, ReactionInfo } from "./Utils/config";
 
 // --- Component Props (Unchanged) ---
 interface ReactionButtonProps {

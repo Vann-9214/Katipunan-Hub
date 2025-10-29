@@ -1,101 +1,131 @@
-// types.ts on AddPosts.tsx
+// --- Filter Types ---
 
-export interface PostShape {
-  id?: string;
+/** Options for sorting posts */
+export type SortOption = "Newest First" | "Oldest First";
+
+/** Options for filtering posts by date */
+export type DateOption = "Today" | "This Week" | "This Month" | "All Time";
+
+/** Options for filtering posts by visibility */
+export type VisibilityOption = "Global" | "Course" | "All";
+
+/**
+ * The complete state object for all filters managed by AdvancedFilter.
+ */
+export interface FilterState {
+  sort: SortOption;
+  date: DateOption;
+  visibility: VisibilityOption;
+}
+
+// --- User Types ---
+
+/**
+ * Represents the detailed object for the currently authenticated user.
+ * Fetched from `getCurrentUserDetails()`.
+ */
+export interface CurrentUser {
+  id: string;
+  email?: string;
+  fullName?: string | null;
+  role?: string[];
+  course?: string;
+  studentID?: string;
+  year?: string;
+  avatarURL?: string;
+}
+
+// --- Post Types ---
+
+/**
+ * Represents the raw data structure of a row from the "Posts" table in Supabase.
+ * This should match your database schema exactly.
+ */
+export interface DBPostRow {
+  id: string;
+  title: string;
+  description: string;
+  images: string[] | null;
+  tags: string[] | null;
+  type: "announcement" | "highlight";
+  author_id: string;
+  created_at: string; // ISO timestamp string
+  updated_at: string; // ISO timestamp string
+  visibility: string | null;
+}
+
+/**
+ * Represents a Post object after being processed for display in the UI.
+ * (e.g., dates formatted, null arrays empty). This is the shape for your `posts` state.
+ */
+export interface PostUI {
+  id: string;
+  title: string;
+  description: string;
+  date: string; // Formatted date string for display (e.g., "Oct 30, 2025")
+  images: string[]; // Normalized to always be an array
+  tags: string[]; // Normalized to always be an array
+  type: "announcement" | "highlight";
+  visibility: string | null;
+  author_id: string;
+  created_at: string; // Raw ISO string, kept for accurate sorting
+}
+
+// --- Component Prop Types ---
+
+/**
+ * Data payload required for creating a new post.
+ * Used by `onAddPost` in `AddPostsProps`.
+ */
+export interface NewPostPayload {
   title: string;
   description: string;
   images: string[];
   tags: string[];
   type: "announcement" | "highlight";
-  visibleTo?: "global" | "college";
-  visibleCollege?: string | null;
-  author_id?: string;
-  visibility?: string | null;
+  visibility: string | null;
+  author_id: string;
 }
 
-export interface UserSummary {
+/**
+ * Data payload required for updating an existing post.
+ * Used by `onUpdatePost` in `AddPostsProps`.
+ */
+export interface UpdatePostPayload {
   id: string;
-  fullName?: string | null;
-  avatarURL?: string | null;
+  title: string;
+  description: string;
+  images: string[];
+  tags: string[];
+  type: "announcement" | "highlight";
+  visibility: string | null;
 }
 
+/**
+ * Props for the `AddPosts` component.
+ */
 export interface AddPostsProps {
-  onAddPost?: (post: {
-    title: string;
-    description: string;
-    images: string[];
-    tags: string[];
-    type: "announcement" | "highlight";
-    visibility?: string | null;
-    author_id?: string | undefined;
-  }) => Promise<void> | void;
+  onAddPost?: (post: NewPostPayload) => Promise<void> | void;
+  onUpdatePost?: (post: UpdatePostPayload) => Promise<void> | void;
   externalOpen?: boolean;
   onExternalClose?: () => void;
-  initialPost?: PostShape | null;
-  onUpdatePost?: (updated: {
-    id: string;
-    title: string;
-    description: string;
-    images: string[];
-    tags: string[];
-    type: "announcement" | "highlight";
-    visibility?: string | null;
-  }) => Promise<void> | void;
+  initialPost?: PostUI | null; // Use the UI shape for consistency
   currentType?: "announcement" | "highlight";
-  author?: UserSummary | null;
-  authorId?: string | null;
+  authorId?: string; // The ID of the user creating the post
 }
 
-// AnnouncementPageContent/types.ts
-
-// shape of a DB row returned by Supabase for the Posts table
-export type DBPostRow = {
-  id?: string;
-  title?: string | null;
-  description?: string | null;
-  created_at?: string | null;
-  createdAt?: string | null; // sometimes createdAt
-  images?: string[] | null;
-  tags?: string[] | null;
-  type?: "announcement" | "highlight" | string | null;
-  visibility?: string | null;
-  author_id?: string | null;
-};
-
-// shape used by the UI (your posts state)
-export type PostUI = {
-  id?: string;
-  title: string;
-  description: string;
-  date: string;
-  images: string[];
-  tags: string[];
-  type: "announcement" | "highlight";
-  visibility?: string | null;
-  author_id?: string;
-  created_at?: string | null;
-};
-
-// shape of the current user object returned by getCurrentUserDetails()
-export type CurrentUser = {
-  id?: string;
-  email?: string | null;
-  fullName?: string | null;
-  role?: string | string[] | null;
-  course?: string | null;
-  studentID?: string | null;
-  year?: string | null;
-  avatarURL?: string | null;
-};
-
-// Types.ts on UploadButton
-
+/**
+ * Props for the `UploadButton` component.
+ */
 export interface UploadButtonProps {
-  onUpload?: (files: string[]) => void; // optional callback
-  predefinedImages?: string[]; // existing server URLs to show initially
+  onUpload?: (files: string[]) => void;
+  predefinedImages?: string[];
 }
 
-// exports both methods for parent to call
+/**
+ * Ref handle for the `UploadButton` component, allowing parent
+ * to call its internal methods.
+ */
 export interface UploadButtonHandle {
   uploadAndGetFinalUrls: () => Promise<string[]>;
   getRemovedUrls: () => string[];

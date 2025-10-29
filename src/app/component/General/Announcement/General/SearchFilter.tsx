@@ -20,46 +20,22 @@ export default function SearchFilter({
   ];
 
   return (
-    <div className="flex items-center h-[50px] bg-white border border-customgray rounded-full overflow-hidden w-full max-w-[540px]">
+    <div className="flex items-center h-[40px] bg-white border border-customgray rounded-[10px] overflow-hidden w-[320px]">
       {/* Search input */}
-      <div className="flex w-[320px] h-[40px] border bg-[#D6D6D6] border-customgray rounded-[50px] items-center flex-1 mx-1 px-4">
-        <Search className="text-[#6D0000] w-5 h-5 mr-2" />
-        <input
-          type="text"
-          placeholder="Search posts..."
-          value={search}
-          onChange={(e) => {
-            const val = e.target.value;
-            setSearch(val);
-            onSearchChange?.(val);
-          }}
-          className="bg-transparent outline-none text-gray-800 placeholder:text-gray-700 text-[18px] font-montserrat w-full"
-        />
-      </div>
+      <Search className="text-black w-[24px] h-[24px] mx-2" />
+      <input
+        type="text"
+        placeholder="Search posts..."
+        value={search}
+        onChange={(e) => {
+          const val = e.target.value;
+          setSearch(val);
+          onSearchChange?.(val);
+        }}
+        className="bg-transparent outline-none text-black placeholder:text-black/60 text-[16px] font-montserrat font-medium w-full"
+      />
 
       {/* Combobox */}
-      <div className="mx-1">
-        <Combobox
-          items={sortOptions}
-          placeholder="Choose Time"
-          width="w-[200px]"
-          buttonHeight="h-[40px]"
-          rounded="rounded-[50px]"
-          dropdownRounded="rounded-[15px]"
-          dropdownHeight="h-[180px]"
-          buttonBG="bg-[#D6D6D6]"
-          borderColor="border-customgray"
-          textColor="text-gray-700"
-          selectedTextColor="text-gray-900"
-          hoverBG="hover:bg-gray-300"
-          dropdownBG="bg-white"
-          dropdownTextColor="text-gray-700"
-          dropdownHoverBG="hover:bg-[#D6D6D6]"
-          checkArrowColor="text-green-700"
-          defaultMode="first"
-          onChange={(val) => onSortChange?.(val)}
-        />
-      </div>
     </div>
   );
 }

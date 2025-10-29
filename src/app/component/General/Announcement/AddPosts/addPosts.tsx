@@ -1,23 +1,43 @@
 "use client";
 
+import Image from "next/image";
 import UploadButton, {
   type UploadButtonHandle,
 } from "../UploadButton/uploadButton";
-import Button from "@/app/component/ReusableComponent/Buttons";
+// import Button from "@/app/component/ReusableComponent/Buttons"; // 1. Removed broken import
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ImageButton } from "@/app/component/ReusableComponent/Buttons";
+// import { ImageButton } from "@/app/component/ReusableComponent/Buttons"; // 2. Removed broken import
 import { useRouter } from "next/navigation";
 
 import VisibilitySettings from "./visibilitySettings";
 import TagEditor from "./tagEditor";
 
 import { deleteUrlsFromBucket } from "../../../../../../supabase/Lib/Announcement/AddPosts/storage";
+
+// 3. Import the universal types
 import {
-  type AddPostsProps,
-  type PostShape,
-  type UserSummary,
+  type PostUI,
+  type NewPostPayload,
+  type UpdatePostPayload,
 } from "../Utils/types";
+
+// 4. Define props based on universal types
+export interface AddPostsProps {
+  onAddPost?: (post: NewPostPayload) => Promise<void> | void;
+  onUpdatePost?: (post: UpdatePostPayload) => Promise<void> | void;
+  externalOpen?: boolean;
+  onExternalClose?: () => void;
+  initialPost?: PostUI | null; // 5. Changed from PostShape to PostUI
+  currentType?: "announcement" | "highlight";
+  authorId?: string | null;
+}
+
+// 6. Helper to check if a string is a known college code (avoids "global")
+const isCollegeCode = (vis: string | null | undefined): boolean => {
+  if (!vis) return false;
+  return vis !== "global";
+};
 
 export default function AddPosts({
   onAddPost,
@@ -26,7 +46,6 @@ export default function AddPosts({
   initialPost = null,
   onUpdatePost,
   currentType = "announcement",
-  author = null,
   authorId = null,
 }: AddPostsProps) {
   const router = useRouter();
@@ -34,6 +53,7 @@ export default function AddPosts({
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Visibility state
   const [visibleTo, setVisibleTo] = useState<"global" | "college">("global");
   const [visibleCollege, setVisibleCollege] = useState<string | null>(null);
 
@@ -42,15 +62,12 @@ export default function AddPosts({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState<string[]>([]);
-  // const [tagInput, setTagInput] = useState(""); // <-- MOVED to TagEditor
   const [postType, setPostType] = useState<"announcement" | "highlight">(
     currentType ?? "announcement"
   );
 
   const [predefinedImages, setPredefinedImages] = useState<string[]>([]);
   const uploadRef = useRef<UploadButtonHandle>(null);
-
-  // const supabase = createClientComponentClient(); // <-- REMOVED (no longer needed)
 
   useEffect(() => setMounted(true), []);
   useEffect(() => {
@@ -68,17 +85,27 @@ export default function AddPosts({
     setPostType(currentType ?? "announcement");
   }, [currentType]);
 
+  // 7. Rewritten logic to handle `initialPost` of type `PostUI`
   useEffect(() => {
     if (initialPost) {
       setTitle(initialPost.title || "");
-      setDescription(
-        initialPost.description?.replace(/\s*#\S+/g, "").trim() || ""
-      );
+      // This logic now correctly strips tags from the description for the editor
+      const descWithoutTags =
+        initialPost.description?.replace(/\s*#\S+/g, "").trim() || "";
+      setDescription(descWithoutTags);
       setTags(initialPost.tags ?? []);
       setPredefinedImages(initialPost.images ?? []);
       setPostType(initialPost.type ?? currentType ?? "announcement");
-      setVisibleTo(initialPost.visibleTo ?? "global");
-      setVisibleCollege(initialPost.visibleCollege ?? null);
+
+      // Parse the `visibility` string
+      const vis = initialPost.visibility;
+      if (isCollegeCode(vis)) {
+        setVisibleTo("college");
+        setVisibleCollege(vis);
+      } else {
+        setVisibleTo("global");
+        setVisibleCollege(null);
+      }
       setIsOpen(true);
     }
   }, [initialPost, currentType]);
@@ -88,7 +115,7 @@ export default function AddPosts({
       clearLocalForm();
       setPostType(currentType ?? "announcement");
     }
-  }, [isOpen]);
+  }, [isOpen, initialPost, currentType]);
 
   const handleInput = () => {
     const el = textareaRef.current;
@@ -99,9 +126,8 @@ export default function AddPosts({
     el.style.overflowY = el.scrollHeight > 210 ? "auto" : "hidden";
   };
 
-  // This function now receives the tag from the child
   const addTag = (t: string) => {
-    if (tags.includes(t)) return; // Check for duplicates
+    if (tags.includes(t)) return;
     setTags((prev) => [...prev, t]);
   };
 
@@ -114,7 +140,6 @@ export default function AddPosts({
     setDescription("");
     setTags([]);
     setPredefinedImages([]);
-    // setTagInput(""); // <-- MOVED
     setVisibleTo("global");
     setVisibleCollege(null);
   };
@@ -124,11 +149,6 @@ export default function AddPosts({
     clearLocalForm();
     if (onExternalClose) onExternalClose();
   };
-
-  // --- These functions are now GONE ---
-  // const getFilePathFromPublicUrl = ...
-  // const deleteUrlsFromBucket = ...
-  // ------------------------------------
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -145,37 +165,46 @@ export default function AddPosts({
       const tagString = tags.length
         ? " " + tags.map((t) => `#${t}`).join(" ")
         : "";
+      // Save description with tags appended
       const combinedDescription = description.trim() + tagString;
 
-      const resolvedAuthorId = authorId ?? author?.id ?? undefined;
-      if (!resolvedAuthorId) throw new Error("Author not found");
+      if (!authorId) throw new Error("Author ID not found");
 
+      // Determine the final visibility string to save
       const visibilityToStore: string | null =
         postType === "highlight"
-          ? "global"
+          ? "global" // Highlights are always global
           : postType === "announcement"
           ? visibleTo === "global"
             ? "global"
-            : visibleCollege ?? null
+            : visibleCollege ?? null // Save college code or null
           : null;
 
-      const createPayload = {
+      const payload = {
         title,
         description: combinedDescription,
         images: uniqueImages,
         tags,
         type: postType,
         visibility: visibilityToStore,
-        author_id: resolvedAuthorId,
       };
 
       if (initialPost && onUpdatePost) {
         if (!initialPost.id) throw new Error("Post id missing. Cannot update.");
-        await onUpdatePost({ ...createPayload, id: initialPost.id });
-        await deleteUrlsFromBucket(removedUrls); // <-- Use imported function
+
+        const updatePayload: UpdatePostPayload = {
+          ...payload,
+          id: initialPost.id,
+        };
+        await onUpdatePost(updatePayload);
+        await deleteUrlsFromBucket(removedUrls);
       } else if (onAddPost) {
+        const createPayload: NewPostPayload = {
+          ...payload,
+          author_id: authorId, // Author ID only needed for new posts
+        };
         await onAddPost(createPayload);
-        await deleteUrlsFromBucket(removedUrls); // <-- Use imported function
+        await deleteUrlsFromBucket(removedUrls);
       }
 
       resetForm();
@@ -222,7 +251,6 @@ export default function AddPosts({
             required
           />
 
-          {/* ===> USE THE NEW COMPONENT <=== */}
           {postType === "announcement" && (
             <VisibilitySettings
               visibleTo={visibleTo}
@@ -232,8 +260,12 @@ export default function AddPosts({
             />
           )}
 
-          {/* ===> USE THE NEW COMPONENT <=== */}
-          <TagEditor tags={tags} onTagAdd={addTag} onTagRemove={removeTag} />
+          <TagEditor
+            width="w-full"
+            tags={tags}
+            onTagAdd={addTag}
+            onTagRemove={removeTag}
+          />
 
           <UploadButton
             key={initialPost?.id ?? "new"}
@@ -241,33 +273,26 @@ export default function AddPosts({
             predefinedImages={predefinedImages}
           />
 
-          <div className="flex justify-end gap-3 mt-6">
-            <Button
-              text="Cancel"
-              textSize="text-[18px]"
+          <div className="flex justify-end gap-3">
+            {/* 8. Replaced custom <Button> with standard <button> */}
+            <button
               type="button"
-              rounded="rounded-[20px]"
-              width="w-[170px]"
-              height="h-[45px]"
               onClick={resetForm}
-              className="border border-black"
-            />
-            <Button
-              text={
-                loading
-                  ? "Publishing..."
-                  : initialPost
-                  ? "Save changes"
-                  : "Publish"
-              }
-              textSize="text-[18px]"
+              className="text-[18px] rounded-[20px] w-[170px] h-[45px] border border-black text-black bg-gray-200 hover:bg-gray-300 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
               type="submit"
-              width="w-[170px]"
-              rounded="rounded-[20px]"
-              height="h-[45px]"
-              className="border border-black"
               disabled={loading}
-            />
+              className="text-[18px] rounded-[20px] w-[170px] h-[45px] border border-black bg-maroon text-white hover:bg-maroon/90 transition-colors disabled:bg-gray-400"
+            >
+              {loading
+                ? "Publishing..."
+                : initialPost
+                ? "Save changes"
+                : "Publish"}
+            </button>
           </div>
         </form>
       </div>
@@ -276,20 +301,28 @@ export default function AddPosts({
 
   return (
     <>
-      <div className="relative h-screen flex flex-col justify-end">
-        <div className="sticky ml-110 bottom-0 flex justify-center pb-5">
-          <ImageButton
-            src="Plus Sign.svg"
-            height={90}
-            width={90}
-            className="hover:scale-105 active:scale-95 transition-transform"
+      <div className="relative bg-gold w-[590px] h-[80px] rounded-[15px] p-[5px]">
+        <div className="bg-darkmaroon w-[580px] h-[70px] rounded-[10px] flex px-[15px] justify-center items-center">
+          <Image
+            src="/Cit Logo.svg"
+            alt="Cit Logo"
+            width={55}
+            height={55}
+            draggable={false}
+          />
+          <button
+            className="w-[490px] h-[45px] rounded-[20px] mx-[10px] bg-[#E0E0E0] cursor-pointer hover:brightness-105"
             onClick={() => {
               onExternalClose?.();
               clearLocalForm();
               setPostType(currentType ?? "announcement");
               setIsOpen(true);
             }}
-          />
+          >
+            <p className="font-montserrat text-[18px] text-black/70 ml-4 text-left font-medium">
+              Create announcement...
+            </p>
+          </button>
         </div>
       </div>
       {mounted && isOpen && createPortal(modalContent, document.body)}

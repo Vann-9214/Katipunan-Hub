@@ -57,7 +57,7 @@ export default function Posts({
         <div className="w-[580px] bg-darkmaroon rounded-t-[10px] flex flex-col">
           {/* ... (Post header, title, description, images - UNCHANGED) ... */}
           {/* ... */}
-          <div className="flex items-start justify-between mt-[15px] mx-[20px]">
+          <div className="flex items-start justify-between mt-[15px] mx-[15px]">
             <div className="flex">
               <div className="select-none">
                 <Image

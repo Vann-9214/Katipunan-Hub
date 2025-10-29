@@ -5,12 +5,14 @@ import { useState } from "react";
 import TagsFilter from "../General/TagsFilter";
 
 interface TagEditorProps {
+  width?: string;
   tags: string[];
   onTagAdd: (tag: string) => void;
   onTagRemove: (tag: string) => void;
 }
 
 export default function TagEditor({
+  width,
   tags,
   onTagAdd,
   onTagRemove,
@@ -53,7 +55,12 @@ export default function TagEditor({
         </div>
       </div>
       <div className="mt-3">
-        <TagsFilter mode="edit" tags={tags} onTagRemove={onTagRemove} />
+        <TagsFilter
+          width={width}
+          mode="edit"
+          tags={tags}
+          onTagRemove={onTagRemove}
+        />
       </div>
     </div>
   );

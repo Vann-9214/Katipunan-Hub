@@ -2,9 +2,9 @@
 "use client";
 
 import Image from "next/image";
-import { formatCompactNumber } from "./General/FormatNumber";
+import { formatCompactNumber } from "./Utils/FormatNumber";
 // --- 1. Import your helper function ---
-import { getReactionIcon } from "./General/config";
+import { getReactionIcon } from "./Utils/config";
 import { ReactionCount } from "../../../../../../supabase/Lib/Announcement/Posts/usePostReaction";
 
 interface ReactionSummaryProps {

@@ -73,14 +73,14 @@ export default function NavigationButton({
       {isActive && (
         <span
           className="
-            absolute
-            bottom-0
-            left-0
-            h-[3px]
-            bg-[#8B0E0E]
-            w-full
-            rounded-full
-          "
+                absolute
+                bottom-0
+                left-4      
+                right-4     
+                h-[3px]
+                bg-[#8B0E0E]          
+                rounded-full
+              "
         />
       )}
     </a>
