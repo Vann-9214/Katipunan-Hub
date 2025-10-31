@@ -3,7 +3,7 @@
 import Image from "next/image";
 import UploadButton, {
   type UploadButtonHandle,
-} from "../UploadButton/UploadButton";
+} from "../UploadButton-temp/UploadButton";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
