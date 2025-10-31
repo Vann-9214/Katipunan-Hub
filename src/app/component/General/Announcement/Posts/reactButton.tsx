@@ -1,17 +1,21 @@
-// components/ReactButton/reactButton.tsx
 "use client";
 
 import Image from "next/image";
 import { useState, useRef, useEffect } from "react";
 // --- 1. Import from your new config file ---
-import { reactionsList, getReactionIcon, ReactionInfo } from "./Utils/config";
+import { reactionsList, getReactionIcon } from "./Utils/config";
 
-// --- Component Props (Unchanged) ---
+// --- 2. Update Component Props ---
 interface ReactionButtonProps {
   selectedReactionId: string | null;
   isLoading: boolean;
   onReactionSelect: (id: string) => void;
   onMainButtonClick: () => void;
+  // --- ADDED PROPS ---
+  width?: number | "full" | "auto";
+  height?: number;
+  textSize?: number;
+  // --- END ADDED PROPS ---
 }
 
 export default function ReactionButton({
@@ -19,6 +23,10 @@ export default function ReactionButton({
   isLoading,
   onReactionSelect,
   onMainButtonClick,
+  // --- 3. Set default values to match original code ---
+  width = "full", // Original was w-full
+  height = 35, // Original was h-[35px]
+  textSize = 22, // Original was text-[22px]
 }: ReactionButtonProps) {
   // --- All UI state logic (showPicker, timeouts) is UNCHANGED ---
   const [showPicker, setShowPicker] = useState(false);
@@ -64,34 +72,41 @@ export default function ReactionButton({
     return () => clearTimeouts();
   }, []);
 
-  // --- 2. Update Display Value logic ---
-  // Find the full reaction object to get label and color
+  // --- Display Value logic (Unchanged) ---
   const selectedReaction = reactionsList.find(
     (r) => r.id === selectedReactionId
   );
-
-  // Use your helper function to get the icon
   const currentIcon = getReactionIcon(selectedReactionId);
   const currentLabel = selectedReaction ? selectedReaction.label : "Like";
   const currentColorClass = selectedReaction
     ? selectedReaction.colorClass
-    : "text-black"; // Default to black if no color specified
+    : "text-black";
 
-  // --- 3. Update Render logic ---
+  // --- 4. Create dynamic classes from props ---
+  const widthClass =
+    width === "full"
+      ? "w-full"
+      : width === "auto"
+      ? "w-auto"
+      : `w-[${width}px]`;
+
+  // Scale icon size based on text size (Original: 22px text -> 23px icon)
+  const iconSize = textSize + 1;
+
+  // --- 5. Update Render logic ---
   return (
     <div
-      className="relative w-full"
+      className="relative w-full" // Kept w-full as per original
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Reaction Picker */}
+      {/* Reaction Picker (Unchanged) */}
       {showPicker && (
         <div
           onMouseEnter={handlePickerMouseEnter}
           onMouseLeave={handleMouseLeave}
           className="absolute bottom-full h-10 w-62 gap-2 left-1/2 mb-2 -translate-x-1/2 flex items-center justify-center bg-white rounded-full shadow-lg z-10"
         >
-          {/* Use reactionsList instead of reactions */}
           {reactionsList.map((reaction) => (
             <button
               key={reaction.id}
@@ -117,7 +132,14 @@ export default function ReactionButton({
       <button
         onClick={onMainClick}
         disabled={isLoading}
-        className={`cursor-pointer rounded-[10px] text-[22px] font-montserrat font-medium h-[35px] w-full flex gap-1 items-center justify-center px-4 transition-colors ${
+        // --- 6. Apply dynamic classes ---
+        className={`cursor-pointer rounded-[10px] font-montserrat font-medium flex gap-1 items-center justify-center px-4 transition-colors ${
+          `text-[${textSize}px]` // Apply text size
+        } ${
+          `h-[${height}px]` // Apply height
+        } ${
+          widthClass // Apply width
+        } ${
           isLoading
             ? "opacity-50 cursor-not-allowed"
             : selectedReactionId
@@ -125,7 +147,13 @@ export default function ReactionButton({
             : "hover:bg-black/10"
         }`}
       >
-        <Image src={currentIcon} alt={currentLabel} height={23} width={23} />
+        {/* --- 7. Apply dynamic icon size --- */}
+        <Image
+          src={currentIcon}
+          alt={currentLabel}
+          height={iconSize}
+          width={iconSize}
+        />
         <span className={currentColorClass}>{currentLabel}</span>
       </button>
     </div>

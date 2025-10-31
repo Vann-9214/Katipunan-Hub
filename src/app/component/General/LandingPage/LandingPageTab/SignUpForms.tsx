@@ -108,11 +108,10 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
       }
 
       // Step 1: Sign up the user
-      const { data: signUpData, error: signUpError } =
-        await supabase.auth.signUp({
-          email,
-          password,
-        });
+      const { error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
 
       if (signUpError) {
         alert(signUpError.message);
@@ -233,6 +232,7 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
             transition={{ delay: 0.4, duration: 0.5 }}
           >
             <ToggleButton
+              textSize="text-[23px]"
               leftLabel="Sign In"
               rightLabel="Sign Up"
               active="right"

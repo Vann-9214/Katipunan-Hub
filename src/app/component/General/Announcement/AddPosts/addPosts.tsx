@@ -3,7 +3,7 @@
 import Image from "next/image";
 import UploadButton, {
   type UploadButtonHandle,
-} from "../UploadButton/uploadButton";
+} from "../UploadButton/UploadButton";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
@@ -308,6 +308,18 @@ export default function AddPosts({
                       <ChevronDown size={16} />
                     </button>
                   )}
+
+                  {/* Case 2: Highlight (Disabled, no icon) */}
+                  {postType === "highlight" && (
+                    <button
+                      type="button"
+                      disabled
+                      className="flex items-center text-sm text-gray-500 cursor-not-allowed" // Disabled styling
+                    >
+                      {/* Icon removed */}
+                      <span>Global</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -424,7 +436,9 @@ export default function AddPosts({
             }}
           >
             <p className="font-montserrat text-[18px] text-black/70 ml-4 text-left font-medium">
-              Create announcement...
+              {currentType === "highlight"
+                ? "Create highlight..."
+                : "Create announcement..."}
             </p>
           </button>
         </div>

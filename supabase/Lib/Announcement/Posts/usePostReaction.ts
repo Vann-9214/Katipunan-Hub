@@ -18,7 +18,17 @@ export interface ReactionCount {
  * Manages all reaction logic for a single post.
  */
 export function usePostReactions({ postId, userId }: UsePostReactionsProps) {
-  const supabase = createClientComponentClient();
+  const supabase = createClientComponentClient({
+    options: {
+      realtime: {
+        params: {
+          events: {
+            self: "broadcast",
+          },
+        },
+      },
+    },
+  });
 
   const [selectedReactionId, setSelectedReactionId] = useState<string | null>(
     null
@@ -28,83 +38,69 @@ export function usePostReactions({ postId, userId }: UsePostReactionsProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
 
-  // --- 1. Function to fetch ALL reaction data ---
-  const getReactionData = useCallback(async () => {
-    if (!postId) return;
+  // --- 1. THIS IS THE FIXED FUNCTION ---
+  // It no longer depends on or sets 'isInitialLoading'.
+  // It is now a stable utility function.
+  const fetchAllReactionData = useCallback(async () => {
+    if (!postId || !userId) {
+      return;
+    }
 
-    const { data, error } = await supabase.rpc("get_reaction_counts", {
-      p_post_id: postId,
-    });
+    const [aggData, userReactionResult] = await Promise.all([
+      supabase.rpc("get_reaction_counts", { p_post_id: postId }),
+      supabase
+        .from("PostReactions")
+        .select("reaction")
+        .eq("post_id", postId)
+        .eq("user_id", userId)
+        .maybeSingle(),
+    ]);
 
-    if (error) {
-      console.error("Error fetching reaction counts:", error.message);
+    // Handle aggregate data result
+    if (aggData.error) {
+      console.error("Error fetching counts:", aggData.error.message);
       setTopReactions([]);
       setReactionCount(0);
     } else {
-      const reactionData = data as ReactionCount[];
-      setTopReactions(reactionData);
+      const data = aggData.data as ReactionCount[];
+      setTopReactions(data);
 
-      // --- FIXED: Explicitly type acc and item ---
-      const total = reactionData.reduce(
+      const total = data.reduce(
         (acc: number, item: ReactionCount) => acc + item.count,
         0
       );
       setReactionCount(total);
     }
-  }, [supabase, postId]);
 
-  // --- 2. Initial Data Fetching ---
-  useEffect(() => {
-    if (!postId || !userId) {
-      setIsInitialLoading(false);
-      return;
+    // Handle user reaction result
+    if (userReactionResult.error) {
+      console.error("Error fetching reaction:", userReactionResult.error);
+    } else {
+      // @ts-ignore
+      setSelectedReactionId(userReactionResult.data?.reaction || null);
     }
+  }, [supabase, postId, userId]); // <-- Dependencies are stable!
 
-    const fetchInitialData = async () => {
-      setIsInitialLoading(true);
-
-      const [aggData, userReactionResult] = await Promise.all([
-        supabase.rpc("get_reaction_counts", { p_post_id: postId }),
-        supabase
-          .from("PostReactions")
-          .select("reaction")
-          .eq("post_id", postId)
-          .eq("user_id", userId)
-          .maybeSingle(),
-      ]);
-
-      // Handle aggregate data result
-      if (aggData.error) {
-        console.error("Error fetching counts:", aggData.error.message);
-        setTopReactions([]);
-        setReactionCount(0);
-      } else {
-        const data = aggData.data as ReactionCount[];
-        setTopReactions(data);
-        
-        // --- FIXED: Explicitly type acc and item ---
-        const total = data.reduce(
-          (acc: number, item: ReactionCount) => acc + item.count,
-          0
-        );
-        setReactionCount(total);
-      }
-
-      // Handle user reaction result
-      if (userReactionResult.error) {
-        console.error("Error fetching reaction:", userReactionResult.error);
-      } else {
-        // @ts-ignore
-        setSelectedReactionId(userReactionResult.data?.reaction || null);
-      }
-
+  // --- 2. Initial Data Fetching (FIXED) ---
+  // This useEffect now manages its own loading state.
+  // It runs when postId or userId changes.
+  useEffect(() => {
+    if (postId && userId) {
+      const loadInitialData = async () => {
+        setIsInitialLoading(true);
+        await fetchAllReactionData();
+        setIsInitialLoading(false);
+      };
+      loadInitialData();
+    } else {
+      // Not ready to load
       setIsInitialLoading(false);
-    };
+    }
+    // fetchAllReactionData is stable and won't cause loops
+  }, [postId, userId, fetchAllReactionData]);
 
-    fetchInitialData();
-  }, [postId, userId, supabase]);
-
-  // --- 3. Real-time Subscription (UNMODIFIED) ---
+  // --- 3. Real-time Subscription ---
+  // This is now stable because fetchAllReactionData is stable.
   useEffect(() => {
     const channel = supabase
       .channel(`reaction-count-${postId}`)
@@ -117,7 +113,8 @@ export function usePostReactions({ postId, userId }: UsePostReactionsProps) {
           filter: `post_id=eq.${postId}`,
         },
         () => {
-          getReactionData();
+          // This call no longer causes any loading state issues
+          fetchAllReactionData();
         }
       )
       .subscribe();
@@ -125,9 +122,10 @@ export function usePostReactions({ postId, userId }: UsePostReactionsProps) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [supabase, postId, getReactionData]);
+  }, [supabase, postId, fetchAllReactionData]);
 
-  // --- 4. Data Mutation (Optimistic Update - UNMODIFIED) ---
+  // --- 4. Data Mutation (FIXED) ---
+  // The 'finally' block is now correct.
   const updateDatabaseReaction = async (newReactionId: string | null) => {
     if (isLoading) return;
     setIsLoading(true);
@@ -159,18 +157,20 @@ export function usePostReactions({ postId, userId }: UsePostReactionsProps) {
           .eq("user_id", userId);
         if (error) throw error;
       }
-    } catch (error: any) {
+    } catch (error: any)
+    {
       console.error("🔴 Error updating reaction:", error.message);
       setReactionCount(oldReactionCount);
       setSelectedReactionId(oldReactionId);
       alert(`Failed to update reaction: ${error?.message || "Unknown error"}`);
     } finally {
       setIsLoading(false);
-      getReactionData();
+      // This call is now safe and won't trigger 'isInitialLoading'
+      fetchAllReactionData();
     }
   };
 
-  // --- 5. Public Event Handlers (UNMODIFIED) ---
+  // --- 5. Public Event Handlers (Unmodified) ---
   const handleReactionSelect = (id: string) => {
     const newReactionId = selectedReactionId === id ? null : id;
     updateDatabaseReaction(newReactionId);
@@ -181,6 +181,8 @@ export function usePostReactions({ postId, userId }: UsePostReactionsProps) {
     updateDatabaseReaction(newReactionId);
   };
 
+  // --- 6. Export (FIXED) ---
+  // We export the stable fetchAllReactionData function
   return {
     selectedReactionId,
     reactionCount,
@@ -189,5 +191,6 @@ export function usePostReactions({ postId, userId }: UsePostReactionsProps) {
     isInitialLoading,
     handleReactionSelect,
     handleMainButtonClick,
+    getReactionData: fetchAllReactionData, // <-- Export the stable function
   };
 }

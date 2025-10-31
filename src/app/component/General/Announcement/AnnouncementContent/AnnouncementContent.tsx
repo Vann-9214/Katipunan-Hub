@@ -7,7 +7,6 @@ import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import AdvancedFilter from "../General/AdvanceFilter";
 import AddPosts from "../AddPosts/addPosts";
 import TagsFilter from "../General/TagsFilter";
-import ButtonFIlter from "../General/ButtonFilter";
 import HomepageTab from "@/app/component/ReusableComponent/HomepageTab";
 import ToggleButton from "@/app/component/ReusableComponent/ToggleButton";
 import SearchFilter from "../General/SearchFilter";
@@ -18,11 +17,8 @@ import {
   type DBPostRow,
   type PostUI,
   type CurrentUser,
-  type FilterState, // 👈 Import the main filter state type
-  type SortOption,
-  type DateOption,
-  type VisibilityOption,
-} from "../Utils/types"; // 👈 Adjust path as needed
+  type FilterState,
+} from "../Utils/types";
 
 // --- Constants & Utils ---
 import { VISIBILITY, programToCollege } from "../Utils/constants";
@@ -99,10 +95,12 @@ export default function AnnouncementPageContent() {
     async (currentFilters: FilterState, uc: string | null) => {
       console.log("Fetching with filters:", currentFilters);
       try {
+        // ...
         let query = supabase
           .from("Posts")
           .select("*")
-          .filter("type", "in", '("announcement", "highlight")');
+          .in("type", ["announcement", "highlight"]); // <-- RIGHT
+        // ...
 
         // 1. Apply Date Filter
         const dateRange = getDateRange(currentFilters.date);
@@ -287,6 +285,7 @@ export default function AnnouncementPageContent() {
               // Path should be "posts/filename.jpg"
               return urlParts.slice(urlParts.indexOf("posts")).join("/");
             } catch (e) {
+              console.error("Invalid image URL:", e);
               return null;
             }
           })
@@ -398,8 +397,18 @@ export default function AnnouncementPageContent() {
             rightActiveBg="bg-maroon"
             active={activeTab === "announcement" ? "left" : "right"}
             onToggle={(side) => {
-              setActiveTab(side === "left" ? "announcement" : "highlight");
+              const newTab = side === "left" ? "announcement" : "highlight";
+              setActiveTab(newTab);
               setActiveTags([]);
+
+              // If switching to highlights, force the filter state to "Global".
+              if (newTab === "highlight") {
+                setFilters((prev) => ({
+                  ...prev,
+                  visibility: "Global",
+                  date: "All Time",
+                }));
+              }
             }}
           />
         </div>
@@ -408,6 +417,7 @@ export default function AnnouncementPageContent() {
           <AdvancedFilter
             onChange={handleFilterChange}
             initialFilters={filters}
+            isHighlights={activeTab === "highlight"}
           />
           <TagsFilter
             tags={derivedTags}
@@ -447,6 +457,7 @@ export default function AnnouncementPageContent() {
               <Posts
                 key={post.id} // 👈 Use unique ID for key
                 postId={post.id!}
+                type={post.type}
                 userId={id}
                 title={post.title}
                 description={post.description}

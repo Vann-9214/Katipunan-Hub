@@ -1,19 +1,20 @@
-// Posts.tsx
 "use client";
 
-import CommentButton from "./commentButton";
+// --- 1. Import the modal hook AND your new hook ---
+import { usePostModal } from "./Comment/postModalContext";
+import { useCommentCount } from "../../../../../../supabase/Lib/Announcement/Posts/useCommentCount";
+
+import CommentButton from "./Comment/commentButton";
 import ReactButton from "./reactButton";
 import Image from "next/image";
 import ImageAttachments from "../ImageAttachment/ImageAttachments";
-import { TextButton } from "../../../ReusableComponent/Buttons";
 import EditPostsButton from "../General/EditPostsButton";
 
-// --- 1. Import the new hook and component ---
 import { usePostReactions } from "../../../../../../supabase/Lib/Announcement/Posts/usePostReaction";
 import ReactionSummary from "./reactionSummary";
-// (We no longer need formatCompactNumber here)
 
-interface PostsProps {
+// --- 3. Make sure 'export' is here ---
+export interface PostsProps {
   postId: string;
   userId?: string;
   title?: string;
@@ -23,40 +24,73 @@ interface PostsProps {
   onEdit?: () => void;
   onDelete?: () => void;
   canEdit?: boolean;
+  type: "announcement" | "highlight"; // <-- Make sure this is here from our previous fix
 }
 
-export default function Posts({
-  postId,
-  userId,
-  title = "Title",
-  description = "Description",
-  date = "Date",
-  images = [],
-  onEdit,
-  onDelete,
-  canEdit = false,
-}: PostsProps) {
-  // --- 2. Use the combined hook ---
+// --- 2. UPDATED helper function ---
+const formatCommentCount = (count: number) => {
+  if (count === 0) {
+    return null; // <-- FIX: Return nothing if 0
+  }
+  if (count === 1) {
+    return "1 comment";
+  }
+  if (count < 1000) {
+    return `${count} comments`;
+  }
+  // Format to 1k, 1.1k etc.
+  return `${(count / 1000).toFixed(count % 1000 === 0 ? 0 : 1)}k comments`;
+};
+
+export default function Posts(props: PostsProps) {
+  const {
+    postId,
+    userId,
+    title = "Title",
+    description = "Description",
+    date = "Date",
+    images = [],
+    onEdit,
+    onDelete,
+    canEdit = false,
+  } = props; // Get all props
+
+  const { openPostModal } = usePostModal();
+
+  // --- 3. GET 'count' AND 'refreshCount' ---
+  const { count: commentCount, refreshCount } = useCommentCount(postId);
+
+  // --- 4. GET 'getReactionData' ---
   const {
     selectedReactionId,
     reactionCount,
-    topReactions, // <-- Get the new data
+    topReactions,
     isLoading,
     isInitialLoading,
     handleReactionSelect,
     handleMainButtonClick,
+    getReactionData, // <-- This is the reaction refresh function
   } = usePostReactions({
     postId: postId,
     userId: userId || "",
   });
 
+  // --- 5. CREATE A *COMBINED* REFRESH FUNCTION ---
+  const handleModalClose = () => {
+    getReactionData(); // Refreshes reactions
+    refreshCount(); // Refreshes comment count
+  };
+
+  const handleCommentClick = () => {
+    // --- 6. PASS THE *COMBINED* FUNCTION ---
+    openPostModal(props, handleModalClose);
+  };
+
   return (
     <div>
-      {/* ... (Omitted for brevity: Outer container, inner container, header...) ... */}
       <div className="w-[590px] bg-gold rounded-[15px] p-[5px]">
         <div className="w-[580px] bg-darkmaroon rounded-t-[10px] flex flex-col">
           {/* ... (Post header, title, description, images - UNCHANGED) ... */}
-          {/* ... */}
           <div className="flex items-start justify-between mt-[15px] mx-[15px]">
             <div className="flex">
               <div className="select-none">
@@ -101,13 +135,12 @@ export default function Posts({
             {description}
           </div>
           <div className="select-none">
-            <ImageAttachments images={images} />
+            <ImageAttachments images={images || []} />
           </div>
         </div>
 
         {/* Bottom buttons */}
         <div className="px-5 py-1 flex items-center">
-          {/* --- 3. Use the new ReactionSummary component --- */}
           <div className="mr-auto">
             <ReactionSummary
               topReactions={topReactions}
@@ -115,16 +148,20 @@ export default function Posts({
               isLoading={isInitialLoading}
             />
           </div>
-          <TextButton
-            text="Comment"
-            textSize="text-[22px]"
-            fontSize="font-medium"
-          />
+
+          {/* This div now renders the count */}
+          <div
+            className="cursor-pointer font-montserrat font-medium text-[20px] text-black hover:underline"
+            onClick={handleCommentClick}
+          >
+            {formatCommentCount(commentCount)}
+          </div>
         </div>
+
         <div className="flex justify-between items-center">
-          {/* --- (This section is unchanged) --- */}
           {userId ? (
             <ReactButton
+              width={"full"}
               selectedReactionId={selectedReactionId}
               isLoading={isLoading}
               onReactionSelect={handleReactionSelect}
@@ -136,7 +173,10 @@ export default function Posts({
               Like
             </div>
           )}
-          <CommentButton />
+
+          <div className="w-full" onClick={handleCommentClick}>
+            <CommentButton />
+          </div>
         </div>
       </div>
     </div>

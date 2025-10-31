@@ -1,7 +1,7 @@
 // PostAudienceSelector.tsx
 
 import React, { useState } from "react";
-import { ArrowLeft, Globe, School, Circle, CircleDot } from "lucide-react";
+import { ArrowLeft, Globe, School, Circle } from "lucide-react";
 import { Combobox } from "@/app/component/ReusableComponent/Combobox"; // Make sure this path is correct
 
 interface PostAudienceSelectorProps {
@@ -123,7 +123,7 @@ export default function PostAudienceSelector({
               <div>
                 <p className="font-semibold text-gray-900 text-left">College</p>
                 <p className="text-sm text-gray-600 text-left">
-                  Certain college's will see
+                  Certain colleges will see
                 </p>
               </div>
             </div>

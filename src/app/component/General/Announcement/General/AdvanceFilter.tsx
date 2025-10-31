@@ -25,6 +25,9 @@ interface AdvancedFilterProps {
     date: DateOption;
     visibility: VisibilityOption;
   };
+  // --- ADDED ---
+  // Add new prop to determine the context
+  isHighlights?: boolean;
 }
 
 // Default state
@@ -37,23 +40,64 @@ const DEFAULT_FILTERS: FilterState = {
 export default function AdvancedFilter({
   onChange,
   initialFilters = DEFAULT_FILTERS,
+  isHighlights = false, // --- ADDED ---
 }: AdvancedFilterProps) {
   // State for the popover
   const [isOpen, setIsOpen] = useState(false);
 
+  // --- MODIFIED ---
+  // Force visibility to "Global" if in highlights section
+  const effectiveInitialFilters = {
+    ...initialFilters,
+    ...(isHighlights && { visibility: "Global" as VisibilityOption }),
+  };
+
   // This is the *applied* filter state
-  const [activeFilters, setActiveFilters] =
-    useState<FilterState>(initialFilters);
+  const [activeFilters, setActiveFilters] = useState<FilterState>(
+    effectiveInitialFilters
+  ); // --- MODIFIED ---
 
   // This is the *temporary* state while the popover is open
-  const [tempFilters, setTempFilters] = useState<FilterState>(activeFilters);
+  const [tempFilters, setTempFilters] = useState<FilterState>(
+    effectiveInitialFilters
+  ); // --- MODIFIED ---
 
+  // --- ADDED ---
+  // This effect ensures that if the isHighlights prop changes dynamically,
+  // the component state is corrected to "Global".
+  // --- This is the fixed code ---
+  useEffect(() => {
+    if (isHighlights && activeFilters.visibility !== "Global") {
+      const globalOnlyFilters = {
+        ...activeFilters,
+        visibility: "Global" as VisibilityOption,
+      };
+
+      setActiveFilters(globalOnlyFilters);
+      setTempFilters(globalOnlyFilters);
+      onChange(globalOnlyFilters);
+    }
+  }, [isHighlights, activeFilters, onChange]);
+
+  // Update temp state when popover opens
+  // ...
   // Update temp state when popover opens
   useEffect(() => {
     if (isOpen) {
-      setTempFilters(activeFilters);
+      // --- THIS IS THE FIX ---
+      // Before setting the temp state, check if we are on the Highlights tab
+      // and if the active filter is still something wrong (like "Course").
+      if (isHighlights && activeFilters.visibility !== "Global") {
+        // If it's wrong, force the popover's state to "Global".
+        setTempFilters({ ...activeFilters, visibility: "Global" });
+      } else {
+        // Otherwise, just show the currently active filter as normal.
+        setTempFilters(activeFilters);
+      }
+      // --- END FIX ---
     }
-  }, [isOpen, activeFilters]);
+  }, [isOpen, activeFilters, isHighlights]); // <-- Add 'isHighlights' to the dependency array
+  // ...
 
   const handleToggleOpen = () => {
     setIsOpen(!isOpen);
@@ -139,6 +183,9 @@ export default function AdvancedFilter({
                 visibility: val as VisibilityOption,
               }))
             }
+            // --- ADDED ---
+            // Pass the options to disable
+            disabledOptions={isHighlights ? ["Course", "All"] : []}
           />
 
           {/* --- Action Buttons --- */}
@@ -170,6 +217,7 @@ interface FilterRadioGroupProps {
   options: string[];
   activeOption: string;
   onChange: (option: string) => void;
+  disabledOptions?: string[]; // --- ADDED ---
 }
 
 function FilterRadioGroup({
@@ -177,33 +225,43 @@ function FilterRadioGroup({
   options,
   activeOption,
   onChange,
+  disabledOptions = [], // --- ADDED ---
 }: FilterRadioGroupProps) {
   return (
     <div className="mb-4 border-b pb-4">
       <span className="text-sm font-semibold text-gray-500">{label}</span>
       <div className="mt-2 flex flex-wrap items-center gap-3">
-        {options.map((option) => (
-          <button
-            key={option}
-            onClick={() => onChange(option)}
-            className="flex items-center gap-2 rounded-full border border-gray-300 px-4 py-1.5 transition-all cursor-pointer"
-          >
-            {activeOption === option ? (
-              <Circle size={18} className="text-maroon" fill="currentColor" />
-            ) : (
-              <Circle size={18} className="text-gray-400" />
-            )}
-            <span
-              className={`text-[15px] ${
-                activeOption === option
-                  ? "font-semibold text-maroon"
-                  : "font-medium text-gray-600"
+        {options.map((option) => {
+          // --- ADDED ---
+          const isDisabled = disabledOptions.includes(option);
+
+          return (
+            <button
+              key={option}
+              onClick={() => onChange(option)}
+              disabled={isDisabled} // --- ADDED ---
+              className={`flex items-center gap-2 rounded-full border border-gray-300 px-4 py-1.5 transition-all ${
+                // --- MODIFIED ---
+                isDisabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"
               }`}
             >
-              {option}
-            </span>
-          </button>
-        ))}
+              {activeOption === option ? (
+                <Circle size={18} className="text-maroon" fill="currentColor" />
+              ) : (
+                <Circle size={18} className="text-gray-400" />
+              )}
+              <span
+                className={`text-[15px] ${
+                  activeOption === option
+                    ? "font-semibold text-maroon"
+                    : "font-medium text-gray-600"
+                }`}
+              >
+                {option}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

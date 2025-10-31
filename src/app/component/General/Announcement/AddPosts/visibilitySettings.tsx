@@ -15,7 +15,6 @@ interface VisibilitySettingsProps {
 export default function VisibilitySettings({
   visibleTo,
   // visibleCollege is received as a prop but not passed to Combobox
-  visibleCollege,
   onVisibleToChange,
   onVisibleCollegeChange,
 }: VisibilitySettingsProps) {
