@@ -158,11 +158,15 @@ export default function CalendarContent() {
     if ("name" in ev && ev.name) return String(ev.name);
     return String(ev.title ?? ev.name ?? "");
   };
-
-  const randomColor = () => {
-    const colors = ["#C4E1A4", "#FAD6A5", "#A0D8EF", "#F6B6B6", "#D9B3FF"];
-    return colors[Math.floor(Math.random() * colors.length)];
-  };
+const getEventColor = (label: string) => {
+  const colors = ["#C4E1A4", "#FAD6A5", "#A0D8EF", "#F6B6B6", "#D9B3FF"];
+  let hash = 0;
+  for (let i = 0; i < label.length; i++) {
+    hash = label.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % colors.length;
+  return colors[index];
+};
 
   // ---------------------
   // JSX
@@ -338,7 +342,8 @@ export default function CalendarContent() {
                         <div
                           key={i}
                           className="text-[10px] text-center rounded-md px-[2px] py-[1px] text-black truncate"
-                          style={{ backgroundColor: randomColor() }}
+                          style={{ backgroundColor: getEventColor(getEventLabel(event)) }}
+
                         >
                           {getEventLabel(event)}
                         </div>
