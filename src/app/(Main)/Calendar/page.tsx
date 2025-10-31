@@ -1,4 +1,4 @@
-import HomepageTab from "@/app/component/ReusableComponent/HomepageTab";
+import HomepageTab from "@/app/component/ReusableComponent/HomepageTab/HomepageTab";
 import CalendarContent from "@/app/component/General/Calendar/CalendarContent";
 
 export default function Calendar() {

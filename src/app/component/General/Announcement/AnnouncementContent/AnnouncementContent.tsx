@@ -7,7 +7,7 @@ import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import AdvancedFilter from "../General/AdvanceFilter";
 import AddPosts from "../AddPosts/addPosts";
 import TagsFilter from "../General/TagsFilter";
-import HomepageTab from "@/app/component/ReusableComponent/HomepageTab";
+import HomepageTab from "@/app/component/ReusableComponent/HomepageTab/HomepageTab";
 import ToggleButton from "@/app/component/ReusableComponent/ToggleButton";
 import SearchFilter from "../General/SearchFilter";
 import Posts from "../Posts/Posts";

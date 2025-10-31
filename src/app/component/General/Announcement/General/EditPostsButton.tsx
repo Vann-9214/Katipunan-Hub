@@ -61,7 +61,7 @@ export default function EditPostsButton({
           {/* Edit Post */}
           <button
             onClick={handleEdit}
-            className="flex items-center gap-2 w-full text-left px-2 py-1 mb-1 rounded-md hover:bg-gray-200 transition font-montserrat font-medium text-[16px] text-[#333]"
+            className="cursor-pointer flex items-center gap-2 w-full text-left px-2 py-1 mb-1 rounded-md hover:bg-gray-200 transition font-montserrat font-medium text-[16px] text-[#333]"
           >
             <Image
               src="/Edit.svg"
@@ -76,7 +76,7 @@ export default function EditPostsButton({
           {/* Remove Post */}
           <button
             onClick={handleRemove}
-            className="flex items-center gap-2 w-full text-left px-2 py-1 rounded-md hover:bg-gray-200 transition font-montserrat font-medium text-[16px] text-[#333]"
+            className="cursor-pointer flex items-center gap-2 w-full text-left px-2 py-1 rounded-md hover:bg-gray-200 transition font-montserrat font-medium text-[16px] text-[#333]"
           >
             <Image
               src="/Trash.svg"

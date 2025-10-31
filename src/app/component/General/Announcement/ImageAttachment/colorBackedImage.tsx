@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+// No next/image import needed here
 import { useAverageColor } from "../../../../../../supabase/Lib/Announcement/ImageAttachment/useAverageColor";
 
 interface ColorBackedImageProps {
@@ -24,6 +25,11 @@ export function ColorBackedImage({
 
   return (
     <div className={containerClassName} style={{ backgroundColor: bgColor }}>
+      {/* This is the fix. 
+        We are disabling the Next.js warning because for this specific
+        flexible layout, the <img> tag is the correct tool.
+      */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         ref={imgRef}
         src={src}

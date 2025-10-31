@@ -83,7 +83,7 @@ export default function PostModal() {
             </span>
             <button
               onClick={closePostModal}
-              className="p-1 rounded-full text-white hover:bg-white/20 absolute right-2"
+              className="cursor-pointer p-1 rounded-full text-white hover:bg-white/20 absolute right-2"
             >
               <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
                 <path

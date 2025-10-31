@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import { Montserrat, PT_Sans } from "next/font/google";
 import "./globals.css";
 
-// --- 1. Import the new components ---
-// --- Make sure these paths are correct for your project! ---
 import { PostModalProvider } from "@/app/component/General/Announcement/Posts/Comment/postModalContext";
 import PostModal from "./component/General/Announcement/Posts/Comment/PostModal";
+// --- 1. Import your new provider ---
+import { ImageLightboxProvider } from "./component/General/Announcement/ImageAttachment/imageLightboxContent";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -32,13 +32,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${montserrat.variable} ${ptsans.variable} antialiased`}>
-        {/* --- 2. Wrap your children with the provider --- */}
-        <PostModalProvider>
-          {children}
-
-          {/* --- 3. Render the Modal component (it's hidden by default) --- */}
-          <PostModal />
-        </PostModalProvider>
+        {/* --- 2. Wrap your PostModalProvider with the new one --- */}
+        <ImageLightboxProvider>
+          <PostModalProvider>
+            {children}
+            <PostModal />
+          </PostModalProvider>
+        </ImageLightboxProvider>
       </body>
     </html>
   );
