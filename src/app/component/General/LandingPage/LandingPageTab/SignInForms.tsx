@@ -1,7 +1,6 @@
 "use client";
 
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { motion } from "framer-motion";
 
@@ -17,7 +16,6 @@ interface SignInFormProps {
 
 export default function SignInForm({ onClose, onSwitch }: SignInFormProps) {
   const supabase = createClientComponentClient();
-  const router = useRouter();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -134,6 +132,7 @@ export default function SignInForm({ onClose, onSwitch }: SignInFormProps) {
             transition={{ delay: 0.4, duration: 0.5 }}
           >
             <ToggleButton
+              textSize="text-[23px]"
               leftLabel="Sign In"
               rightLabel="Sign Up"
               active="left"

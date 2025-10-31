@@ -2,10 +2,15 @@ import type { Metadata } from "next";
 import { Montserrat, PT_Sans } from "next/font/google";
 import "./globals.css";
 
+import { PostModalProvider } from "@/app/component/General/Announcement/Posts/Comment/postModalContext";
+import PostModal from "./component/General/Announcement/Posts/Comment/PostModal";
+// --- 1. Import your new provider ---
+import { ImageLightboxProvider } from "./component/General/Announcement/ImageAttachment/imageLightboxContent";
+
 const montserrat = Montserrat({
   subsets: ["latin"],
   variable: "--font-montserrat",
-  weight: ["400", "500", "700"], // choose weights you need
+  weight: ["400", "500", "700"],
 });
 
 const ptsans = PT_Sans({
@@ -27,7 +32,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${montserrat.variable} ${ptsans.variable} antialiased`}>
-        {children}
+        {/* --- 2. Wrap your PostModalProvider with the new one --- */}
+        <ImageLightboxProvider>
+          <PostModalProvider>
+            {children}
+            <PostModal />
+          </PostModalProvider>
+        </ImageLightboxProvider>
       </body>
     </html>
   );
