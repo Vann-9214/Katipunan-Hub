@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import UploadButton from "@/app/component/General/Announcement/UploadButton/UploadButton";
 import Button, {
   ImageButton,
   TextButton,
@@ -21,17 +20,6 @@ export default function ButtonPage() {
         <Button text="Click Me" />
         <TextButton text="Hello" />
         <ImageButton src="Open Eye Icon.svg" />
-      </div>
-
-      {/* Upload Button */}
-      <div className="w-full max-w-md mt-6">
-        <h2 className="text-lg font-semibold text-[#732626] mb-2">
-          Image Upload Test
-        </h2>
-        <UploadButton
-          onUpload={handleUpload}
-          predefinedImages={uploadedImages}
-        />
       </div>
 
       {/* Display current image data (for debug/confirmation) */}
