@@ -3,6 +3,7 @@
 
 import { Search, Maximize2, MoreHorizontal } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 // Assuming this path is correct for your supabase setup
 import {
   supabase,
@@ -29,12 +30,10 @@ function PopupConversationItem({
 }) {
   // Determine if the conversation is 'active' (has unread messages)
   const isActive = conversation.unreadCount > 0;
-
+  const router = useRouter();
   // Handle click instead of navigating
   const handleClick = () => {
-    console.log(
-      `Clicked conversation: ${conversation.otherUserName}. Navigation is currently disabled.`
-    );
+    router.push(`/Message/${conversation.id}`);
     // Add logic here later to open the chat window
   };
 
@@ -100,6 +99,7 @@ export default function ChatPopup() {
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<FullUser | null>(null);
+  const router = useRouter();
 
   // 1. Fetch current user on mount
   useEffect(() => {
@@ -208,7 +208,7 @@ export default function ChatPopup() {
 
   // Function to handle the 'See all in chats' click (non-navigable for now)
   const handleSeeAllChats = () => {
-    console.log("See all chats clicked. Navigation is currently disabled.");
+    router.push("/Message");
   };
 
   return (
@@ -217,8 +217,12 @@ export default function ChatPopup() {
       <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
         <h2 className="text-xl font-bold text-gray-800">Chats</h2>
         {/* Replaced Link with a non-navigable element for now */}
-        <div onClick={handleSeeAllChats} title="See all chats">
-          <Maximize2 className="w-5 h-5 cursor-pointer text-[#8B0E0E] hover:text-[#FFC9C9]" />
+        <div
+          onClick={handleSeeAllChats}
+          title="See all chats"
+          className="cursor-pointer"
+        >
+          <Maximize2 className="w-5 h-5 text-[#8B0E0E] hover:text-[#FFC9C9]" />
         </div>
       </div>
 

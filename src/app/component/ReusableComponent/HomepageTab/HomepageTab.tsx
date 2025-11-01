@@ -14,7 +14,8 @@ import {
   CalendarDays,
   Package,
 } from "lucide-react";
-import { useState } from "react";
+// --- ADDED ---
+import { useState, useEffect } from "react";
 import ChatPopup from "./chatPopup"; // Assuming ChatPopup is one level down
 
 const navItems = [
@@ -35,6 +36,20 @@ export default function HomepageTab() {
     p.endsWith("/") && p !== "/" ? p.slice(0, -1) : p;
 
   const currentPath = normalize(pathname);
+
+  // --- ADDED: Check if we are on the Message page ---
+  // This will be true for "/Message", "/Message/123", etc.
+  const isOnMessagePage = pathname.startsWith("/Message");
+
+  // --- ADDED: A small helper Effect ---
+  // This closes the popup if the user navigates to the Message page
+  // while the popup is open.
+  useEffect(() => {
+    if (isOnMessagePage) {
+      setIsChatPopupOpen(false);
+    }
+  }, [isOnMessagePage]);
+  // --- END ADDITIONS ---
 
   return (
     // Increased z-index to 20 to ensure the popup renders above other elements
@@ -63,36 +78,47 @@ export default function HomepageTab() {
 
       {/* Right: User Icons */}
       <div className="flex gap-8 items-center text-black relative">
-        {/* Chat Icon - Click to toggle popup */}
-        <MessageCircle
-          className="w-8 h-8 cursor-pointer transition-colors hover:text-[#8B0E0E]"
-          // 2. Add click handler to toggle state
-          onClick={() => setIsChatPopupOpen(!isChatPopupOpen)}
-        />
+        {/* --- ADDED: Conditional rendering --- */}
+        {/* Only show the chat icon and popup if we are NOT on the message page */}
+        {!isOnMessagePage && (
+          <>
+            {/* Chat Icon - Click to toggle popup */}
+            <MessageCircle
+              className="w-8 h-8 cursor-pointer transition-colors hover:text-[#8B0E0E]"
+              // 2. Add click handler to toggle state
+              onClick={() => setIsChatPopupOpen(!isChatPopupOpen)}
+            />
+
+            {/* 3. Conditionally render the Chat Popup */}
+            {isChatPopupOpen && (
+              <>
+                <div
+                  className="absolute top-[80px] right-0 z-30"
+                  // Prevent closing if clicking inside the popup
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {/* Ensure your ChatPopup component path is correct */}
+                  <ChatPopup />
+                </div>
+                {/* 4. Overlay to close the popup when clicking outside */}
+                <div
+                  className="fixed inset-0 z-20"
+                  onClick={() => setIsChatPopupOpen(false)}
+                />
+              </>
+            )}
+          </>
+        )}
+        {/* --- END ADDED --- */}
 
         <Bell className="w-8 h-8 cursor-pointer transition-colors hover:text-[#8B0E0E]" />
         <Link href="/">
           <User className="w-8 h-8 cursor-pointer transition-colors hover:text-[#8B0E0E]" />
         </Link>
 
-        {/* 3. Conditionally render the Chat Popup */}
-        {isChatPopupOpen && (
-          <>
-            <div
-              className="absolute top-[80px] right-0 z-30"
-              // Prevent closing if clicking inside the popup
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Ensure your ChatPopup component path is correct */}
-              <ChatPopup />
-            </div>
-            {/* 4. Overlay to close the popup when clicking outside */}
-            <div
-              className="fixed inset-0 z-20"
-              onClick={() => setIsChatPopupOpen(false)}
-            />
-          </>
-        )}
+        {/* NOTE: The original Chat Popup logic (point 3) was moved 
+          INSIDE the conditional {!isOnMessagePage} block. 
+        */}
       </div>
     </header>
   );
