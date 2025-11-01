@@ -187,48 +187,65 @@ export default function ConversationWindow() {
   }, [conversationId, currentUser?.id]);
 
   // 4. Handle sending a message
+  // 4. Handle sending a message
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !currentUser?.id || !conversationId) return;
 
-    // --- START OF FIX: Use Broadcast on send ---
+    // --- START OF FIX: This will give us a REAL error message ---
 
-    // 1. Create the message object first
+    // 1. Log the exact values we are sending
+    console.log("--- DEBUGGING: ATTEMPTING TO SEND ---");
+    console.log("currentUser.id:", currentUser.id);
+    console.log("conversationId:", conversationId);
+
     const messagePayload = {
       content: newMessage.trim(),
       sender_id: currentUser.id,
       conversation_id: conversationId,
     };
 
-    // 2. Clear the input *immediately* (Optimistic UI)
     setNewMessage("");
 
     // 3. Insert the message into the database
-    // We add .select().single() to get the full message back
+    //    We changed .select().single() to just .select()
     const { data: newMessageData, error } = await supabase
       .from("Messages")
       .insert(messagePayload)
-      .select()
-      .single();
+      .select(); // <-- THE CHANGE IS HERE!
 
     if (error) {
-      console.error("Error sending message:", error);
-      // If it failed, put the message back in the input to let the user retry
+      // THIS WILL NO LONGER BE {}
+      // This will now be a detailed PostgrestError.
+      console.error("--- !!! REAL RLS INSERT ERROR !!! ---:", error);
+      console.log("Error details:", error.message, error.code, error.details);
+
       setNewMessage(messagePayload.content);
       return;
     }
 
-    // 4. Add to your *own* screen instantly
-    // This is the "instant send" for the sender
-    setMessages((currentMessages) => [...currentMessages, newMessageData]);
+    // If the insert worked but the SELECT policy failed, we'd get this:
+    if (!newMessageData || newMessageData.length === 0) {
+      console.error("--- !!! REAL RLS SELECT ERROR !!! ---");
+      console.error(
+        "Insert succeeded, but .select() returned no data. Check your SELECT RLS policy."
+      );
+      setNewMessage(messagePayload.content);
+      return;
+    }
 
-    // 5. --- NEW PART: BROADCAST THE MESSAGE ---
-    // This sends the message directly to the other user
+    // 4. Get the message from the array
+    const theMessage = newMessageData[0];
+
+    // 5. Add to your *own* screen instantly
+    setMessages((currentMessages) => [...currentMessages, theMessage]);
+
+    // 6. --- BROADCAST THE MESSAGE ---
     const channel = supabase.channel(`messages_${conversationId}`);
     channel.send({
       type: "broadcast",
       event: "new_message",
-      payload: newMessageData, // Send the full message object we got from .select()
+      payload: theMessage, // Send the full message object
     });
 
     // --- END OF FIX ---
