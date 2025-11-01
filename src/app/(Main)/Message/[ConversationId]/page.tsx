@@ -40,7 +40,6 @@ export default function ConversationWindow() {
     const fetchUser = async () => {
       const user = await getCurrentUserDetails();
       setCurrentUser(user);
-      // --- DEBUG LOG ---
       console.log("1. Current User Fetched:", user);
     };
     fetchUser();
@@ -51,9 +50,8 @@ export default function ConversationWindow() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // 3. Fetch messages and conversation details
+  // 3. Fetch messages and conversation details (NO REALTIME)
   useEffect(() => {
-    // --- DEBUG LOG ---
     console.log(
       "3. Firing main data useEffect. conversationId:",
       conversationId,
@@ -62,9 +60,7 @@ export default function ConversationWindow() {
     );
 
     if (!conversationId || !currentUser?.id) {
-      if (!conversationId) setLoading(false); // No ID, so not loading
-
-      // --- DEBUG LOG ---
+      if (!conversationId) setLoading(false);
       console.warn(
         "Returning early: No conversationId or current user ID yet."
       );
@@ -73,7 +69,6 @@ export default function ConversationWindow() {
 
     const fetchConversationData = async () => {
       try {
-        // --- DEBUG LOG ---
         console.log("3a. Fetching convo data for ID:", conversationId);
 
         // A. Get conversation
@@ -86,7 +81,6 @@ export default function ConversationWindow() {
         if (convoError) throw convoError;
         if (!convoData) throw new Error("Conversation not found");
 
-        // --- DEBUG LOG ---
         console.log("3b. Convo data found:", convoData);
 
         // B. Identify other user
@@ -95,10 +89,9 @@ export default function ConversationWindow() {
             ? convoData.user_b_id
             : convoData.user_a_id;
 
-        // --- DEBUG LOG ---
         console.log("3c. Identified otherUserId:", otherUserId);
 
-        // C. Get other user's details AND all messages at the same time
+        // C. Get other user's details AND all messages
         const [accountResult, messagesResult] = await Promise.all([
           supabase
             .from("Accounts")
@@ -112,7 +105,6 @@ export default function ConversationWindow() {
             .order("created_at", { ascending: true }),
         ]);
 
-        // --- !! IMPORTANT DEBUG LOGS !! ---
         console.log("3d. Account Query Result:", accountResult);
         console.log("3e. Messages Query Result:", messagesResult);
 
@@ -121,21 +113,16 @@ export default function ConversationWindow() {
 
         // D. Set states
         if (accountResult.data) {
-          // --- DEBUG LOG ---
           console.log("3f. Setting other user state with:", accountResult.data);
           setOtherUser(accountResult.data);
         } else {
-          // --- DEBUG LOG ---
-          console.warn(
-            "3f. Account query returned NO DATA (data is null). This is likely the problem."
-          );
+          console.warn("3f. Account query returned NO DATA (data is null).");
         }
 
         if (messagesResult.data) {
           setMessages(messagesResult.data);
         }
       } catch (error) {
-        // --- !! IMPORTANT DEBUG LOG !! ---
         console.error("--- !!! ERROR in fetchConversationData !!! ---:", error);
       } finally {
         setLoading(false);
@@ -144,55 +131,16 @@ export default function ConversationWindow() {
 
     fetchConversationData();
 
-    // --- START OF FIX: Subscribe to Broadcast events ---
-    // E. Subscribe to new messages via BROADCAST
-    const channel = supabase
-      .channel(`messages_${conversationId}`)
-      .on(
-        "broadcast", // Listen for "broadcast"
-        { event: "new_message" }, // Match the custom event name
-        (payload) => {
-          console.log("Broadcast: New message received!", payload);
-
-          // The data is inside "payload.payload"
-          const newMessage = payload.payload as Message;
-
-          // Add the new message to the state
-          setMessages((currentMessages) => {
-            // Avoid adding duplicates (e.g., if you sent it and received your own broadcast)
-            if (currentMessages.find((m) => m.id === newMessage.id)) {
-              return currentMessages;
-            }
-            // Add the new message from the other user
-            return [...currentMessages, newMessage];
-          });
-        }
-      )
-      .subscribe((status, err) => {
-        if (status === "SUBSCRIBED") {
-          console.log(
-            `Successfully subscribed to channel: messages_${conversationId}`
-          );
-        }
-        if (status === "CHANNEL_ERROR" || err) {
-          console.error("Failed to subscribe to channel:", err);
-        }
-      });
-    // --- END OF FIX ---
-
-    // Cleanup subscription
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    // --- REALTIME CODE REMOVED ---
+    // The channel subscription logic that was here is now gone.
   }, [conversationId, currentUser?.id]);
 
-  // 4. Handle sending a message
   // 4. Handle sending a message
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !currentUser?.id || !conversationId) return;
 
-    // --- START OF FIX: This will give us a REAL error message ---
+    // --- DEBUGGING CODE IS STILL HERE ---
 
     // 1. Log the exact values we are sending
     console.log("--- DEBUGGING: ATTEMPTING TO SEND ---");
@@ -208,29 +156,28 @@ export default function ConversationWindow() {
     setNewMessage("");
 
     // 3. Insert the message into the database
-    //    We changed .select().single() to just .select()
+    //    We are still using .select() to get the real error
     const { data: newMessageData, error } = await supabase
       .from("Messages")
       .insert(messagePayload)
-      .select(); // <-- THE CHANGE IS HERE!
+      .select(); // <-- Kept this for debugging
 
     if (error) {
-      // THIS WILL NO LONGER BE {}
-      // This will now be a detailed PostgrestError.
+      // THIS WILL SHOW THE REAL RLS ERROR
       console.error("--- !!! REAL RLS INSERT ERROR !!! ---:", error);
       console.log("Error details:", error.message, error.code, error.details);
 
-      setNewMessage(messagePayload.content);
+      setNewMessage(messagePayload.content); // Put message back
       return;
     }
 
-    // If the insert worked but the SELECT policy failed, we'd get this:
+    // Check if SELECT RLS policy failed
     if (!newMessageData || newMessageData.length === 0) {
       console.error("--- !!! REAL RLS SELECT ERROR !!! ---");
       console.error(
         "Insert succeeded, but .select() returned no data. Check your SELECT RLS policy."
       );
-      setNewMessage(messagePayload.content);
+      setNewMessage(messagePayload.content); // Put message back
       return;
     }
 
@@ -238,17 +185,11 @@ export default function ConversationWindow() {
     const theMessage = newMessageData[0];
 
     // 5. Add to your *own* screen instantly
+    // THIS IS THE "AUTO SEND" YOU WANTED
     setMessages((currentMessages) => [...currentMessages, theMessage]);
 
-    // 6. --- BROADCAST THE MESSAGE ---
-    const channel = supabase.channel(`messages_${conversationId}`);
-    channel.send({
-      type: "broadcast",
-      event: "new_message",
-      payload: theMessage, // Send the full message object
-    });
-
-    // --- END OF FIX ---
+    // --- REALTIME CODE REMOVED ---
+    // The channel.send() logic that was here is now gone.
   };
 
   // --- Render ---
