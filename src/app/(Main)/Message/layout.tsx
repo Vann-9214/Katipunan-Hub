@@ -1,5 +1,5 @@
 // app/Message/layout.tsx
-import ChatSidebar from "@/app/component/ReusableComponent/HomepageTab/sidebar";
+import ChatSidebar from "@/app/component/General/Message/Sidebar/sidebar";
 import HomepageTab from "@/app/component/ReusableComponent/HomepageTab/HomepageTab";
 
 export default function MessageLayout({

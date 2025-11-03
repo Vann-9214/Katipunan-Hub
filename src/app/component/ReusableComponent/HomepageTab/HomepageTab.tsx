@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 // --- ADDED ---
 import { useState, useEffect } from "react";
-import ChatPopup from "./chatPopup"; // Assuming ChatPopup is one level down
+import ChatPopup from "../../General/Message/ChatPopup/chatPopup"; // Assuming ChatPopup is one level down
 
 const navItems = [
   { href: "/Announcement", icon: Megaphone, name: "Announcement" },

@@ -8,7 +8,7 @@ import {
   getCurrentUserDetails,
   FullUser,
   getSortedUserPair,
-} from "../../../../../../supabase/Lib/General/auth"; // Adjust this path as needed
+} from "../../../../../../supabase/Lib/Message/auth"; // Adjust this path as needed
 
 // --- Types ---
 interface OtherUser {

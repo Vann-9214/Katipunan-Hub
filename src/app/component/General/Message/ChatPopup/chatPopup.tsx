@@ -1,107 +1,18 @@
-// ChatPopup.tsx
 "use client";
 
-import { Search, Maximize2, MoreHorizontal } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Search, Maximize2 } from "lucide-react"; // Icons for this component
+import { useState, useEffect } from "react"; // Only hooks needed here
 import { useRouter } from "next/navigation";
 // Assuming this path is correct for your supabase setup
 import {
   supabase,
   getCurrentUserDetails,
   FullUser,
-} from "../../../../../supabase/Lib/General/auth";
+} from "../../../../../../supabase/Lib/Message/auth";
 
-// --- Types ---
-interface ConversationItem {
-  id: string;
-  otherUserName: string;
-  lastMessagePreview: string;
-  avatarURL: string | null;
-  timestamp: string; // Formatted time
-  unreadCount: number; // Crucial for 'active' state
-}
-
-// Single Conversation Item Component
-function PopupConversationItem({
-  conversation,
-}: {
-  conversation: ConversationItem;
-}) {
-  const isActive = conversation.unreadCount > 0;
-  const router = useRouter();
-
-  // Handle click instead of navigating
-  const handleClick = () => {
-    // --- START OF FIX & DEBUGGING ---
-    const navPath = `/Message/${conversation.id}`;
-    console.log(
-      `[DEBUG] PopupConversationItem: Clicked. Queuing navigation to: ${navPath}`
-    );
-
-    // FIX: Wrap in setTimeout to prevent race condition.
-    // This lets the popup close state update *before* we navigate.
-    setTimeout(() => {
-      console.log(
-        `[DEBUG] PopupConversationItem: Firing router.push() inside timeout.`
-      );
-      router.push(navPath);
-    }, 50); // 50ms is a safe, small delay
-    // --- END OF FIX & DEBUGGING ---
-  };
-
-  return (
-    <div
-      onClick={handleClick} // Replaced Link with a clickable div
-      className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors w-full relative group
-          ${isActive ? "bg-gray-200" : "hover:bg-gray-100"}`}
-    >
-      <img
-        src={
-          conversation.avatarURL ||
-          "https://placehold.co/100x100/EFEFEF/333?text=?"
-        }
-        alt={conversation.otherUserName}
-        className="w-10 h-10 rounded-full object-cover border border-gray-300"
-        onError={(e) =>
-          (e.currentTarget.src =
-            "https://placehold.co/100x100/EFEFEF/333?text=User")
-        }
-      />
-      <div className="flex-1 overflow-hidden">
-        <h3
-          className={`font-semibold text-sm truncate ${
-            isActive ? "text-gray-900" : "text-gray-700"
-          }`}
-        >
-          {conversation.otherUserName}
-        </h3>
-        <p
-          className={`text-xs truncate ${
-            isActive ? "font-bold text-gray-800" : "text-gray-500"
-          }`}
-        >
-          {conversation.lastMessagePreview}
-        </p>
-      </div>
-      <div className="flex flex-col items-end h-full justify-between pt-1 pb-1">
-        <span className="text-xs text-gray-500">{conversation.timestamp}</span>
-        {isActive ? (
-          <span className="bg-[#8B0E0E] text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-            {conversation.unreadCount}
-          </span>
-        ) : (
-          <MoreHorizontal
-            size={16}
-            className="text-gray-400 group-hover:text-gray-700 transition-colors"
-          />
-        )}
-      </div>
-      {isActive && (
-        <span className="absolute left-0 top-1/2 -translate-y-1/2 h-full w-1 rounded-r-lg bg-[#8B0E0E]"></span>
-      )}
-    </div>
-  );
-}
+// --- NEW IMPORTS ---
+import { ConversationItem } from "../Utils/types";
+import PopupConversationItem from "./popupConversationitem";
 
 // Main Chat Popup Component
 export default function ChatPopup() {
@@ -153,7 +64,7 @@ export default function ChatPopup() {
         );
         const { data: accountsData } = await supabase
           .from("Accounts")
-          .select("id, fullName, avatarURL")
+          .select("id, fullName, avatarURL") // Make sure you're selecting avatarURL here!
           .in("id", otherUserIds);
         const accountsMap = new Map(
           (accountsData || []).map((acc) => [acc.id, acc])
@@ -196,7 +107,7 @@ export default function ChatPopup() {
             id: convo.id,
             otherUserName: otherUser.fullName,
             lastMessagePreview: lastMessage,
-            avatarURL: otherUser.avatarURL,
+            avatarURL: otherUser.avatarURL, // This now passes the URL to the item
             timestamp: timestamp,
             unreadCount: unreadCount || 0,
           } as ConversationItem;
@@ -236,15 +147,17 @@ export default function ChatPopup() {
   return (
     <div className="w-80 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden transform transition-all duration-300 z-40">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
-        <h2 className="text-xl font-bold text-gray-800">Chats</h2>
+      <div className="px-4 py-2 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+        <h2 className="text-[32px] font-montserrat font-bold text-gray-800">
+          Chats
+        </h2>
         {/* This click is now fixed */}
         <div
           onClick={handleSeeAllChats}
           title="See all chats"
           className="cursor-pointer"
         >
-          <Maximize2 className="w-5 h-5 text-[#8B0E0E] hover:text-[#FFC9C9]" />
+          <Maximize2 className="w-5 h-5 text-black hover:text-black/70" />
         </div>
       </div>
 
@@ -256,17 +169,17 @@ export default function ChatPopup() {
             placeholder="Search User..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-8 pr-3 py-2 text-sm rounded-full bg-gray-100 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#FFC9C9]"
+            className="w-full pl-10 pr-3 py-2 text-sm rounded-full bg-gray-100 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-black"
           />
           <Search
-            size={16}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            size={24}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-black/70"
           />
         </div>
       </div>
 
       {/* Conversation List */}
-      <div className="p-2 space-y-1 max-h-72 overflow-y-auto">
+      <div className="p-2 space-y-1 max-h-[250px] overflow-y-auto">
         {loading ? (
           <div className="text-center py-4 text-sm text-gray-500">
             Loading recent chats...
@@ -277,6 +190,7 @@ export default function ChatPopup() {
           </div>
         ) : (
           filteredConversations.map((item) => (
+            // --- Use the imported component ---
             <PopupConversationItem key={item.id} conversation={item} />
           ))
         )}
@@ -285,7 +199,7 @@ export default function ChatPopup() {
       {/* Footer Link - This click is also fixed */}
       <button
         onClick={handleSeeAllChats}
-        className="block w-full text-center py-2 text-sm font-medium text-gray-600 hover:text-[#8B0E0E] bg-gray-100 hover:bg-gray-200 transition-colors border-t border-gray-200"
+        className="cursor-pointer block w-full text-center py-2 text-[16px] font-montserrat font-medium text-gray-600 hover:text-[#8B0E0E] bg-gray-100 hover:bg-gray-200 transition-colors border-t border-gray-200"
       >
         See all in chats
       </button>
