@@ -4,7 +4,12 @@ import React, { useMemo, useState } from "react";
 import Image from "next/image";
 import { Montserrat, PT_Sans } from "next/font/google";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Holiday, PostedEvent, PersonalEvent, MenuType } from "@/app/component/General/Calendar/types";
+import {
+  Holiday,
+  PostedEvent,
+  PersonalEvent,
+  MenuType,
+} from "@/app/component/General/Calendar/types";
 import EventModal from "@/app/component/General/Calendar/EventModal";
 import ReminderPanel from "@/app/component/General/Calendar/ReminderPanel";
 import SchedulePanel from "@/app/component/General/Calendar/SchedulePanel";
@@ -18,6 +23,78 @@ const ptSans = PT_Sans({
   subsets: ["latin"],
   weight: ["400", "700"],
 });
+
+// ---------------------
+// Holiday Logic (Moved outside component)
+// ---------------------
+function computeEasterSunday(y: number): Date {
+  const a = y % 19;
+  const b = Math.floor(y / 100);
+  const c = y % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(y, month - 1, day);
+}
+
+function lastMondayOfMonth(y: number, month0Based: number) {
+  const lastDay = new Date(y, month0Based + 1, 0);
+  const dayOfWeek = lastDay.getDay();
+  const offset = (dayOfWeek + 6) % 7;
+  const lastMonday = new Date(y, month0Based + 1, 0 - offset);
+  return lastMonday;
+}
+
+function getPhilippineHolidays(y: number): Holiday[] {
+  const base: Holiday[] = [
+    { name: "New Year's Day", month: 1, day: 1 },
+    { name: "Araw ng Kagitingan", month: 4, day: 9 },
+    { name: "Labor Day", month: 5, day: 1 },
+    { name: "Independence Day", month: 6, day: 12 },
+    { name: "Ninoy Aquino Day", month: 8, day: 21 },
+    { name: "All Saints' Day", month: 11, day: 1 },
+    { name: "Bonifacio Day", month: 11, day: 30 },
+    { name: "Christmas Day", month: 12, day: 25 },
+    { name: "Rizal Day", month: 12, day: 30 },
+    { name: "Christmas Eve", month: 12, day: 24 },
+    { name: "New Year's Eve", month: 12, day: 31 },
+  ];
+
+  const easter = computeEasterSunday(y);
+  const maundy = new Date(easter);
+  maundy.setDate(easter.getDate() - 3);
+  const goodFriday = new Date(easter);
+  goodFriday.setDate(easter.getDate() - 2);
+
+  base.push({
+    name: "Maundy Thursday",
+    month: maundy.getMonth() + 1,
+    day: maundy.getDate(),
+  });
+  base.push({
+    name: "Good Friday",
+    month: goodFriday.getMonth() + 1,
+    day: goodFriday.getDate(),
+  });
+
+  const lastMonAug = lastMondayOfMonth(y, 7);
+  base.push({
+    name: "National Heroes Day",
+    month: lastMonAug.getMonth() + 1,
+    day: lastMonAug.getDate(),
+  });
+
+  base.sort((a, b) => a.month - b.month || a.day - b.day);
+  return base;
+}
 
 export default function CalendarContent() {
   // ---------------------
@@ -62,77 +139,8 @@ export default function CalendarContent() {
   });
 
   // ---------------------
-  // Holiday logic
+  // Holiday logic (Hook)
   // ---------------------
-  function computeEasterSunday(y: number): Date {
-    const a = y % 19;
-    const b = Math.floor(y / 100);
-    const c = y % 100;
-    const d = Math.floor(b / 4);
-    const e = b % 4;
-    const f = Math.floor((b + 8) / 25);
-    const g = Math.floor((b - f + 1) / 3);
-    const h = (19 * a + b - d - g + 15) % 30;
-    const i = Math.floor(c / 4);
-    const k = c % 4;
-    const l = (32 + 2 * e + 2 * i - h - k) % 7;
-    const m = Math.floor((a + 11 * h + 22 * l) / 451);
-    const month = Math.floor((h + l - 7 * m + 114) / 31);
-    const day = ((h + l - 7 * m + 114) % 31) + 1;
-    return new Date(y, month - 1, day);
-  }
-
-  function lastMondayOfMonth(y: number, month0Based: number) {
-    const lastDay = new Date(y, month0Based + 1, 0);
-    const dayOfWeek = lastDay.getDay();
-    const offset = (dayOfWeek + 6) % 7;
-    const lastMonday = new Date(y, month0Based + 1, 0 - offset);
-    return lastMonday;
-  }
-
-  function getPhilippineHolidays(y: number): Holiday[] {
-    const base: Holiday[] = [
-      { name: "New Year's Day", month: 1, day: 1 },
-      { name: "Araw ng Kagitingan", month: 4, day: 9 },
-      { name: "Labor Day", month: 5, day: 1 },
-      { name: "Independence Day", month: 6, day: 12 },
-      { name: "Ninoy Aquino Day", month: 8, day: 21 },
-      { name: "All Saints' Day", month: 11, day: 1 },
-      { name: "Bonifacio Day", month: 11, day: 30 },
-      { name: "Christmas Day", month: 12, day: 25 },
-      { name: "Rizal Day", month: 12, day: 30 },
-      { name: "Christmas Eve", month: 12, day: 24 },
-      { name: "New Year's Eve", month: 12, day: 31 },
-    ];
-
-    const easter = computeEasterSunday(y);
-    const maundy = new Date(easter);
-    maundy.setDate(easter.getDate() - 3);
-    const goodFriday = new Date(easter);
-    goodFriday.setDate(easter.getDate() - 2);
-
-    base.push({
-      name: "Maundy Thursday",
-      month: maundy.getMonth() + 1,
-      day: maundy.getDate(),
-    });
-    base.push({
-      name: "Good Friday",
-      month: goodFriday.getMonth() + 1,
-      day: goodFriday.getDate(),
-    });
-
-    const lastMonAug = lastMondayOfMonth(y, 7);
-    base.push({
-      name: "National Heroes Day",
-      month: lastMonAug.getMonth() + 1,
-      day: lastMonAug.getDate(),
-    });
-
-    base.sort((a, b) => a.month - b.month || a.day - b.day);
-    return base;
-  }
-
   const holidaysForYear = useMemo(() => getPhilippineHolidays(year), [year]);
   const holidaysForCurrentMonth = holidaysForYear.filter(
     (h) => h.month === currentDate.getMonth() + 1
@@ -151,22 +159,33 @@ export default function CalendarContent() {
   // ---------------------
   // Helpers for calendar day rendering
   // ---------------------
-  const getEventLabel = (ev: any): string => {
+  const getEventLabel = (
+    ev: Holiday | PostedEvent | PersonalEvent | null | undefined
+  ): string => {
     if (!ev) return "";
-    if (typeof ev === "string") return ev;
-    if ("title" in ev && ev.title) return String(ev.title);
-    if ("name" in ev && ev.name) return String(ev.name);
-    return String(ev.title ?? ev.name ?? "");
+
+    // Type guard for PostedEvent
+    if ("title" in ev) {
+      return String(ev.title);
+    }
+
+    // Type guard for Holiday or PersonalEvent
+    if ("name" in ev) {
+      return String(ev.name);
+    }
+
+    return ""; // Fallback
   };
-const getEventColor = (label: string) => {
-  const colors = ["#C4E1A4", "#FAD6A5", "#A0D8EF", "#F6B6B6", "#D9B3FF"];
-  let hash = 0;
-  for (let i = 0; i < label.length; i++) {
-    hash = label.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const index = Math.abs(hash) % colors.length;
-  return colors[index];
-};
+
+  const getEventColor = (label: string) => {
+    const colors = ["#C4E1A4", "#FAD6A5", "#A0D8EF", "#F6B6B6", "#D9B3FF"];
+    let hash = 0;
+    for (let i = 0; i < label.length; i++) {
+      hash = label.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
+  };
 
   // ---------------------
   // JSX
@@ -245,9 +264,7 @@ const getEventColor = (label: string) => {
             >
               <ChevronLeft size={28} />
             </button>
-            <span>
-              {viewMode === "month" ? `${monthName} ${year}` : year}
-            </span>
+            <span>{viewMode === "month" ? `${monthName} ${year}` : year}</span>
             <button
               onClick={nextMonth}
               className="hover:text-[#FFD700] transition"
@@ -342,8 +359,11 @@ const getEventColor = (label: string) => {
                         <div
                           key={i}
                           className="text-[10px] text-center rounded-md px-[2px] py-[1px] text-black truncate"
-                          style={{ backgroundColor: getEventColor(getEventLabel(event)) }}
-
+                          style={{
+                            backgroundColor: getEventColor(
+                              getEventLabel(event)
+                            ),
+                          }}
                         >
                           {getEventLabel(event)}
                         </div>
@@ -402,11 +422,8 @@ const getEventColor = (label: string) => {
           selectedDay={selectedDay}
           monthName={monthName}
           todayDate={todayDate}
-          year={year}
-          currentMonth={currentDate.getMonth()}
-          postedEvents={postedEvents}
-          personalEvents={personalEvents}
-          holidays={holidaysForCurrentMonth}
+          // ✅ FIX 6: Removed the `holidays` prop
+          // holidays={holidaysForCurrentMonth}
         />
       )}
 
