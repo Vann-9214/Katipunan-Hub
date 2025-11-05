@@ -427,7 +427,7 @@ export default function AnnouncementPageContent() {
       </div>
 
       {/* Right Side (Placeholder) */}
-      <div className="bg-gray-200 w-[350px] right-0 top-0 fixed h-full"></div>
+      <div className="w-[350px] right-0 top-0 fixed h-full"></div>
 
       {/* Main Posts */}
       <div className="flex items-center justify-center mt-20 gap-10">
