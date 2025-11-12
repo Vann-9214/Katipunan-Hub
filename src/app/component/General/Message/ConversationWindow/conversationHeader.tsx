@@ -13,7 +13,7 @@ export default function ConversationHeader({
       <Avatar
         avatarURL={otherUser?.avatarURL}
         altText={otherUser?.fullName || "User"}
-        className="w-10 h-10 border border-gray-300"
+        className="w-10 h-10"
       />
       <h2 className="font-semibold text-lg text-gray-800">
         {otherUser?.fullName || "Other User Name"}

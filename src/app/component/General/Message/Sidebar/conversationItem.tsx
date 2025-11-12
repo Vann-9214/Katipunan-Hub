@@ -75,7 +75,7 @@ export default function ConversationItem({
       <Avatar
         avatarURL={conversation.otherUser.avatarURL}
         altText={conversation.otherUser.fullName}
-        className="w-12 h-12 border-2 border-black"
+        className="w-12 h-12 "
       />
 
       <div className="flex-1 overflow-hidden">

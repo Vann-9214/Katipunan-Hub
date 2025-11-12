@@ -1,6 +1,8 @@
+// lib/user.ts (or wherever you created this file)
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
-const supabase = createClientComponentClient();
+// ✅ Create and EXPORT the client
+export const supabase = createClientComponentClient();
 
 export async function getCurrentUserDetails() {
   // ✅ Get the authenticated user from Supabase auth
@@ -20,8 +22,8 @@ export async function getCurrentUserDetails() {
   const { data: account, error: accountError } = await supabase
     .from("Accounts")
     .select("id, fullName, avatarURL, role, course, studentID, year")
-    .eq("id", user.id) // <-- make sure this matches the logged-in user's id
-    .maybeSingle(); // safer than .single() to prevent "multiple rows" errors
+    .eq("id", user.id)
+    .maybeSingle(); // Using maybeSingle() as you did
 
   if (accountError) {
     console.error("⚠️ Error fetching account info:", accountError.message);
