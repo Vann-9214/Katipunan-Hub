@@ -18,7 +18,7 @@ export default function SearchResultItem({
       <Avatar
         avatarURL={account.avatarURL}
         altText={account.fullName}
-        className="w-12 h-12 border-2 border-black"
+        className="w-12 h-12"
       />
       <div className="flex-1 overflow-hidden">
         <h3 className="font-semibold text-gray-800 truncate">

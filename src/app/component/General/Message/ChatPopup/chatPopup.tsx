@@ -179,7 +179,7 @@ export default function ChatPopup() {
       </div>
 
       {/* Conversation List */}
-      <div className="p-2 space-y-1 max-h-[250px] overflow-y-auto">
+      <div className="p-2 space-y-1 max-h-[350px] overflow-y-auto">
         {loading ? (
           <div className="text-center py-4 text-sm text-gray-500">
             Loading recent chats...

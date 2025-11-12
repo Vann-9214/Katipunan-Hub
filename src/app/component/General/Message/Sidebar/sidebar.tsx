@@ -1,13 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import {
-  Search,
-  MessagesSquare,
-  MoreHorizontal,
-  User,
-  ArrowLeft,
-} from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Search, MessagesSquare, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   supabase,
@@ -178,14 +172,14 @@ export default function ChatSidebar() {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "Messages" },
-        (payload) => {
+        () => {
           fetchConversations(currentUserId);
         }
       )
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "Messages" },
-        (payload) => {
+        () => {
           fetchConversations(currentUserId);
         }
       )
@@ -212,6 +206,10 @@ export default function ChatSidebar() {
       .eq("user_b_id", user_b_id)
       .single();
 
+    if (error && error.code !== "PGRST116") {
+      console.error("Error checking for existing conversation:", error);
+      return; // Stop execution
+    }
     if (existingConvo) {
       router.push(`/Message/${existingConvo.id}`);
     } else {
@@ -348,7 +346,7 @@ export default function ChatSidebar() {
         <Avatar
           avatarURL={currentUser?.avatarURL}
           altText={currentUser?.fullName || "User"}
-          className="w-12 h-12 border-2 border-black"
+          className="w-12 h-12"
         />
 
         <div className="flex-1 overflow-hidden">

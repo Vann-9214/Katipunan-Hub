@@ -10,6 +10,8 @@ import {
   getSortedUserPair,
 } from "../../../../../../supabase/Lib/Message/auth"; // Adjust this path as needed
 
+import Image from "next/image";
+
 // --- Types ---
 interface OtherUser {
   id: string;
@@ -127,17 +129,12 @@ export default function NewConversationWindow() {
     <div className="flex flex-col h-full bg-white">
       {/* Header */}
       <div className="flex items-center gap-4 p-4 border-b border-gray-200 shadow-sm bg-gray-50">
-        <img
-          src={
-            otherUser?.avatarURL ||
-            "https://placehold.co/100x100/EFEFEF/333?text=?"
-          }
+        <Image
+          src={otherUser?.avatarURL || "/DefaultAvatar.svg"} // Use your local SVG as the fallback
           alt={otherUser?.fullName || "User"}
-          className="w-10 h-10 rounded-full object-cover border border-gray-300"
-          onError={(e) =>
-            (e.currentTarget.src =
-              "https://placehold.co/100x100/EFEFEF/333?text=User")
-          }
+          width={40}
+          height={40}
+          className="rounded-full object-cover border border-gray-300"
         />
         <h2 className="font-semibold text-lg text-gray-800">
           {otherUser?.fullName || "Other User Name"}

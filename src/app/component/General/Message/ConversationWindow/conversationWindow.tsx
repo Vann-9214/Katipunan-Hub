@@ -114,7 +114,12 @@ export default function ConversationWindow() {
           setMessages(messagesResult.data);
         }
       } catch (error) {
-        console.error("--- !!! ERROR in fetchConversationData !!! ---:", error);
+        console.error("--- !!! ERROR in fetchConversationData !!! ---:");
+        if (error instanceof Error) {
+          console.error("Error Message:", error.message);
+        } else {
+          console.error("An unknown error occurred:", error);
+        }
       } finally {
         setLoading(false);
       }

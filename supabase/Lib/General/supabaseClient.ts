@@ -1,6 +1,6 @@
-import { createClient } from '@supabase/supabase-js'
+// lib/supabaseClient.ts
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// This is now your ONE AND ONLY Supabase client for "use client" components.
+// We export it so other files can import it.
+export const supabase = createClientComponentClient();

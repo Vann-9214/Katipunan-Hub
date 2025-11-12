@@ -1,22 +1,27 @@
 "use client";
 
-import Link from "next/link";
-import NavigationButton from "./navigationButtons"; // Assuming this is still used
-import Logo from "../Logo"; // Assuming this is still used
+import Image from "next/image";
+import NavigationButton from "./navigationButtons";
+import Logo from "../Logo";
 import { usePathname } from "next/navigation";
 import {
   Bell,
-  MessageCircle,
-  User,
   Megaphone,
   Newspaper,
   BookOpenText,
   CalendarDays,
   Package,
 } from "lucide-react";
-// --- ADDED ---
 import { useState, useEffect } from "react";
-import ChatPopup from "../../General/Message/ChatPopup/chatPopup"; // Assuming ChatPopup is one level down
+import ChatPopup from "../../General/Message/ChatPopup/chatPopup";
+
+import Avatar from "../../ReusableComponent/Avatar";
+import AccountDropdown from "../../General/Account/accountDropdown";
+
+// --- 1. ADD IMPORTS ---
+// (These paths are from your file)
+import { getCurrentUserDetails } from "../../../../../supabase/Lib/General/getUser";
+import { UserDetails } from "../../General/Account/types";
 
 const navItems = [
   { href: "/Announcement", icon: Megaphone, name: "Announcement" },
@@ -28,37 +33,47 @@ const navItems = [
 
 export default function HomepageTab() {
   const pathname = usePathname() ?? "/";
-  // 1. Add state to manage the popup visibility
   const [isChatPopupOpen, setIsChatPopupOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-  // Normalize path (remove trailing slash)
+  // --- 2. ADD STATE TO HOLD THE USER ---
+  const [user, setUser] = useState<UserDetails | null>(null);
+
   const normalize = (p: string) =>
     p.endsWith("/") && p !== "/" ? p.slice(0, -1) : p;
 
   const currentPath = normalize(pathname);
-
-  // --- ADDED: Check if we are on the Message page ---
-  // This will be true for "/Message", "/Message/123", etc.
   const isOnMessagePage = pathname.startsWith("/Message");
 
-  // --- ADDED: A small helper Effect ---
-  // This closes the popup if the user navigates to the Message page
-  // while the popup is open.
+  // --- (Existing effects are fine) ---
   useEffect(() => {
     if (isOnMessagePage) {
       setIsChatPopupOpen(false);
     }
   }, [isOnMessagePage]);
-  // --- END ADDITIONS ---
+
+  useEffect(() => {
+    setIsChatPopupOpen(false);
+    setIsProfileOpen(false);
+  }, [pathname]);
+
+  // --- 3. ADD EFFECT TO FETCH USER DATA ON LOAD ---
+  useEffect(() => {
+    const loadUserData = async () => {
+      const userDetails = await getCurrentUserDetails();
+      if (userDetails) {
+        setUser(userDetails);
+      }
+    };
+    loadUserData();
+  }, []); // Empty array means this runs once when the component mounts
 
   return (
-    // Increased z-index to 20 to ensure the popup renders above other elements
     <header className="h-[80px] w-full fixed top-0 left-0 z-20 flex items-center justify-between px-8 bg-gradient-to-r from-[#FFF7CD] to-[#FFC9C9] shadow-md">
-      {/* Left: Logo */}
-      {/* Assuming Logo component takes width, height, and href props */}
+      {/* --- (Left: Logo) --- */}
       <Logo width={50} height={55} href="/Announcement" />
 
-      {/* Middle: Navigation Icons */}
+      {/* --- (Middle: Navigation) --- */}
       <nav className="flex gap-4">
         {navItems.map((item) => {
           const itemPath = normalize(item.href);
@@ -76,31 +91,34 @@ export default function HomepageTab() {
         })}
       </nav>
 
-      {/* Right: User Icons */}
+      {/* --- (Right: User Icons) --- */}
       <div className="flex gap-8 items-center text-black relative">
-        {/* --- ADDED: Conditional rendering --- */}
-        {/* Only show the chat icon and popup if we are NOT on the message page */}
+        {/* --- (Chat Icon & Popup) --- */}
         {!isOnMessagePage && (
           <>
-            {/* Chat Icon - Click to toggle popup */}
-            <MessageCircle
-              className="w-8 h-8 cursor-pointer transition-colors hover:text-[#8B0E0E]"
-              // 2. Add click handler to toggle state
+            <button
               onClick={() => setIsChatPopupOpen(!isChatPopupOpen)}
-            />
+              className="rounded-full
+                         cursor-pointer transition-colors
+                         hover:bg-black/10"
+            >
+              <Image
+                src="/Chat.svg"
+                alt="Chat Messages"
+                width={38}
+                height={38}
+                className="p-1 border rounded-full object-cover transition-colors border-black"
+              />
+            </button>
 
-            {/* 3. Conditionally render the Chat Popup */}
             {isChatPopupOpen && (
               <>
                 <div
-                  className="absolute top-[80px] right-0 z-30"
-                  // Prevent closing if clicking inside the popup
+                  className="absolute top-14 right-0 z-30"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {/* Ensure your ChatPopup component path is correct */}
                   <ChatPopup />
                 </div>
-                {/* 4. Overlay to close the popup when clicking outside */}
                 <div
                   className="fixed inset-0 z-20"
                   onClick={() => setIsChatPopupOpen(false)}
@@ -109,16 +127,46 @@ export default function HomepageTab() {
             )}
           </>
         )}
-        {/* --- END ADDED --- */}
 
+        {/* --- (Notification Bell) --- */}
         <Bell className="w-8 h-8 cursor-pointer transition-colors hover:text-[#8B0E0E]" />
-        <Link href="/">
-          <User className="w-8 h-8 cursor-pointer transition-colors hover:text-[#8B0E0E]" />
-        </Link>
 
-        {/* NOTE: The original Chat Popup logic (point 3) was moved 
-          INSIDE the conditional {!isOnMessagePage} block. 
-        */}
+        {/* --- Profile Avatar & Dropdown --- */}
+        <div className="relative">
+          <button
+            onClick={() => setIsProfileOpen(!isProfileOpen)}
+            className={`rounded-full
+                           cursor-pointer transition-colors
+                           hover:bg-black/10
+                           ${isProfileOpen ? "bg-black/10" : "bg-transparent"}`}
+          >
+            {/* --- 4. USE THE USER DATA FROM STATE --- */}
+            <Avatar
+              avatarURL={user?.avatarURL}
+              altText={user?.fullName || "User Profile"}
+              className="w-[38px] h-[38px]"
+            />
+          </button>
+
+          {/* Profile Dropdown Logic */}
+          {isProfileOpen && (
+            <>
+              <div
+                className="absolute top-14 right-0 z-30"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* This component fetches its own data, which is fine, 
+                  but now our main button also has data.
+                */}
+                <AccountDropdown onClose={() => setIsProfileOpen(false)} />
+              </div>
+              <div
+                className="fixed inset-0 z-20"
+                onClick={() => setIsProfileOpen(false)}
+              />
+            </>
+          )}
+        </div>
       </div>
     </header>
   );

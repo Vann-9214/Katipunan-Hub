@@ -96,7 +96,7 @@ export default function PopupConversationItem({
       <Avatar
         avatarURL={conversation.avatarURL}
         altText={conversation.otherUserName}
-        className="w-10 h-10 border border-gray-300"
+        className="w-10 h-10 "
       />
 
       <div className="flex-1 overflow-hidden">
