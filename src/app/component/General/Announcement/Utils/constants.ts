@@ -39,9 +39,6 @@ export const collegeitems = [
 ];
 
 // AnnouncementPageContent/constants.ts
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-
-export const supabase = createClientComponentClient();
 
 // small visibility constants for easy reuse
 export const VISIBILITY = {

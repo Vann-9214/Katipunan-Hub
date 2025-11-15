@@ -1,15 +1,15 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
 
 // --- Child Components ---
-import AdvancedFilter from "../General/AdvanceFilter";
+import AdvancedFilter from "../LeftSide/AdvanceFilter";
 import AddPosts from "../AddPosts/addPosts";
-import TagsFilter from "../General/TagsFilter";
+import TagsFilter from "../LeftSide/TagsFilter";
 import HomepageTab from "@/app/component/ReusableComponent/HomepageTab/HomepageTab";
 import ToggleButton from "@/app/component/ReusableComponent/ToggleButton";
-import SearchFilter from "../General/SearchFilter";
+import SearchFilter from "../LeftSide/SearchFilter";
 import Posts from "../Posts/Posts";
 
 // --- Types ---
@@ -25,7 +25,7 @@ import { VISIBILITY, programToCollege } from "../Utils/constants";
 import { shapePostForUI } from "./utils";
 import formatPostDate from "../Utils/formatDate";
 import { getCurrentUserDetails } from "../../../../../../supabase/Lib/General/getUser";
-import { getDateRange } from "../../../../../../supabase/Lib/Announcement/Filter/supabase-helper"; // 👈 Import your new helper
+import { getDateRange } from "../../../../../../supabase/Lib/Announcement/Filter/supabase-helper";
 
 // --- Default State ---
 const DEFAULT_FILTERS: FilterState = {
@@ -52,9 +52,6 @@ export default function AnnouncementPageContent() {
   // Client-side filters
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTags, setActiveTags] = useState<string[]>([]);
-
-  // Supabase client
-  const supabase = createClientComponentClient();
 
   // --- Fetch current user once ---
   useEffect(() => {
@@ -160,7 +157,7 @@ export default function AnnouncementPageContent() {
         }
       }
     },
-    [supabase] // Only depends on supabase client
+    []
   );
 
   // --- Run fetch when user or filters change ---

@@ -1,5 +1,5 @@
 // supabase/lib/storage.ts
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { supabase } from "../../General/supabaseClient";
 
 // Helper to extract storage path from public URL
 const getFilePathFromPublicUrl = (url: string): string | null => {
@@ -22,7 +22,6 @@ export const deleteUrlsFromBucket = async (urls: string[]) => {
   if (paths.length === 0) return;
 
   // Create a client instance specifically for this function
-  const supabase = createClientComponentClient();
   const { error } = await supabase.storage.from("posts").remove(paths);
 
   if (error) {

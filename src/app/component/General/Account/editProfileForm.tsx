@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 import FormInput from "./formInput";
-import { UserDetails } from "./types";
+import type { User } from "../../../../../supabase/Lib/General/user";
 
 interface EditProfileModalProps {
-  user: UserDetails;
+  user: User;
   onClose: () => void;
   onSave: (updatedData: { fullName: string }) => void;
   isSaving: boolean;
@@ -18,18 +18,17 @@ export default function EditProfileModal({
   onSave,
   isSaving,
 }: EditProfileModalProps) {
-  // State for the editable form field
   const [fullName, setFullName] = useState(user.fullName || "");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSaving) return; // --- Prevent submit while saving
+    if (isSaving) return;
     onSave({ fullName });
   };
 
   return (
     // Overlay
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm transition-opacity">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 backdrop-blur-sm transition-opacity">
       {/* Modal Content */}
       <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl mx-4">
         {/* Modal Header */}
@@ -39,7 +38,7 @@ export default function EditProfileModal({
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-800"
+            className="text-gray-500 hover:text-gray-800 cursor-pointer"
           >
             <X size={24} />
           </button>
@@ -54,7 +53,7 @@ export default function EditProfileModal({
               id="fullName"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              disabled={isSaving} // --- Disable input while saving
+              disabled={isSaving}
             />
             {/* Cit Email (Disabled) */}
             <FormInput
@@ -97,7 +96,7 @@ export default function EditProfileModal({
           <div className="mt-8 flex justify-end">
             <button
               type="submit"
-              className="px-6 py-2 bg-maroon text-white font-semibold rounded-lg hover:bg-red-800 transition-colors
+              className="px-6 py-2 bg-maroon cursor-pointer text-white font-semibold rounded-lg hover:bg-red-800 transition-colors
                          disabled:bg-gray-400 disabled:cursor-not-allowed" // --- Add disabled styles
               disabled={isSaving} // --- Add disabled attribute
             >

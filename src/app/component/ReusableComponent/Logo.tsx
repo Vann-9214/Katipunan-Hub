@@ -1,8 +1,8 @@
 import Image from "next/image";
 
 interface LogoProps {
-  href?: string; // where the logo should link to
-  unclickable?: boolean; // force it to not be clickable
+  href?: string;
+  unclickable?: boolean;
   width?: number;
   height?: number;
 }
@@ -16,7 +16,7 @@ export default function Logo({
   const content = (
     <>
       <Image
-        src="Logo.svg"
+        src="/Logo.svg"
         alt="My Logo"
         width={width}
         height={height}

@@ -21,7 +21,7 @@ import AccountDropdown from "../../General/Account/accountDropdown";
 // --- 1. ADD IMPORTS ---
 // (These paths are from your file)
 import { getCurrentUserDetails } from "../../../../../supabase/Lib/General/getUser";
-import { UserDetails } from "../../General/Account/types";
+import type { User } from "../../../../../supabase/Lib/General/user";
 
 const navItems = [
   { href: "/Announcement", icon: Megaphone, name: "Announcement" },
@@ -37,7 +37,7 @@ export default function HomepageTab() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   // --- 2. ADD STATE TO HOLD THE USER ---
-  const [user, setUser] = useState<UserDetails | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   const normalize = (p: string) =>
     p.endsWith("/") && p !== "/" ? p.slice(0, -1) : p;
@@ -99,15 +99,15 @@ export default function HomepageTab() {
             <button
               onClick={() => setIsChatPopupOpen(!isChatPopupOpen)}
               className="rounded-full
-                         cursor-pointer transition-colors
-                         hover:bg-black/10"
+                         cursor-pointer transition-colors bg-black/10
+                         hover:brightness-150"
             >
               <Image
                 src="/Chat.svg"
                 alt="Chat Messages"
-                width={38}
-                height={38}
-                className="p-1 border rounded-full object-cover transition-colors border-black"
+                width={43}
+                height={43}
+                className="p-1 rounded-full object-cover transition-color"
               />
             </button>
 
@@ -144,7 +144,7 @@ export default function HomepageTab() {
             <Avatar
               avatarURL={user?.avatarURL}
               altText={user?.fullName || "User Profile"}
-              className="w-[38px] h-[38px]"
+              className="w-[43px] h-[43px]"
             />
           </button>
 

@@ -3,7 +3,7 @@
 
 import { Plus } from "lucide-react";
 import { useState } from "react";
-import TagsFilter from "../General/TagsFilter";
+import TagsFilter from "../LeftSide/TagsFilter";
 
 interface TagEditorProps {
   width?: string;

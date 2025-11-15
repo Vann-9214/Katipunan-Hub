@@ -6,15 +6,8 @@ import { User, Settings, LogOut } from "lucide-react";
 import Avatar from "../../ReusableComponent/Avatar";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-
-// --- 1. Import BOTH from your new helper file ---
-// (Adjust this path to point to your file from Step 1)
-import {
-  supabase,
-  getCurrentUserDetails,
-} from "../../../../../supabase/Lib/General/getUser";
-
-// Define props for the component
+import { getCurrentUserDetails } from "../../../../../supabase/Lib/General/getUser";
+import { supabase } from "../../../../../supabase/Lib/General/supabaseClient";
 interface ProfileDropdownProps {
   onClose: () => void;
 }
@@ -26,19 +19,14 @@ export default function AccountDropdown({ onClose }: ProfileDropdownProps) {
   const [email, setEmail] = useState<string>("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
-  // --- 2. This useEffect is now much simpler ---
   useEffect(() => {
     const fetchUserData = async () => {
-      // ✅ Just call your helper function!
       const userDetails = await getCurrentUserDetails();
 
       if (!userDetails) {
-        // The function already logged the error, so just redirect
         router.push("/signin");
         return;
       }
-
-      // ✅ Set all state from the object
       setFullName(userDetails.fullName || "User");
       setEmail(userDetails.email || "No email");
       setAvatarUrl(userDetails.avatarURL || null);
@@ -47,8 +35,6 @@ export default function AccountDropdown({ onClose }: ProfileDropdownProps) {
     fetchUserData();
   }, [router]);
 
-  // --- 3. Your handleLogout function is perfect! ---
-  // It now uses the 'supabase' client exported from your helper file
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
 
@@ -61,7 +47,6 @@ export default function AccountDropdown({ onClose }: ProfileDropdownProps) {
     onClose();
   };
 
-  // ... (The rest of your JSX is exactly the same) ...
   return (
     <div
       className="w-64 bg-white rounded-lg shadow-xl border border-gray-100"
@@ -72,7 +57,7 @@ export default function AccountDropdown({ onClose }: ProfileDropdownProps) {
         <Avatar
           avatarURL={avatarUrl}
           altText={fullName}
-          className="w-12 h-12"
+          className="w-12 h-12 flex-shrink-0"
         />
         <div>
           <p className="font-semibold font-montserrat text-[18px] text-black">

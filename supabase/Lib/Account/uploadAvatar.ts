@@ -1,9 +1,11 @@
 import { supabase } from "../General/supabaseClient";
+// --- 1. ADD THIS IMPORT ---
+import { updateUserAccount } from "./updateUserAccount";
 
 /**
- * Uploads a file to the 'avatars' bucket in Supabase Storage.
+ * Uploads a file, gets the public URL, and updates the user's Account table.
  *
- * @param userId - The ID of the user, used to create a unique folder.
+ * @param userId - The ID of the user.
  * @param file - The image file (Blob) to upload.
  * @returns {Promise<{ publicUrl: string | null, error: Error | null }>}
  */
@@ -19,8 +21,7 @@ export const uploadAvatar = async (userId: string, file: Blob) => {
   const fileExt = file.type.split("/").pop() || "png";
   const filePath = `public/${userId}/avatar-${Date.now()}.${fileExt}`;
 
-  // 2. Upload the file to the 'avatars' bucket.
-  //    Make sure you have a public bucket named "avatars" in Supabase Storage.
+  // 2. Upload the file to storage.
   const { error: uploadError } = await supabase.storage
     .from("avatars") // BUCKET NAME
     .upload(filePath, file, {
@@ -33,7 +34,7 @@ export const uploadAvatar = async (userId: string, file: Blob) => {
     return { publicUrl: null, error: uploadError };
   }
 
-  // 3. Get the public URL for the new file.
+  // 3. Get the public URL.
   const { data: urlData } = supabase.storage
     .from("avatars") // BUCKET NAME
     .getPublicUrl(filePath);
@@ -44,6 +45,19 @@ export const uploadAvatar = async (userId: string, file: Blob) => {
     return { publicUrl: null, error: urlError };
   }
 
-  console.log("Avatar public URL:", urlData.publicUrl);
-  return { publicUrl: urlData.publicUrl, error: null };
+  const newUrl = urlData.publicUrl;
+
+  // --- 4. ADDED: Update the database ---
+  const { error: dbError } = await updateUserAccount(userId, {
+    avatarURL: newUrl,
+  });
+
+  if (dbError) {
+    console.error("Supabase DB Error:", dbError.message);
+    return { publicUrl: null, error: dbError };
+  }
+
+  // 5. Success
+  console.log("Avatar public URL:", newUrl);
+  return { publicUrl: newUrl, error: null };
 };

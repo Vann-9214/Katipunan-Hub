@@ -1,4 +1,3 @@
-// middleware.ts
 import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
@@ -39,8 +38,10 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - signin (your sign-in page)
-     * - / (your public landing page)
+     * - signup (your sign-up page)
+     * - / (your public landing page - THIS IS THE FIX)
+     * - .svg (all svg image files)
      */
-    "/((?!api|_next/static|_next/image|favicon.ico|signin|signup|$).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|signin|signup|.*\\.svg$|$).*)",
   ],
 };

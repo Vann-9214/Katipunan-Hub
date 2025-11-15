@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { supabase } from "../../General/supabaseClient";
 
 interface UsePostReactionsProps {
   postId: string;
@@ -18,17 +18,6 @@ export interface ReactionCount {
  * Manages all reaction logic for a single post.
  */
 export function usePostReactions({ postId, userId }: UsePostReactionsProps) {
-  const supabase = createClientComponentClient({
-    options: {
-      realtime: {
-        params: {
-          events: {
-            self: "broadcast",
-          },
-        },
-      },
-    },
-  });
 
   const [selectedReactionId, setSelectedReactionId] = useState<string | null>(
     null

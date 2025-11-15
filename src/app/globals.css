@@ -65,6 +65,7 @@ body.modal-open .overflow-scroll:not(.modal-scroll)::-webkit-scrollbar {
 /* 6. Keep your global styles */
 html,
 body {
+  font-family: var(--font-montserrat);
   background-color: white;
   scrollbar-gutter: auto;
   overflow-y: auto;

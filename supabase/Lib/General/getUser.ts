@@ -1,11 +1,7 @@
-// lib/user.ts (or wherever you created this file)
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { supabase } from "./supabaseClient";
+import type { User } from "./user";
 
-// ✅ Create and EXPORT the client
-export const supabase = createClientComponentClient();
-
-export async function getCurrentUserDetails() {
-  // ✅ Get the authenticated user from Supabase auth
+export async function getCurrentUserDetails(): Promise<User | null> {
   const {
     data: { user },
     error: userError,
@@ -18,21 +14,19 @@ export async function getCurrentUserDetails() {
 
   console.log("🟩 Auth user fetched:", user.email, user.id);
 
-  // ✅ Fetch additional details from your Accounts table
   const { data: account, error: accountError } = await supabase
     .from("Accounts")
     .select("id, fullName, avatarURL, role, course, studentID, year")
     .eq("id", user.id)
-    .maybeSingle(); // Using maybeSingle() as you did
+    .maybeSingle();
 
   if (accountError) {
     console.error("⚠️ Error fetching account info:", accountError.message);
   }
 
-  // ✅ Merge both auth + Accounts data
-  const fullUser = {
+  const fullUser: User = { 
     id: user.id,
-    email: user.email, // comes from auth
+    email: user.email,
     fullName: account?.fullName ?? "",
     avatarURL: account?.avatarURL ?? "",
     role: account?.role ?? "",

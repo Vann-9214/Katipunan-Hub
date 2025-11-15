@@ -3,12 +3,11 @@
 import { useState, useEffect } from "react";
 import { Send } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import {
-  supabase,
-  getCurrentUserDetails,
-  FullUser,
-  getSortedUserPair,
-} from "../../../../../../supabase/Lib/Message/auth"; // Adjust this path as needed
+import { getSortedUserPair } from "../../../../../../supabase/Lib/Message/auth";
+
+import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
+import { getCurrentUserDetails } from "../../../../../../supabase/Lib/General/getUser";
+import type { User } from "../../../../../../supabase/Lib/General/user";
 
 import Image from "next/image";
 
@@ -27,7 +26,7 @@ export default function NewConversationWindow() {
 
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState<FullUser | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [otherUser, setOtherUser] = useState<OtherUser | null>(null);
 
   // 1. Fetch current user
