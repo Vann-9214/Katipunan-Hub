@@ -1,8 +1,6 @@
 "use client";
 
 import React from "react";
-// Import next/image (it's still used by ImagePreview, which is fine)
-import Image from "next/image";
 import { ColorBackedImage } from "./colorBackedImage";
 import { useImageLightbox } from "./imageLightboxContent";
 

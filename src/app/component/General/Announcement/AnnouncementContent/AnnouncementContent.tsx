@@ -226,6 +226,7 @@ export default function AnnouncementPageContent() {
               const urlParts = new URL(url).pathname.split("/");
               return urlParts.slice(urlParts.indexOf("posts")).join("/");
             } catch (e) {
+              console.error("Invalid image URL:", e);
               return null;
             }
           })
