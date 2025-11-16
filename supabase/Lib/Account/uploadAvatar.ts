@@ -1,15 +1,13 @@
 import { supabase } from "../General/supabaseClient";
-// --- 1. ADD THIS IMPORT ---
 import { updateUserAccount } from "./updateUserAccount";
 
 /**
- * Uploads a file, gets the public URL, and updates the user's Account table.
- *
- * @param userId - The ID of the user.
- * @param file - The image file (Blob) to upload.
- * @returns {Promise<{ publicUrl: string | null, error: Error | null }>}
+ * Uploads a file, updates the user's Account table,
+ * and DELETES all old avatars in the user's folder.
  */
 export const uploadAvatar = async (userId: string, file: Blob) => {
+  
+  // Validation
   if (!file) {
     return { publicUrl: null, error: new Error("No file provided.") };
   }
@@ -17,16 +15,30 @@ export const uploadAvatar = async (userId: string, file: Blob) => {
     return { publicUrl: null, error: new Error("No user ID provided.") };
   }
 
-  // 1. Create a unique file path.
-  const fileExt = file.type.split("/").pop() || "png";
-  const filePath = `public/${userId}/avatar-${Date.now()}.${fileExt}`;
+  // --- THIS IS YOUR ORIGINAL PATH ---
+  const userFolderPath = `public/${userId}/`;
 
-  // 2. Upload the file to storage.
+  // List Old Files
+  const { data: oldFiles, error: listError } = await supabase.storage
+    .from("avatars")
+    .list(userFolderPath);
+
+  if (listError) {
+    console.warn(
+      "Could not list old avatars, proceeding anyway:",
+      listError.message
+    );
+  }
+
+  // Upload New File
+  const fileExt = file.type.split("/").pop() || "png";
+  const newFilePath = `${userFolderPath}avatar-${Date.now()}.${fileExt}`;
+
   const { error: uploadError } = await supabase.storage
-    .from("avatars") // BUCKET NAME
-    .upload(filePath, file, {
+    .from("avatars")
+    .upload(newFilePath, file, {
       cacheControl: "3600",
-      upsert: true, // Overwrite existing file if any
+      upsert: false,
     });
 
   if (uploadError) {
@@ -34,10 +46,10 @@ export const uploadAvatar = async (userId: string, file: Blob) => {
     return { publicUrl: null, error: uploadError };
   }
 
-  // 3. Get the public URL.
+  // Get Public URL
   const { data: urlData } = supabase.storage
-    .from("avatars") // BUCKET NAME
-    .getPublicUrl(filePath);
+    .from("avatars")
+    .getPublicUrl(newFilePath);
 
   if (!urlData.publicUrl) {
     const urlError = new Error("Could not get public URL.");
@@ -47,7 +59,7 @@ export const uploadAvatar = async (userId: string, file: Blob) => {
 
   const newUrl = urlData.publicUrl;
 
-  // --- 4. ADDED: Update the database ---
+  // Update Database
   const { error: dbError } = await updateUserAccount(userId, {
     avatarURL: newUrl,
   });
@@ -57,7 +69,21 @@ export const uploadAvatar = async (userId: string, file: Blob) => {
     return { publicUrl: null, error: dbError };
   }
 
-  // 5. Success
-  console.log("Avatar public URL:", newUrl);
+  // Delete Old Files
+  if (oldFiles && oldFiles.length > 0) {
+    const oldFilePaths = oldFiles.map((f) => `${userFolderPath}${f.name}`);
+    const { error: deleteError } = await supabase.storage
+      .from("avatars")
+      .remove(oldFilePaths);
+
+    if (deleteError) {
+      console.error("Failed to delete old avatars:", deleteError.message);
+    } else {
+      console.log("Successfully deleted old avatars:", oldFilePaths);
+    }
+  }
+
+  // Return
+  console.log("Avatar updated. New URL:", newUrl);
   return { publicUrl: newUrl, error: null };
 };

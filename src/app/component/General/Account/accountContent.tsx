@@ -67,7 +67,7 @@ export default function AccountPage() {
   return (
     <main className="pt-[110px] p-8 bg-gray-50 min-h-screen">
       <HomepageTab />
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="w-full mx-5 space-y-6">
         <h1 className="text-3xl font-bold text-black">My Profile</h1>
 
         {/* --- Top Profile Card --- */}

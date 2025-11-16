@@ -33,9 +33,12 @@ export default function AvatarUploadModal({
     }
   };
 
-  const onCropComplete = useCallback((croppedAreaPixels: Area) => {
-    setCroppedAreaPixels(croppedAreaPixels);
-  }, []);
+  const onCropComplete = useCallback(
+    (croppedArea: Area, croppedAreaPixels: Area) => {
+      setCroppedAreaPixels(croppedAreaPixels);
+    },
+    []
+  );
 
   const handleChangeClick = () => {
     fileInputRef.current?.click();
