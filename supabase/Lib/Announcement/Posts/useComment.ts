@@ -4,7 +4,7 @@ import { supabase } from "../../General/supabaseClient";
 import { useEffect, useState, useCallback, useRef } from "react";
 // Make sure this path is correct for your project
 import { CommentWithAuthor } from "@/app/component/General/Announcement/Posts/Comment/commentItem";
-import { usePostModal } from "@/app/component/General/Announcement/Posts/Comment/postModalContext";
+import { usePostComment } from "@/app/component/General/Announcement/Posts/Comment/postCommentContext";
 
 // --- 1. REMOVED `findComment` HELPER ---
 
@@ -49,7 +49,7 @@ export function useComments(postId: string) {
   const [reactingCommentId, setReactingCommentId] = useState<string | null>(
     null
   );
-  const { closePostModal } = usePostModal();
+  const { closePostModal } = usePostComment();
 
   // --- 3. SIMPLIFIED `fetchCommentsWithReactions` ---
   const fetchCommentsWithReactions = useCallback(async () => {

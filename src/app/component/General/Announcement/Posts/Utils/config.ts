@@ -1,17 +1,12 @@
-// src/utils/reactionsConfig.ts (or adjust path as needed)
-
-// Define the structure for reaction information
 export interface ReactionInfo {
-  id: string; // Unique identifier (e.g., 'like', 'love')
-  label: string; // Text label (e.g., 'Like', 'Love')
-  icon: string; // Path to the SVG icon shown in the button/picker
-  colorClass?: string; // Optional: Tailwind CSS class for text color
+  id: string;
+  label: string; 
+  icon: string; 
+  colorClass?: string; 
 }
 
-// Define the path for the default (unselected) Like icon
-export const defaultLikeIcon = "/Like.svg"; // Your outline/black Like icon path
+export const defaultLikeIcon = "/Like.svg"; 
 
-// Define the list of available reactions with their details
 export const reactionsList: ReactionInfo[] = [
   { id: "like", label: "Like", icon: "/Like Fill.svg", colorClass: "text-blue-600" },
   { id: "love", label: "Love", icon: "/Heart.svg", colorClass: "text-red-600" },
@@ -30,9 +25,9 @@ export const reactionsList: ReactionInfo[] = [
  */
 export const getReactionIcon = (reactionId: string | null): string => {
   if (!reactionId) {
-    return defaultLikeIcon; // Return default if no reaction ID
+    return defaultLikeIcon; 
   }
   const reaction = reactionsList.find(r => r.id === reactionId);
-  // Return the found reaction's icon, or fallback to default if ID is invalid
+
   return reaction ? reaction.icon : defaultLikeIcon;
 };

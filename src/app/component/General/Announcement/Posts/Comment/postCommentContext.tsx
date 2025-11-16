@@ -63,7 +63,7 @@ export const PostModalProvider = ({ children }: { children: ReactNode }) => {
 };
 
 // The custom hook
-export const usePostModal = () => {
+export const usePostComment = () => {
   const context = useContext(PostModalContext);
   if (context === undefined) {
     throw new Error("usePostModal must be used within a PostModalProvider");
