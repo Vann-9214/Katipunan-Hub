@@ -11,13 +11,16 @@ import InfoItem from "./infoItem";
 import AvatarEditor from "./avatarEditable";
 import type { User } from "../../../../../supabase/Lib/General/user";
 
+// Component
 export default function AccountPage() {
+  // State
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const router = useRouter();
 
+  // Data Fetching
   useEffect(() => {
     const loadUserData = async () => {
       const userDetails = await getCurrentUserDetails();
@@ -31,6 +34,7 @@ export default function AccountPage() {
     loadUserData();
   }, [router]);
 
+  // Handlers
   const handleSaveProfile = async (updatedData: { fullName: string }) => {
     if (!user) return;
     setIsSaving(true);
@@ -47,11 +51,11 @@ export default function AccountPage() {
     setIsSaving(false);
   };
 
-  // --- Show a loading state  ---
+  // Loading State
   if (isLoading) {
     return (
       <main className="pt-[110px] p-8 bg-gray-50 min-h-screen">
-        <HomepageTab />
+        <HomepageTab user={user} />
         <div className="max-w-4xl mx-auto">
           <p>Loading profile...</p>
         </div>
@@ -59,18 +63,18 @@ export default function AccountPage() {
     );
   }
 
-  // --- Render the profile page  ---
   if (!user) {
     return null;
   }
 
+  // Main Render
   return (
     <main className="pt-[110px] p-8 bg-gray-50 min-h-screen">
-      <HomepageTab />
+      <HomepageTab user={user} />
       <div className="w-full mx-5 space-y-6">
         <h1 className="text-3xl font-bold text-black">My Profile</h1>
 
-        {/* --- Top Profile Card --- */}
+        {/* Top Profile Card */}
         <div className="bg-white p-5 rounded-xl shadow-md flex items-center gap-5">
           <AvatarEditor user={user} className="w-16 h-16" />
           <div>
@@ -80,7 +84,7 @@ export default function AccountPage() {
           </div>
         </div>
 
-        {/* --- Personal Information Card  --- */}
+        {/* Personal Information Card */}
         <div className="bg-white p-6 rounded-xl shadow-md">
           {/* Card Header */}
           <div className="flex justify-between items-center pb-4">
@@ -94,7 +98,7 @@ export default function AccountPage() {
             </button>
           </div>
           <hr className="border-black/50 mb-6" />
-          {/* Details Grid  */}
+          {/* Details Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
             <InfoItem label="Full Name" value={user.fullName} />
             <InfoItem label="Course" value={user.course} />
@@ -106,7 +110,7 @@ export default function AccountPage() {
         </div>
       </div>
 
-      {/* --- Modal  --- */}
+      {/* Modal */}
       {isModalOpen && (
         <EditProfileModal
           user={user}

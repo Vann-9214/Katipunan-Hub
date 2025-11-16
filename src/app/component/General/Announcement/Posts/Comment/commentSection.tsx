@@ -2,10 +2,6 @@
 import CommentItem from "./commentItem";
 import type { CommentWithAuthor } from "./commentItem";
 
-// --- This component is now "dumb" ---
-// It just receives props and renders the list.
-// It does NOT render the CommentInput.
-
 interface CommentSectionProps {
   comments: CommentWithAuthor[];
   isLoading: boolean;
@@ -33,13 +29,11 @@ export default function CommentSection({
           <CommentItem
             key={comment.id}
             comment={comment}
-            onReact={onReact} // <-- PASS IT DOWN
+            onReact={onReact}
             isReacting={reactingCommentId === comment.id}
           />
         ))}
       </div>
-
-      {/* --- The CommentInput is REMOVED from this file --- */}
     </div>
   );
 }

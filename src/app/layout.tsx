@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { Montserrat, PT_Sans } from "next/font/google";
 import "./globals.css";
 
-import { PostModalProvider } from "@/app/component/General/Announcement/Posts/Comment/postModalContext";
-import PostModal from "./component/General/Announcement/Posts/Comment/PostModal";
+import { PostModalProvider } from "@/app/component/General/Announcement/Posts/Comment/postCommentContext";
+import PostModal from "./component/General/Announcement/Posts/Comment/PostComment";
 // --- 1. Import your new provider ---
 import { ImageLightboxProvider } from "./component/General/Announcement/ImageAttachment/imageLightboxContent";
 

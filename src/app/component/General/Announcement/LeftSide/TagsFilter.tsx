@@ -115,7 +115,7 @@ export default function TagsFilter({
                     <button
                       type="button"
                       onClick={() => handleTagRemove(tag)}
-                      className="ml-2 text-gray-600 hover:text-red-600 font-bold text-[20px]"
+                      className="ml-2 text-gray-600 hover:text-black cursor-pointer font-bold text-[20px]"
                     >
                       ×
                     </button>

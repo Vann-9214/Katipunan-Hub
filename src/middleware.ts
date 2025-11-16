@@ -42,6 +42,6 @@ export const config = {
      * - / (your public landing page - THIS IS THE FIX)
      * - .svg (all svg image files)
      */
-    "/((?!api|_next/static|_next/image|favicon.ico|signin|signup|.*\\.svg$|$).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|signin|signup|AboutUs|Features|.*\\.svg$|$).*)",
   ],
 };

@@ -2,7 +2,6 @@
 import { useState } from "react";
 import Image from "next/image";
 
-// --- 1. Add '?' to make props optional ---
 type CommentInputProps = {
   onSubmit?: (commentText: string) => Promise<void>;
   avatarUrl?: string;
@@ -11,14 +10,12 @@ type CommentInputProps = {
 
 export default function CommentInput({
   onSubmit,
-  // --- 2. Provide default values ---
-  avatarUrl = "/DefaultAvatar.svg", // Default avatar if none provided
-  disabled = false, // Default to false
+
+  avatarUrl = "/DefaultAvatar.svg",
+  disabled = false,
 }: CommentInputProps) {
   const [commentText, setCommentText] = useState("");
 
-  // This 'realDisabled' check is the key:
-  // The input should be disabled if 'disabled' is true OR if no 'onSubmit' function was given.
   const realDisabled = disabled || !onSubmit;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -26,7 +23,6 @@ export default function CommentInput({
     const textToSubmit = commentText.trim();
     if (!textToSubmit) return;
 
-    // --- 3. Only call onSubmit if it exists ---
     if (onSubmit) {
       await onSubmit(textToSubmit);
       setCommentText("");
@@ -55,7 +51,7 @@ export default function CommentInput({
         />
         <button
           type="submit"
-          disabled={realDisabled || !commentText.trim()} // Also use 'realDisabled' here
+          disabled={realDisabled || !commentText.trim()}
           className="cursor-pointer absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-2 transition-colors hover:bg-gray-200 disabled:opacity-50"
         >
           {/* Send icon */}

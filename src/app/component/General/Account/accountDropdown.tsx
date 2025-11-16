@@ -1,40 +1,26 @@
-// ProfileDropdown.tsx
 "use client";
 
 import Link from "next/link";
 import { User, Settings, LogOut } from "lucide-react";
 import Avatar from "../../ReusableComponent/Avatar";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { getCurrentUserDetails } from "../../../../../supabase/Lib/General/getUser";
 import { supabase } from "../../../../../supabase/Lib/General/supabaseClient";
+import type { User as AppUser } from "../../../../../supabase/Lib/General/user";
+
+// Component Interface
 interface ProfileDropdownProps {
+  user: AppUser | null;
   onClose: () => void;
 }
 
-export default function AccountDropdown({ onClose }: ProfileDropdownProps) {
+// Component
+export default function AccountDropdown({
+  user,
+  onClose,
+}: ProfileDropdownProps) {
   const router = useRouter();
 
-  const [fullName, setFullName] = useState<string>("Loading...");
-  const [email, setEmail] = useState<string>("");
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchUserData = async () => {
-      const userDetails = await getCurrentUserDetails();
-
-      if (!userDetails) {
-        router.push("/signin");
-        return;
-      }
-      setFullName(userDetails.fullName || "User");
-      setEmail(userDetails.email || "No email");
-      setAvatarUrl(userDetails.avatarURL || null);
-    };
-
-    fetchUserData();
-  }, [router]);
-
+  // Handler
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
 
@@ -47,6 +33,11 @@ export default function AccountDropdown({ onClose }: ProfileDropdownProps) {
     onClose();
   };
 
+  const fullName = user?.fullName || "Loading...";
+  const email = user?.email || "";
+  const avatarUrl = user?.avatarURL || null;
+
+  // Render
   return (
     <div
       className="w-64 bg-white rounded-lg shadow-xl border border-gray-100"
@@ -81,7 +72,7 @@ export default function AccountDropdown({ onClose }: ProfileDropdownProps) {
         </Link>
         <Link
           href="/settings"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-[16px] hover:bg-maroon/5 hover:text-maroon transition-colors group"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-[16px] text-black hover:bg-maroon/5 hover:text-maroon transition-colors group"
           onClick={onClose}
         >
           <Settings className="w-[24px] h-[24px] text-black group-hover:text-maroon" />
@@ -95,7 +86,7 @@ export default function AccountDropdown({ onClose }: ProfileDropdownProps) {
       <div className="p-2">
         <button
           onClick={handleLogout}
-          className="cursor-pointer flex items-center w-full gap-3 px-3 py-2.5 rounded-[10px] text-[16px] hover:bg-maroon/5 hover:text-maroon transition-colors group"
+          className="cursor-pointer flex items-center w-full gap-3 px-3 py-2.5 rounded-[10px] text-[16px] text-black hover:bg-maroon/5 hover:text-maroon transition-colors group"
         >
           <LogOut className="w-[24px] h-[24px] text-black group-hover:text-maroon" />
           <span>Log Out</span>

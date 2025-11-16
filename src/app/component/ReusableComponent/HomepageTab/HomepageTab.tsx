@@ -14,15 +14,16 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import ChatPopup from "../../General/Message/ChatPopup/chatPopup";
-
 import Avatar from "../../ReusableComponent/Avatar";
 import AccountDropdown from "../../General/Account/accountDropdown";
-
-// --- 1. ADD IMPORTS ---
-// (These paths are from your file)
-import { getCurrentUserDetails } from "../../../../../supabase/Lib/General/getUser";
 import type { User } from "../../../../../supabase/Lib/General/user";
 
+// Component Interface
+interface HomepageTabProps {
+  user: User | null;
+}
+
+// Navigation
 const navItems = [
   { href: "/Announcement", icon: Megaphone, name: "Announcement" },
   { href: "/Feeds", icon: Newspaper, name: "Feeds" },
@@ -31,13 +32,11 @@ const navItems = [
   { href: "/LostandFound", icon: Package, name: "Lost & Found" },
 ];
 
-export default function HomepageTab() {
+// Component
+export default function HomepageTab({ user }: HomepageTabProps) {
   const pathname = usePathname() ?? "/";
   const [isChatPopupOpen, setIsChatPopupOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-
-  // --- 2. ADD STATE TO HOLD THE USER ---
-  const [user, setUser] = useState<User | null>(null);
 
   const normalize = (p: string) =>
     p.endsWith("/") && p !== "/" ? p.slice(0, -1) : p;
@@ -45,7 +44,7 @@ export default function HomepageTab() {
   const currentPath = normalize(pathname);
   const isOnMessagePage = pathname.startsWith("/Message");
 
-  // --- (Existing effects are fine) ---
+  // Effects
   useEffect(() => {
     if (isOnMessagePage) {
       setIsChatPopupOpen(false);
@@ -57,23 +56,13 @@ export default function HomepageTab() {
     setIsProfileOpen(false);
   }, [pathname]);
 
-  // --- 3. ADD EFFECT TO FETCH USER DATA ON LOAD ---
-  useEffect(() => {
-    const loadUserData = async () => {
-      const userDetails = await getCurrentUserDetails();
-      if (userDetails) {
-        setUser(userDetails);
-      }
-    };
-    loadUserData();
-  }, []); // Empty array means this runs once when the component mounts
-
+  // Render
   return (
     <header className="h-[80px] w-full fixed top-0 left-0 z-20 flex items-center justify-between px-8 bg-gradient-to-r from-[#FFF7CD] to-[#FFC9C9] shadow-md">
-      {/* --- (Left: Logo) --- */}
+      {/* Left: Logo */}
       <Logo width={50} height={55} href="/Announcement" />
 
-      {/* --- (Middle: Navigation) --- */}
+      {/* Middle: Navigation */}
       <nav className="flex gap-4">
         {navItems.map((item) => {
           const itemPath = normalize(item.href);
@@ -91,9 +80,9 @@ export default function HomepageTab() {
         })}
       </nav>
 
-      {/* --- (Right: User Icons) --- */}
+      {/* Right: User Icons */}
       <div className="flex gap-8 items-center text-black relative">
-        {/* --- (Chat Icon & Popup) --- */}
+        {/* Chat Icon & Popup */}
         {!isOnMessagePage && (
           <>
             <button
@@ -128,10 +117,10 @@ export default function HomepageTab() {
           </>
         )}
 
-        {/* --- (Notification Bell) --- */}
+        {/* Notification Bell */}
         <Bell className="w-8 h-8 cursor-pointer transition-colors hover:text-[#8B0E0E]" />
 
-        {/* --- Profile Avatar & Dropdown --- */}
+        {/* Profile Avatar & Dropdown */}
         <div className="relative">
           <button
             onClick={() => setIsProfileOpen(!isProfileOpen)}
@@ -140,7 +129,6 @@ export default function HomepageTab() {
                            hover:bg-black/10
                            ${isProfileOpen ? "bg-black/10" : "bg-transparent"}`}
           >
-            {/* --- 4. USE THE USER DATA FROM STATE --- */}
             <Avatar
               avatarURL={user?.avatarURL}
               altText={user?.fullName || "User Profile"}
@@ -155,10 +143,10 @@ export default function HomepageTab() {
                 className="absolute top-14 right-0 z-30"
                 onClick={(e) => e.stopPropagation()}
               >
-                {/* This component fetches its own data, which is fine, 
-                  but now our main button also has data.
-                */}
-                <AccountDropdown onClose={() => setIsProfileOpen(false)} />
+                <AccountDropdown
+                  user={user}
+                  onClose={() => setIsProfileOpen(false)}
+                />
               </div>
               <div
                 className="fixed inset-0 z-20"
