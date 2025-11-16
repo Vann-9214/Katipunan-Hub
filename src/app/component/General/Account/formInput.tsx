@@ -1,4 +1,3 @@
-// This is your reusable component for form fields
 interface FormInputProps {
   label: string;
   id: string;
@@ -29,7 +28,7 @@ export default function FormInput({
         onChange={onChange}
         disabled={disabled}
         className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
-                   focus:outline-none focus:ring-maroon focus:border-maroon
+                   focus:outline-none focus:ring-black focus:border-black
                    disabled:bg-gray-100 disabled:text-gray-500"
       />
     </div>

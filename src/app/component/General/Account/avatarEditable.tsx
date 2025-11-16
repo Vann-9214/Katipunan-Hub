@@ -1,73 +1,73 @@
 "use client";
 
+// Imports
 import { useState } from "react";
-import Avatar from "@/app/component/ReusableComponent/Avatar"; // <-- 1. IMPORTS your "dumb" Avatar
-import AvatarUploadModal from "./avatarCroppedModal";
+import Avatar from "@/app/component/ReusableComponent/Avatar";
+import AvatarUploadModal from "./avatarCroppedForm";
 import { uploadAvatar } from "../../../../../supabase/Lib/Account/uploadAvatar";
-import { updateUserAccount } from "../../../../../supabase/Lib/Account/updateUserAccount";
-import { UserDetails } from "./types";
+import type { User } from "../../../../../supabase/Lib/General/user";
 import { Pen } from "lucide-react";
 
+// Interface
 interface AvatarEditorProps {
-  user: UserDetails;
-  className?: string; // To pass sizing like "w-16 h-16"
+  user: User;
+  className?: string;
 }
 
+// Component
 export default function AvatarEditor({ user, className }: AvatarEditorProps) {
+  // State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(
     user.avatarURL || null
   );
 
+  // Handlers
   const handleSaveCrop = async (croppedBlob: Blob) => {
     setIsUploading(true);
-    let newUrl = null;
 
     try {
-      // 1. Upload to Storage
-      const { publicUrl, error: uploadError } = await uploadAvatar(
-        user.id,
-        croppedBlob
-      );
-      if (uploadError) throw uploadError;
+      const { publicUrl, error } = await uploadAvatar(user.id, croppedBlob);
 
-      newUrl = publicUrl;
+      if (error) {
+        throw error;
+      }
 
-      // 2. Update 'Accounts' table in Database
-      const { error: dbError } = await updateUserAccount(user.id, {
-        avatarURL: newUrl,
-      });
-      if (dbError) throw dbError;
-
-      // 3. Success! Update local state and close.
-      setLocalAvatarUrl(newUrl);
-      setIsModalOpen(false);
-    } catch (error) {
-      console.error("Failed to update avatar:", error);
-      // TODO: Show an error toast to the user
+      if (publicUrl) {
+        setLocalAvatarUrl(publicUrl + `?t=${new Date().getTime()}`);
+        setIsModalOpen(false);
+      } else {
+        throw new Error("Upload succeeded but no public URL was returned.");
+      }
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error("Failed to update avatar:", error.message);
+      } else {
+        console.error("Failed to update avatar:", error);
+      }
     } finally {
       setIsUploading(false);
     }
   };
 
+  // JSX
   return (
     <>
-      {/* 2. WRAPS the Avatar in a button to make it clickable */}
       <button
         type="button"
         onClick={() => setIsModalOpen(true)}
         disabled={isUploading}
-        className={`relative group rounded-full focus:outline-none focus:ring-2 focus:ring-maroon focus:ring-offset-2 ${
+        className={`relative group rounded-full cursor-pointer ${
           isUploading ? "cursor-not-allowed" : ""
         } ${className}`}
       >
         <Avatar
           avatarURL={localAvatarUrl}
           altText={user.fullName || "User"}
-          className="w-full h-full" // Ensure Avatar fills the button
+          className="w-full h-full"
         />
-        {/* Edit Icon Overlay */}
+
         {!isUploading && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
             <Pen size={20} className="text-white" />
@@ -75,7 +75,6 @@ export default function AvatarEditor({ user, className }: AvatarEditorProps) {
         )}
       </button>
 
-      {/* 3. Manages the modal logic */}
       {isModalOpen && (
         <AvatarUploadModal
           onClose={() => setIsModalOpen(false)}

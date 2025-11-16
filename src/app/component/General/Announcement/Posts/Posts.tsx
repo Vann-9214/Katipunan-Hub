@@ -8,7 +8,7 @@ import CommentButton from "./Comment/commentButton";
 import ReactButton from "./reactButton";
 import Image from "next/image";
 import ImageAttachments from "../ImageAttachment/ImageAttachments";
-import EditPostsButton from "../General/EditPostsButton";
+import EditPostsButton from "../LeftSide/EditPostsButton";
 
 import { usePostReactions } from "../../../../../../supabase/Lib/Announcement/Posts/usePostReaction";
 import ReactionSummary from "./reactionSummary";

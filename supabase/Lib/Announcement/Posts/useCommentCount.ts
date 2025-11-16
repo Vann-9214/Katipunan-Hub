@@ -1,12 +1,12 @@
 // supabase/Lib/Announcement/Posts/useCommentCount.ts
 "use client";
 
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { supabase } from "../../General/supabaseClient";
 import { useEffect, useState, useCallback } from "react";
 
 export function useCommentCount(postId: string) {
   const [count, setCount] = useState(0);
-  const supabase = createClientComponentClient(); // No broadcast option
+
 
   // 1. This is the re-usable fetch function
   const fetchCount = useCallback(async () => {

@@ -1,9 +1,8 @@
-  import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { supabase } from "../../General/supabaseClient";
 
   export async function uploadFileAndGetPublicUrl(
     file: File
   ): Promise<string | null> {
-    const supabase = createClientComponentClient();
     try {
       const ext = (file.name.split(".").pop() || "bin").replace(
         /[^a-zA-Z0-9]/g,

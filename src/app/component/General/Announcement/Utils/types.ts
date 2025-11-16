@@ -28,7 +28,7 @@ export interface CurrentUser {
   id: string;
   email?: string;
   fullName?: string | null;
-  role?: string[];
+  role?: string;
   course?: string;
   studentID?: string;
   year?: string;

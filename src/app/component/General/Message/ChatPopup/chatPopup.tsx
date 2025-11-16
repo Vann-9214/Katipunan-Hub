@@ -1,16 +1,11 @@
 "use client";
 
-import { Search, Maximize2 } from "lucide-react"; // Icons for this component
-import { useState, useEffect } from "react"; // Only hooks needed here
+import { Search, Maximize2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-// Assuming this path is correct for your supabase setup
-import {
-  supabase,
-  getCurrentUserDetails,
-  FullUser,
-} from "../../../../../../supabase/Lib/Message/auth";
-
-// --- NEW IMPORTS ---
+import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
+import { getCurrentUserDetails } from "../../../../../../supabase/Lib/General/getUser";
+import type { User } from "../../../../../../supabase/Lib/General/user";
 import { ConversationItem } from "../Utils/types";
 import PopupConversationItem from "./popupConversationitem";
 
@@ -19,7 +14,7 @@ export default function ChatPopup() {
   const [search, setSearch] = useState("");
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState<FullUser | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const router = useRouter();
 
   // 1. Fetch current user on mount

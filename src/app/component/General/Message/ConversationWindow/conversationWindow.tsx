@@ -2,11 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
-import {
-  supabase,
-  getCurrentUserDetails,
-  FullUser,
-} from "../../../../../../supabase/Lib/Message/auth";
+import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
+import { getCurrentUserDetails } from "../../../../../../supabase/Lib/General/getUser";
+import type { User } from "../../../../../../supabase/Lib/General/user";
 
 // --- CLEANED IMPORTS ---
 import { OtherUser, Message } from "../Utils/types";
@@ -22,7 +20,7 @@ export default function ConversationWindow() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState<FullUser | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [otherUser, setOtherUser] = useState<OtherUser | null>(null);
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
 

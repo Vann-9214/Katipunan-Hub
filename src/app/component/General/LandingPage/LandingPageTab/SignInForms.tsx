@@ -1,6 +1,6 @@
 "use client";
 
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
 import { useState } from "react";
 import { motion } from "framer-motion";
 
@@ -15,8 +15,6 @@ interface SignInFormProps {
 }
 
 export default function SignInForm({ onClose, onSwitch }: SignInFormProps) {
-  const supabase = createClientComponentClient();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -168,7 +166,7 @@ export default function SignInForm({ onClose, onSwitch }: SignInFormProps) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 rightImageSrc="/Open Eye Icon.svg"
-                rightToggleImageSrc="Eye Off.svg"
+                rightToggleImageSrc="/Eye Off.svg"
                 rightImageAlt="password icon"
                 rightImageWidth={30}
                 rightImageHeight={30}

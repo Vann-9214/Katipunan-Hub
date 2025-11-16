@@ -3,15 +3,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { Search, MessagesSquare, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
-import {
-  supabase,
-  getCurrentUserDetails,
-  FullUser,
-  getSortedUserPair,
-} from "../../../../../../supabase/Lib/Message/auth";
+import { getSortedUserPair } from "../../../../../../supabase/Lib/Message/auth";
+import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
+import { getCurrentUserDetails } from "../../../../../../supabase/Lib/General/getUser";
+import type { User } from "../../../../../../supabase/Lib/General/user";
 import Avatar from "@/app/component/ReusableComponent/Avatar";
-
-// --- NEW CLEAN IMPORTS ---
 import { OtherAccount, Conversation } from "../Utils/types";
 import ConversationList from "./conversationList";
 import SearchResultItem from "./searchResultItem";
@@ -21,7 +17,7 @@ export default function ChatSidebar() {
   const [search, setSearch] = useState("");
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState<FullUser | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   const [searchResults, setSearchResults] = useState<OtherAccount[]>([]);
   const [isSearching, setIsSearching] = useState(false);

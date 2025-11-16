@@ -1,6 +1,6 @@
 "use client";
 
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { supabase } from "../../General/supabaseClient";
 import { useEffect, useState, useCallback, useRef } from "react";
 // Make sure this path is correct for your project
 import { CommentWithAuthor } from "@/app/component/General/Announcement/Posts/Comment/commentItem";
@@ -37,7 +37,6 @@ const simpleOptimisticUpdate = (
 // --- END HELPER ---
 
 export function useComments(postId: string) {
-  const supabase = createClientComponentClient();
   const [comments, setComments] = useState<CommentWithAuthor[]>([]);
   const [commentCount, setCommentCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);

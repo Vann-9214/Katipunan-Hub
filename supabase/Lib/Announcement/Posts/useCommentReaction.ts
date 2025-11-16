@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { supabase } from "../../General/supabaseClient";
 // --- 1. REMOVE `useRouter` ---
 // We will use Supabase Realtime instead.
 
@@ -10,7 +10,6 @@ export const useCommentReaction = (
   initialReactionId: string | null,
   commentId: string
 ) => {
-  const supabase = createClientComponentClient();
   // --- 2. REMOVE `router` instance ---
 
   // This state is for the "optimistic update"

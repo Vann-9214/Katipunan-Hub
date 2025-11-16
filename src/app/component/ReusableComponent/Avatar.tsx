@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 
 /**
@@ -31,8 +31,15 @@ const Avatar: React.FC<AvatarProps> = ({
 }) => {
   // Path to your default avatar in the `public` folder
   const defaultAvatarPath = "/DefaultAvatar.svg"; // Use state to manage the image source for error handling
-
   const [imgSrc, setImgSrc] = useState(avatarURL || defaultAvatarPath);
+
+  useEffect(() => {
+    if (avatarURL) {
+      setImgSrc(avatarURL);
+    } else {
+      setImgSrc(defaultAvatarPath);
+    }
+  }, [avatarURL, defaultAvatarPath]);
 
   return (
     // The Image 'fill' prop needs a parent with 'relative' and a defined size.
@@ -42,7 +49,7 @@ const Avatar: React.FC<AvatarProps> = ({
         src={imgSrc}
         alt={altText} // Use 'fill' to make the image fill the parent div
         fill // Apply styling to the Image itself
-        className="rounded-full object-cover border border-black" // The 'onError' handler updates the state to the fallback
+        className="rounded-full object-cover" // The 'onError' handler updates the state to the fallback
         onError={() => {
           setImgSrc(defaultAvatarPath);
         }} // Add a 'sizes' prop for performance optimization with 'fill'

@@ -1,4 +1,4 @@
-import { supabase } from "../../../../lib/supabaseClient";
+import { supabase } from "../../General/supabaseClient";
 
 export type UpdatePostPayload = {
   title?: string;
