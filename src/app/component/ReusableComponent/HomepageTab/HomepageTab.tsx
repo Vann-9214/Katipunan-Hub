@@ -158,7 +158,10 @@ export default function HomepageTab() {
                 {/* This component fetches its own data, which is fine, 
                   but now our main button also has data.
                 */}
-                <AccountDropdown onClose={() => setIsProfileOpen(false)} />
+                <AccountDropdown
+                  user={user}
+                  onClose={() => setIsProfileOpen(false)}
+                />
               </div>
               <div
                 className="fixed inset-0 z-20"

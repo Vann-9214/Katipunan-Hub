@@ -2,7 +2,8 @@
 
 import React, { useState } from "react";
 import { ArrowLeft, Globe, School, Circle } from "lucide-react";
-import { Combobox } from "@/app/component/ReusableComponent/Combobox"; // Make sure this path is correct
+import { Combobox } from "@/app/component/ReusableComponent/Combobox";
+import { collegeitems } from "../Utils/constants"; // Import the detailed list
 
 interface PostAudienceSelectorProps {
   currentVisibleTo: "global" | "college";
@@ -13,15 +14,6 @@ interface PostAudienceSelectorProps {
   ) => void;
   onClose: () => void;
 }
-
-// Example college list
-const colleges = ["ccs", "cba", "cea", "cas", "coed", "con", "chtm"];
-
-// Format the list for the Combobox component
-const collegeItems = colleges.map((college) => ({
-  value: college,
-  label: college.toUpperCase(), // e.g., "CCS"
-}));
 
 export default function PostAudienceSelector({
   currentVisibleTo,
@@ -52,12 +44,12 @@ export default function PostAudienceSelector({
 
   return (
     <div className="w-full max-h-[90vh] flex flex-col">
-      {/* 1. Header */}
+      {/* Header */}
       <div className="relative flex items-center p-6 border-b border-gray-200 flex-shrink-0">
         <button
           type="button"
           onClick={onClose}
-          className="absolute left-6 text-gray-500 hover:text-gray-700 cursor-pointer" // Added cursor-pointer
+          className="absolute left-6 text-gray-500 hover:text-gray-700 cursor-pointer"
         >
           <ArrowLeft size={24} />
         </button>
@@ -67,17 +59,16 @@ export default function PostAudienceSelector({
         <div className="w-6 h-6"></div>
       </div>
 
-      {/* 2. Options Area */}
+      {/* Options Area */}
       <div className="p-6 space-y-4 overflow-y-auto">
         {/* Global Option */}
         <button
           type="button"
           onClick={() => handleSelect("global")}
           className={`flex items-center justify-between w-full p-4 border rounded-lg transition-colors cursor-pointer ${
-            // Added cursor-pointer
             selectedType === "global"
-              ? "border-maroon bg-maroon/5"
-              : "border-gray-200 hover:bg-gray-50"
+              ? "border-black bg-black/5"
+              : "border-gray-300 hover:bg-gray-50"
           }`}
         >
           <div className="flex items-center gap-4">
@@ -92,7 +83,6 @@ export default function PostAudienceSelector({
             </div>
           </div>
           {selectedType === "global" ? (
-            // --- UPDATED ---
             <Circle size={20} className="text-maroon" fill="currentColor" />
           ) : (
             <Circle size={20} className="text-gray-400" />
@@ -103,8 +93,8 @@ export default function PostAudienceSelector({
         <div
           className={`w-full border rounded-lg transition-colors ${
             selectedType === "college"
-              ? "border-maroon bg-maroon/5"
-              : "border-gray-200" // Removed hover here, as button handles it
+              ? "border-black bg-black/5"
+              : "border-gray-200"
           }`}
         >
           {/* Part 1: The clickable row */}
@@ -112,8 +102,7 @@ export default function PostAudienceSelector({
             type="button"
             onClick={() => handleSelect("college")}
             className={`flex items-center justify-between w-full p-4 cursor-pointer ${
-              // Added cursor-pointer
-              selectedType !== "college" && "hover:bg-gray-50" // Add hover only if not selected
+              selectedType !== "college" && "hover:bg-gray-50"
             }`}
           >
             <div className="flex items-center gap-4">
@@ -128,7 +117,6 @@ export default function PostAudienceSelector({
               </div>
             </div>
             {selectedType === "college" ? (
-              // --- UPDATED ---
               <Circle size={20} className="text-maroon" fill="currentColor" />
             ) : (
               <Circle size={20} className="text-gray-400" />
@@ -139,7 +127,7 @@ export default function PostAudienceSelector({
           {selectedType === "college" && (
             <div className="pb-4 px-4">
               <Combobox
-                items={collegeItems}
+                items={collegeitems}
                 onChange={handleCollegeSelect}
                 defaultMode="value"
                 defaultValue={selectedCollege}
@@ -149,10 +137,13 @@ export default function PostAudienceSelector({
                 width="w-full"
                 buttonHeight="h-auto py-3"
                 rounded="rounded-lg"
-                buttonBG="bg-gray-100"
-                borderColor="border-transparent"
-                textColor="text-gray-700"
-                selectedTextColor="text-gray-900"
+                // Use a clean white BG and a subtle border
+                buttonBG="bg-white"
+                borderColor="border-gray-300"
+                hoverBG="hover:bg-black/1"
+                // Use darker text for better contrast
+                textColor="text-gray-600"
+                selectedTextColor="text-black"
                 checkArrowColor="text-maroon"
                 // --- Dropdown styles ---
                 dropdownBG="bg-white"

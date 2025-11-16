@@ -65,7 +65,7 @@ export default function ImageLightbox({
       {/* Close Button (Top Right) */}
       <button
         onClick={handleClose}
-        className="fixed top-4 right-4 z-[70] p-2 text-white bg-black/30 rounded-full hover:bg-black/60 transition-colors"
+        className="cursor-pointer fixed top-4 right-4 z-[70] p-2 text-white bg-black/30 rounded-full hover:bg-black/60 transition-colors"
         aria-label="Close image carousel"
       >
         <svg
@@ -105,7 +105,7 @@ export default function ImageLightbox({
             e.stopPropagation(); // Prevent backdrop click
             onPrev();
           }}
-          className="fixed left-4 md:left-8 top-1/2 -translate-y-1/2 z-[70] p-3 text-white bg-black/30 rounded-full hover:bg-black/60 transition-colors"
+          className="cursor-pointer fixed left-4 md:left-8 top-1/2 -translate-y-1/2 z-[70] p-3 text-white bg-black/30 rounded-full hover:bg-black/60 transition-colors"
           aria-label="Previous image"
         >
           <ChevronIcon className="w-7 h-7" />
@@ -119,7 +119,7 @@ export default function ImageLightbox({
             e.stopPropagation(); // Prevent backdrop click
             onNext();
           }}
-          className="fixed right-4 md:right-8 top-1/2 -translate-y-1/2 z-[70] p-3 text-white bg-black/30 rounded-full hover:bg-black/60 transition-colors"
+          className="cursor-pointer fixed right-4 md:right-8 top-1/2 -translate-y-1/2 z-[70] p-3 text-white bg-black/30 rounded-full hover:bg-black/60 transition-colors"
           aria-label="Next image"
         >
           <ChevronIcon className="w-7 h-7 transform rotate-180" />

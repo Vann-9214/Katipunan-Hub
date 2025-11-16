@@ -1,41 +1,86 @@
 // Constants.ts on AddPosts
 
+import {
+  HardHat,
+  Briefcase,
+  FlaskConical,
+  Laptop,
+  GraduationCap,
+  Stethoscope,
+  Utensils,
+  Scale,
+  HeartPulse,
+  Wrench,
+  Sprout,
+} from "lucide-react";
+
 export const collegeitems = [
   {
     value: "cea",
     label: "Engineering and Architecture (CEA)",
-    selectedPlaceholder: "CEA",
+    selectedPlaceholder: "Engineering and Architecture (CEA)",
+    icon: HardHat,
   },
   {
     value: "cba",
     label: "Business Administration (CBA)",
-    selectedPlaceholder: "CBA",
+    selectedPlaceholder: "Business Administration (CBA)",
+    icon: Briefcase,
   },
   {
     value: "cas",
     label: "Arts and Sciences (CAS)",
-    selectedPlaceholder: "CAS",
+    selectedPlaceholder: "Arts and Sciences (CAS)",
+    icon: FlaskConical,
   },
   {
     value: "ccs",
     label: "Computer Studies (CCS)",
-    selectedPlaceholder: "CCS",
+    selectedPlaceholder: "Computer Studies (CCS)",
+    icon: Laptop,
   },
-  { value: "coed", label: "Education (COED)", selectedPlaceholder: "COED" },
-  { value: "con", label: "Nursing (CON)", selectedPlaceholder: "CON" },
+  {
+    value: "coed",
+    label: "Education (COED)",
+    selectedPlaceholder: "Education (COED)",
+    icon: GraduationCap,
+  },
+  {
+    value: "con",
+    label: "Nursing (CON)",
+    selectedPlaceholder: "Nursing (CON)",
+    icon: Stethoscope,
+  },
   {
     value: "chtm",
     label: "Hospitality and Tourism Management (CHTM)",
-    selectedPlaceholder: "CHTM",
+    selectedPlaceholder: "Hospitality and Tourism Management (CHTM)",
+    icon: Utensils,
   },
-  { value: "claw", label: "Law (CLAW)", selectedPlaceholder: "CLAW" },
-  { value: "cah", label: "Allied Health (CAH)", selectedPlaceholder: "CAH" },
+  {
+    value: "claw",
+    label: "Law (CLAW)",
+    selectedPlaceholder: "Law (CLAW)",
+    icon: Scale,
+  },
+  {
+    value: "cah",
+    label: "Allied Health (CAH)",
+    selectedPlaceholder: "Allied Health (CAH)",
+    icon: HeartPulse,
+  },
   {
     value: "cit",
     label: "Industrial Technology (CIT)",
-    selectedPlaceholder: "CIT",
+    selectedPlaceholder: "Industrial Technology (CIT)",
+    icon: Wrench,
   },
-  { value: "cagr", label: "Agriculture (CAGR)", selectedPlaceholder: "CAGR" },
+  {
+    value: "cagr",
+    label: "Agriculture (CAGR)",
+    selectedPlaceholder: "Agriculture (CAGR)",
+    icon: Sprout,
+  },
 ];
 
 // AnnouncementPageContent/constants.ts

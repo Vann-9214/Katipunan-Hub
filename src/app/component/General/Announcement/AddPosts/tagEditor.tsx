@@ -30,7 +30,7 @@ export default function TagEditor({
 
   return (
     <div className="flex flex-col">
-      <div className="flex mb-2 gap-4 items-end">
+      <div className="flex mb-1 gap-4 items-end">
         {/* I also added 'mb-2' (margin-bottom) to your H2
           to create space between the title and the input bar.
         */}

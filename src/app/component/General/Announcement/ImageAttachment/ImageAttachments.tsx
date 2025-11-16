@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import Image from "next/image"; // --- 1. Import next/image ---
+// Import next/image (it's still used by ImagePreview, which is fine)
+import Image from "next/image";
 import { ColorBackedImage } from "./colorBackedImage";
 import { useImageLightbox } from "./imageLightboxContent";
 
@@ -21,7 +22,7 @@ export default function ImageAttachments({ images }: ImageAttachmentsProps) {
 
   const gridBase = "w-full h-[450px] overflow-hidden";
 
-  // 1 image
+  // 1 image (Unchanged)
   if (count === 1) {
     return (
       <div onClick={() => handleClick(0)} className="cursor-pointer">
@@ -29,14 +30,13 @@ export default function ImageAttachments({ images }: ImageAttachmentsProps) {
           src={images[0]}
           alt="Attachment"
           containerClassName="w-full flex items-center justify-center overflow-hidden min-h-[200px] transition-colors duration-500"
-          // --- 2. REVERTED: Added back w-full h-auto to fix the layout ---
           imageClassName="w-full h-auto object-contain max-h-[80vh] block"
         />
       </div>
     );
   }
 
-  // 2 images
+  // 2 images (Unchanged)
   if (count === 2) {
     return (
       <div className="grid grid-cols-2 gap-[1.6px] w-full">
@@ -50,7 +50,6 @@ export default function ImageAttachments({ images }: ImageAttachmentsProps) {
               src={src}
               alt={`Attachment ${idx}`}
               containerClassName="relative overflow-hidden flex items-center justify-center min-h-[300px] transition-colors duration-500"
-              // --- 2. REVERTED: Added back w-full h-auto to fix the layout ---
               imageClassName="w-full h-auto object-contain block"
               imageStyle={{ maxHeight: "65vh" }}
             />
@@ -60,7 +59,7 @@ export default function ImageAttachments({ images }: ImageAttachmentsProps) {
     );
   }
 
-  // 3 images
+  // 3 images (Updated)
   if (count === 3) {
     return (
       <div
@@ -68,48 +67,45 @@ export default function ImageAttachments({ images }: ImageAttachmentsProps) {
       >
         <div
           onClick={() => handleClick(0)}
-          className="relative col-span-1 row-span-2 bg-gray-200 overflow-hidden cursor-pointer group"
+          className="relative col-span-1 row-span-2 overflow-hidden cursor-pointer group"
         >
-          {/* --- 3. REPLACED <img> with <Image> --- */}
-          <Image
+          {/* --- REPLACED Image with ColorBackedImage --- */}
+          <ColorBackedImage
             src={images[0]}
             alt="Attachment 1"
-            className="absolute inset-0 w-full h-full object-cover transition-opacity group-hover:opacity-90"
-            fill={true}
-            sizes="(max-width: 768px) 50vw, 33vw"
+            containerClassName="w-full h-full relative overflow-hidden flex items-center justify-center transition-colors duration-500"
+            imageClassName="w-full h-full object-contain block"
           />
         </div>
         <div
           onClick={() => handleClick(1)}
-          className="relative bg-gray-200 overflow-hidden cursor-pointer group"
+          className="relative overflow-hidden cursor-pointer group"
         >
-          {/* --- 3. REPLACED <img> with <Image> --- */}
-          <Image
+          {/* --- REPLACED Image with ColorBackedImage --- */}
+          <ColorBackedImage
             src={images[1]}
             alt="Attachment 2"
-            className="absolute inset-0 w-full h-full object-cover transition-opacity group-hover:opacity-90"
-            fill={true}
-            sizes="(max-width: 768px) 50vw, 33vw"
+            containerClassName="w-full h-full relative overflow-hidden flex items-center justify-center transition-colors duration-500"
+            imageClassName="w-full h-full object-contain block"
           />
         </div>
         <div
           onClick={() => handleClick(2)}
-          className="relative bg-gray-200 overflow-hidden cursor-pointer group"
+          className="relative overflow-hidden cursor-pointer group"
         >
-          {/* --- 3. REPLACED <img> with <Image> --- */}
-          <Image
+          {/* --- REPLACED Image with ColorBackedImage --- */}
+          <ColorBackedImage
             src={images[2]}
             alt="Attachment 3"
-            className="absolute inset-0 w-full h-full object-cover transition-opacity group-hover:opacity-90"
-            fill={true}
-            sizes="(max-width: 768px) 50vw, 33vw"
+            containerClassName="w-full h-full relative overflow-hidden flex items-center justify-center transition-colors duration-500"
+            imageClassName="w-full h-full object-contain block"
           />
         </div>
       </div>
     );
   }
 
-  // 4 images
+  // 4 images (Updated)
   if (count === 4) {
     return (
       <div className={`grid grid-cols-2 gap-[1.6px] w-full ${gridBase}`}>
@@ -117,15 +113,14 @@ export default function ImageAttachments({ images }: ImageAttachmentsProps) {
           <div
             key={idx}
             onClick={() => handleClick(idx)}
-            className="relative bg-gray-200 overflow-hidden cursor-pointer group"
+            className="relative overflow-hidden cursor-pointer group"
           >
-            {/* --- 3. REPLACED <img> with <Image> --- */}
-            <Image
+            {/* --- REPLACED Image with ColorBackedImage --- */}
+            <ColorBackedImage
               src={src}
               alt={`Attachment ${idx}`}
-              className="absolute inset-0 w-full h-full object-cover transition-opacity group-hover:opacity-90"
-              fill={true}
-              sizes="(max-width: 768px) 50vw, 33vw"
+              containerClassName="w-full h-full relative overflow-hidden flex items-center justify-center transition-colors duration-500"
+              imageClassName="w-full h-full object-contain block"
             />
           </div>
         ))}
@@ -133,7 +128,7 @@ export default function ImageAttachments({ images }: ImageAttachmentsProps) {
     );
   }
 
-  // 5+ images
+  // 5+ images (Updated)
   const visible = images.slice(0, 5);
   const extra = count - 5;
 
@@ -144,15 +139,14 @@ export default function ImageAttachments({ images }: ImageAttachmentsProps) {
           <div
             key={idx}
             onClick={() => handleClick(idx)}
-            className="relative bg-gray-200 overflow-hidden cursor-pointer group"
+            className="relative overflow-hidden cursor-pointer group"
           >
-            {/* --- 3. REPLACED <img> with <Image> --- */}
-            <Image
+            {/* --- REPLACED Image with ColorBackedImage --- */}
+            <ColorBackedImage
               src={src}
               alt={`Attachment ${idx}`}
-              className="absolute inset-0 w-full h-full object-cover transition-opacity group-hover:opacity-90"
-              fill={true}
-              sizes="(max-width: 768px) 33vw, 25vw"
+              containerClassName="w-full h-full relative overflow-hidden flex items-center justify-center transition-colors duration-500"
+              imageClassName="w-full h-full object-contain block"
             />
           </div>
         ))}
@@ -165,16 +159,16 @@ export default function ImageAttachments({ images }: ImageAttachmentsProps) {
             <div
               key={idx}
               onClick={() => handleClick(actualIndex)}
-              className="relative bg-gray-200 overflow-hidden cursor-pointer group"
+              className="relative overflow-hidden cursor-pointer group"
             >
-              {/* --- 3. REPLACED <img> with <Image> --- */}
-              <Image
+              {/* --- REPLACED Image with ColorBackedImage --- */}
+              <ColorBackedImage
                 src={src}
                 alt={`Attachment ${actualIndex}`}
-                className="absolute inset-0 w-full h-full object-cover transition-opacity group-hover:opacity-90"
-                fill={true}
-                sizes="(max-width: 768px) 50vw, 33vw"
+                containerClassName="w-full h-full relative overflow-hidden flex items-center justify-center transition-colors duration-500"
+                imageClassName="w-full h-full object-contain block"
               />
+              {/* This overlay logic is kept */}
               {idx === 1 && extra > 0 && (
                 <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                   <span className="text-white text-3xl font-bold">
