@@ -1,6 +1,3 @@
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
 "use client";
 
 // Imports
@@ -33,21 +30,3 @@ export default function LostandFound() {
     </div>
   );
 }
-=======
-import LostAndFoundContent from "@/app/component/General/LostandFound/LostandFoundcontent"; 
-export default function LostandFoundPage() {
-  return <LostAndFoundContent />;
-}
->>>>>>> Stashed changes
-=======
-import LostAndFoundContent from "@/app/component/General/LostandFound/LostandFoundcontent"; 
-export default function LostandFoundPage() {
-  return <LostAndFoundContent />;
-}
->>>>>>> Stashed changes
-=======
-import LostAndFoundContent from "@/app/component/General/LostandFound/LostandFoundcontent"; 
-export default function LostandFoundPage() {
-  return <LostAndFoundContent />;
-}
->>>>>>> Stashed changes
