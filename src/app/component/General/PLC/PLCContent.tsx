@@ -25,7 +25,7 @@ export default function PLCContent() {
   return (
     <div className="w-full mx-auto">
       {/* Page Header & View Toggles */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-4">
         <h1
           className={`${montserrat.className} text-[32px] font-bold text-[#8B0E0E]`}
         >

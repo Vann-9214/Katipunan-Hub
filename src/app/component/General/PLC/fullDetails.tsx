@@ -69,18 +69,18 @@ export default function FullDetails({
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-[20px] w-full max-w-[650px] shadow-2xl relative p-8 flex flex-col items-center animate-in fade-in zoom-in duration-200">
+      <div className="bg-white rounded-[20px] w-full max-w-[1055px] shadow-2xl relative px-8 py-4 flex flex-col items-center animate-in fade-in zoom-in duration-200">
         {/* Close Icon */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-black"
+          className="cursor-pointer absolute top-4 right-4 text-gray-500 hover:text-black"
         >
           <X size={20} />
         </button>
 
         {/* Header */}
         <h2
-          className={`${montserrat.className} text-[24px] font-bold text-black mb-8`}
+          className={`${montserrat.className} text-[36px] font-semibold text-black mb-4`}
         >
           Request Session
         </h2>
@@ -93,19 +93,23 @@ export default function FullDetails({
               <Avatar
                 avatarURL={booking.avatarURL}
                 altText={booking.studentName || "User"}
-                className="w-20 h-20"
+                className="w-20 h-20 shrink-0"
               />
               <div className="flex flex-col justify-center">
                 <p
-                  className={`${montserrat.className} font-bold text-[16px] text-black`}
+                  className={`${montserrat.className} font-medium text-[22px] text-black`}
                 >
                   {booking.studentName || "Student Name"}
                 </p>
-                <p className={`${ptSans.className} text-[14px] text-black`}>
+                <p
+                  className={`${ptSans.className} font-medium text-[20px] text-black`}
+                >
                   {booking.studentCourse || "Course"} &{" "}
                   {booking.studentYear || "Year"}
                 </p>
-                <p className={`${ptSans.className} text-[14px] text-black`}>
+                <p
+                  className={`${ptSans.className} font-medium text-[20px] text-black`}
+                >
                   {booking.studentIDNum || "Student ID"}
                 </p>
               </div>
@@ -113,16 +117,16 @@ export default function FullDetails({
 
             <div className="flex flex-col gap-1">
               <span
-                className={`${montserrat.className} text-[14px] text-black`}
+                className={`${montserrat.className} text-[22px] text-black`}
               >
                 Subject Title:{" "}
-                <span className="font-bold">{booking.subject}</span>
+                <span className="font-medium">{booking.subject}</span>
               </span>
               <span
-                className={`${montserrat.className} text-[14px] text-black`}
+                className={`${montserrat.className} text-[20px] text-black`}
               >
                 Description:{" "}
-                <span className="font-bold">
+                <span className="font-medium">
                   {booking.description || "No description"}
                 </span>
               </span>
@@ -132,27 +136,27 @@ export default function FullDetails({
           {/* Right Column: Session Info */}
           <div className="flex-1 flex flex-col justify-between py-2">
             <div className="flex flex-col gap-2">
-              <p className={`${montserrat.className} text-[14px] text-black`}>
+              <p className={`${montserrat.className} text-[24px] text-black`}>
                 Date:{" "}
-                <span className="font-bold">
+                <span className="font-medium">
                   {formatDate(booking.bookingDate)}
                 </span>
               </p>
-              <p className={`${montserrat.className} text-[14px] text-black`}>
+              <p className={`${montserrat.className} text-[24px] text-black`}>
                 Time:{" "}
-                <span className="font-bold">
+                <span className="font-medium">
                   {formatTime(booking.startTime)}
                 </span>
               </p>
-              <p className={`${montserrat.className} text-[14px] text-black`}>
-                Declined Request: <span className="font-bold">0/10</span>
+              <p className={`${montserrat.className} text-[24px] text-black`}>
+                Declined Request: <span className="font-medium">0/10</span>
               </p>
 
               {/* Status */}
               <p
                 className={`${
                   montserrat.className
-                } text-[14px] font-bold mt-1 ${
+                } text-[24px] font-medium mt-1 ${
                   booking.status === "Pending"
                     ? "text-[#D97706]"
                     : booking.status === "Approved"
@@ -167,7 +171,7 @@ export default function FullDetails({
             <div className="flex justify-end mt-6">
               <button
                 onClick={() => onCancelRequest(booking.id)}
-                className={`${montserrat.className} bg-[#8B0E0E] text-white text-[12px] font-bold py-2 px-4 rounded-full hover:bg-[#6d0b0b] transition-colors`}
+                className={`${montserrat.className} bg-[#8B0E0E] text-white cursor-pointer text-[12px] font-bold py-2 px-4 rounded-full hover:bg-[#6d0b0b] transition-colors`}
               >
                 Cancel Request
               </button>
