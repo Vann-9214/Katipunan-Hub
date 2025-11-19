@@ -5,13 +5,13 @@
 @import "tw-animate-css";
 
 /* 2. Import your custom theme */
-@import "./Global/theme.css"; /* <-- UPDATED PATH */
+@import "./Global/theme.css";
 
 /* 3. Import your custom scrollbar styles */
-@import "./Global/scrollbar.css"; /* <-- UPDATED PATH */
+@import "./Global/scrollbar.css";
 
 /* 4. Import your custom animations */
-@import "./Global/animations.css"; /* <-- UPDATED PATH */
+@import "./Global/animations.css";
 
 /* 5. Keep your base layer styles */
 @layer base {
@@ -23,6 +23,77 @@
   }
 }
 
+/* 6. ADDED ANIMATIONS BLOCK */
+@layer utilities {
+  /* For dropdowns and search bar */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95) translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.15s ease-out;
+  }
+
+  /* For the background blobs */
+  @keyframes blob {
+    0% {
+      transform: translate(0px, 0px) scale(1);
+    }
+    33% {
+      transform: translate(30px, -50px) scale(1.1);
+    }
+    66% {
+      transform: translate(-20px, 20px) scale(0.9);
+    }
+    100% {
+      transform: translate(0px, 0px) scale(1);
+    }
+  }
+  .animate-blob {
+    animation: blob 7s infinite;
+  }
+  .animation-delay-2000 {
+    animation-delay: -2s; /* Using -2s to start at a different point */
+  }
+  
+  /* For the star button "roll out" effect */
+  @keyframes roll-out-bounce {
+    0% {
+      transform: scale(0.5) translateX(60px);
+      opacity: 0;
+    }
+    60% {
+      /* Overshoot (the "bounce") */
+      transform: scale(1.1) translateX(0);
+      opacity: 1;
+    }
+    80% {
+      /* Settle back */
+      transform: scale(0.95) translateX(0);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1) translateX(0);
+      opacity: 1;
+    }
+  }
+
+  .animate-roll-out-bounce {
+    /* Use 'forwards' to hold the final animation state */
+    /* This cubic-bezier gives it a very dynamic, springy feel */
+    animation: roll-out-bounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  }
+}
+/* --- END OF ADDED BLOCK --- */
+
+
 /* globals.css */
 
 /* Primary lock — hide scrolling on html/body when modal is open */
@@ -33,7 +104,7 @@ body.modal-open {
 }
 
 /* Hide overflow for most app containers while modal open,
-   but explicitly exclude elements marked `.modal-scroll`. */
+    but explicitly exclude elements marked `.modal-scroll`. */
 body.modal-open .fixed.h-full,
 body.modal-open .overflow-auto:not(.modal-scroll),
 body.modal-open .overflow-y-auto:not(.modal-scroll),
@@ -62,7 +133,7 @@ body.modal-open .overflow-scroll:not(.modal-scroll)::-webkit-scrollbar {
   display: none;
 }
 
-/* 6. Keep your global styles */
+/* 7. Keep your global styles */
 html,
 body {
   font-family: var(--font-montserrat);
@@ -73,5 +144,5 @@ body {
   z-index: 0;
 }
 
-/* 7. Keep your custom variant */
+/* 8. Keep your custom variant */
 @custom-variant dark (&:is(.dark *));
