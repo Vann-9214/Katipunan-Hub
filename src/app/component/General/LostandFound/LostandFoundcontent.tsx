@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence, Variants, Transition } from "framer-motion"; // Make sure Transition is imported
-import HomepageTab from "../../ReusableComponent/HomepageTab/HomepageTab";
+import { motion, AnimatePresence, Variants, Transition } from "framer-motion";
 import PostCard from "./PostCard";
 import {
   Search,
@@ -15,10 +14,19 @@ import {
   Shirt,
   Blocks,
 } from "lucide-react";
-import PostItemModal from "./PostItemModal";
+import PostItemModal, { ModalPostData } from "./PostItemModal";
 import PostViewModal from "./PostViewModal";
 
-// --- Post Type (No Change) ---
+// --- Types ---
+export type Category =
+  | "All Categories"
+  | "Electronics"
+  | "Wallets"
+  | "Books"
+  | "Clothing"
+  | "Other"
+  | "Category";
+
 export type Post = {
   id: number;
   type: "Lost" | "Found";
@@ -32,24 +40,17 @@ export type Post = {
   createdAt: string;
 };
 
-// --- Type definitions (No Change) ---
+export type NewPostData = Omit<Post, "id" | "createdAt">;
+
 type StarFilter = "Lost" | "Found" | "All";
 type SortOrder = "Latest" | "Oldest";
-type Category =
-  | "All Categories"
-  | "Electronics"
-  | "Wallets"
-  | "Books"
-  | "Clothing"
-  | "Other"
-  | "Category";
 
-// --- Dummy Data (No Change) ---
+// --- Dummy Data ---
 const allPosts: Post[] = [
   {
     id: 1,
     type: "Lost",
-    imageUrl: "/cat.svg", 
+    imageUrl: "/cat.svg",
     title: "cat",
     postedBy: "Juan D. | BSCpE",
     lostOn: "Oct 31",
@@ -61,7 +62,7 @@ const allPosts: Post[] = [
   {
     id: 2,
     type: "Found",
-    imageUrl: "/cat.svg", 
+    imageUrl: "/cat.svg",
     title: "cat",
     postedBy: "the name who posted",
     lostOn: "Oct 30",
@@ -72,28 +73,28 @@ const allPosts: Post[] = [
   },
 ];
 
-// --- Icon Helper (No Change) ---
+// --- Icon Helper ---
 const categoryIcons: { [key in Category]?: React.ReactNode } = {
-  "Electronics": <Laptop size={18} />,
-  "Books": <Book size={18} />,
-  "Clothing": <Shirt size={18} />,
-  "Other": <Blocks size={18} />,
+  Electronics: <Laptop size={18} />,
+  Books: <Book size={18} />,
+  Clothing: <Shirt size={18} />,
+  Other: <Blocks size={18} />,
 };
 
-// --- Star Animation Variants (No Change) ---
+// --- Animation Variants ---
 const buttonContainerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: {
       staggerChildren: 0.07,
-      staggerDirection: -1, 
+      staggerDirection: -1,
     },
   },
 };
 
 const buttonVariants: Variants = {
-  hidden: { opacity: 0, scale: 0.3, x: 50 }, 
+  hidden: { opacity: 0, scale: 0.3, x: 50 },
   visible: {
     opacity: 1,
     scale: 1,
@@ -113,60 +114,56 @@ const buttonVariants: Variants = {
       stiffness: 400,
       damping: 15,
     },
-  }
+  },
 };
 
-// --- Search Animation Variants (No Change) ---
-// Ensure Transition is imported if you're using it here for `searchSpring`
-const searchSpring: Transition = { // Define searchSpring here
+const searchSpring: Transition = {
   type: "spring",
   stiffness: 400,
-  damping: 17
+  damping: 17,
 };
 
 const searchBarVariants: Variants = {
   hidden: { opacity: 0, scale: 0.8, x: 20 },
-  visible: { 
-    opacity: 1, 
-    scale: 1, 
-    x: 0, 
-    transition: searchSpring 
+  visible: {
+    opacity: 1,
+    scale: 1,
+    x: 0,
+    transition: searchSpring,
   },
-  exit: { 
-    opacity: 0, 
-    scale: 0.8, 
-    x: 20, 
-    transition: searchSpring
-  }
+  exit: {
+    opacity: 0,
+    scale: 0.8,
+    x: 20,
+    transition: searchSpring,
+  },
 };
 
 const searchClosedVariants: Variants = {
-  hidden: { opacity: 0, scale: 0.8, x: -20 }, // Added scale for a slightly nicer exit
-  visible: { 
-    opacity: 1, 
-    scale: 1, // Added scale
+  hidden: { opacity: 0, scale: 0.8, x: -20 },
+  visible: {
+    opacity: 1,
+    scale: 1,
     x: 0,
-    transition: searchSpring // Use spring for consistency
+    transition: searchSpring,
   },
-  exit: { 
-    opacity: 0, 
-    scale: 0.8, // Added scale
+  exit: {
+    opacity: 0,
+    scale: 0.8,
     x: -20,
-    transition: searchSpring // Use spring for consistency
-  }
+    transition: searchSpring,
+  },
 };
 
-
-// --- Component ---
+// --- Main Component ---
 export default function LostandFoundContent() {
-  // --- State logic (No Change) ---
   const [showStarOptions, setShowStarOptions] = useState<boolean>(false);
-  const [activeStarFilter, setActiveStarFilter] =
-    useState<StarFilter>("All");
+  const [activeStarFilter, setActiveStarFilter] = useState<StarFilter>("All");
   const [showCategoryDropdown, setShowCategoryDropdown] =
     useState<boolean>(false);
   const [selectedCategory, setSelectedCategory] =
     useState<Category>("Category");
+
   const categories: Category[] = [
     "All Categories",
     "Electronics",
@@ -174,32 +171,38 @@ export default function LostandFoundContent() {
     "Clothing",
     "Other",
   ];
+
   const [showSortDropdown, setShowSortDropdown] = useState<boolean>(false);
   const [selectedSort, setSelectedSort] = useState<SortOrder>("Latest");
   const sortOptions: SortOrder[] = ["Latest", "Oldest"];
+
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [showPostModal, setShowPostModal] = useState<boolean>(false);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
 
-  // --- Refs for click-away (No Change) ---
   const sortRef = useRef<HTMLDivElement>(null);
   const categoryRef = useRef<HTMLDivElement>(null);
   const starRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // --- click-away handler (No Change) ---
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (sortRef.current && !sortRef.current.contains(event.target as Node)) {
         setShowSortDropdown(false);
       }
-      if (categoryRef.current && !categoryRef.current.contains(event.target as Node)) {
+      if (
+        categoryRef.current &&
+        !categoryRef.current.contains(event.target as Node)
+      ) {
         setShowCategoryDropdown(false);
       }
       if (starRef.current && !starRef.current.contains(event.target as Node)) {
         setShowStarOptions(false);
       }
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(event.target as Node)
+      ) {
         if (isSearchOpen) {
           setIsSearchOpen(false);
         }
@@ -211,15 +214,16 @@ export default function LostandFoundContent() {
     };
   }, [sortRef, categoryRef, starRef, searchRef, isSearchOpen]);
 
-
-  // --- Filtering logic (No Change) ---
   const filteredPosts = allPosts
     .filter((post) => {
       if (activeStarFilter === "All") return true;
       return post.type === activeStarFilter;
     })
     .filter((post) => {
-      if (selectedCategory === "All Categories" || selectedCategory === "Category")
+      if (
+        selectedCategory === "All Categories" ||
+        selectedCategory === "Category"
+      )
         return true;
       return post.category === selectedCategory;
     })
@@ -227,15 +231,37 @@ export default function LostandFoundContent() {
       const dateA = new Date(a.createdAt).getTime();
       const dateB = new Date(b.createdAt).getTime();
       if (selectedSort === "Latest") return dateB - dateA;
-      return dateA - dateB; 
+      return dateA - dateB;
     });
 
-  // --- Handle modal publish action (No Change) ---
-  const handlePublishPost = (postData: any) => {
-    console.log("New post data:", postData);
+  // --- Handle modal publish action ---
+  const handlePublishPost = (data: ModalPostData) => {
+    // 1. Create a temporary URL for the uploaded image file
+    const objectUrl = URL.createObjectURL(data.attachment);
+
+    // 2. Transform the Modal Data into your Post structure
+    const newPost: Post = {
+      id: Date.now(), // Generate a temporary ID
+      type: data.itemType,
+      imageUrl: objectUrl, // Use the created URL
+      title: data.itemName, // Map itemName to title
+      postedBy: "You", // Hardcoded for the demo user
+      lostOn: new Date().toLocaleDateString(), // Current date
+      location: data.itemLocation,
+      description: data.itemDescription,
+      // Handle the category type mismatch (ensure it fits the Category type)
+      category:
+        data.itemCategory === "Select Category" ? "Other" : data.itemCategory,
+      createdAt: new Date().toISOString(),
+    };
+
+    // 3. For now, just log it (or add it to a state array if you have one)
+    console.log("New Post Created:", newPost);
+
+    // If you had a state for posts, you would do:
+    // setAllPosts([newPost, ...allPosts]);
   };
 
-  // --- RENDER ---
   return (
     <div
       className="min-h-screen w-full overflow-hidden relative"
@@ -246,14 +272,12 @@ export default function LostandFoundContent() {
         backgroundPosition: "center",
       }}
     >
-      {/* Decorative blobs (z-0) */}
       <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-red-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob z-0" />
       <div className="absolute top-1/2 right-1/4 w-48 h-48 bg-yellow-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000 z-0" />
-      {/* Main content (z-20) */}
+
       <main className="max-w-6xl mx-auto px-8 pb-28 relative z-20 pt-8">
         <div className="grid grid-cols-12 items-start gap-8 mt-20">
-          
-          {/* --- LEFT COLUMN (Title) --- */}
+          {/* --- Title Section --- */}
           <div className="col-span-7">
             <p className="font-light italic text-[#800000] text-xl mb-3">
               Lost something? We may have it
@@ -265,15 +289,13 @@ export default function LostandFoundContent() {
             </h2>
           </div>
 
-          {/* --- RIGHT COLUMN (Filter Bar + Star Button) --- */}
+          {/* --- Filter & Search Section --- */}
           <div className="col-span-5 flex flex-col items-end">
-            
-            {/* --- FILTER BAR (No Change) --- */}
-            <div 
-              className="flex justify-end items-center gap-4 w-full h-14 relative z-30" 
+            <div
+              className="flex justify-end items-center gap-4 w-full h-14 relative z-30"
               ref={searchRef}
             >
-              <AnimatePresence mode="wait"> 
+              <AnimatePresence mode="wait">
                 {isSearchOpen ? (
                   <motion.div
                     key="search-bar"
@@ -289,7 +311,10 @@ export default function LostandFoundContent() {
                       className="p-3 pl-12 h-14 bg-white text-gray-700 rounded-full w-full focus:outline-none shadow-lg ring-2 ring-[#fde68a]"
                       autoFocus
                     />
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                    <Search
+                      className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                      size={20}
+                    />
                   </motion.div>
                 ) : (
                   <motion.div
@@ -310,13 +335,12 @@ export default function LostandFoundContent() {
                     </div>
 
                     <div className="flex items-center space-x-2 bg-white p-2 rounded-full shadow-lg ring-2 ring-[#fde68a]">
-                      {/* Sort Dropdown */}
                       <div className="relative" ref={sortRef}>
                         <button
                           className="flex items-center justify-between px-5 py-3 bg-white text-gray-600 rounded-full font-medium hover:bg-gray-50 w-32 transition-transform duration-200 hover:scale-105"
                           onClick={() => {
                             setShowSortDropdown(!showSortDropdown);
-                            setShowCategoryDropdown(false); 
+                            setShowCategoryDropdown(false);
                           }}
                         >
                           <span>{selectedSort}</span>
@@ -324,11 +348,13 @@ export default function LostandFoundContent() {
                         </button>
                         {showSortDropdown && (
                           <div className="absolute top-0 right-0 w-56 bg-[#FFFBEB] rounded-2xl shadow-lg z-50 overflow-hidden p-3 animate-fadeIn">
-                            {sortOptions.map(option => (
+                            {sortOptions.map((option) => (
                               <button
                                 key={option}
                                 className={`flex items-center justify-center gap-2 w-full px-5 py-3 font-medium rounded-full mb-2 last:mb-0 transition-all ${
-                                  selectedSort === option ? 'bg-yellow-400 text-black' : 'bg-yellow-300 text-gray-700 hover:bg-yellow-400'
+                                  selectedSort === option
+                                    ? "bg-yellow-400 text-black"
+                                    : "bg-yellow-300 text-gray-700 hover:bg-yellow-400"
                                 }`}
                                 onClick={() => {
                                   setSelectedSort(option);
@@ -343,13 +369,12 @@ export default function LostandFoundContent() {
                         )}
                       </div>
 
-                      {/* Category Dropdown */}
                       <div className="relative" ref={categoryRef}>
                         <button
                           className="flex items-center justify-between px-5 py-3 bg-white text-gray-600 rounded-full font-medium hover:bg-gray-50 w-48 transition-transform duration-200 hover:scale-105"
                           onClick={() => {
                             setShowCategoryDropdown(!showCategoryDropdown);
-                            setShowSortDropdown(false); 
+                            setShowSortDropdown(false);
                           }}
                         >
                           <span className="truncate">{selectedCategory}</span>
@@ -357,25 +382,30 @@ export default function LostandFoundContent() {
                         </button>
                         {showCategoryDropdown && (
                           <div className="absolute top-0 right-0 w-56 bg-[#FFFBEB] rounded-2xl shadow-lg z-50 overflow-hidden p-3 animate-fadeIn">
-                            {categories.map(category => {
-                              const hasIcon = category !== 'All Categories';
-                              
+                            {categories.map((category) => {
+                              const hasIcon = category !== "All Categories";
+
                               return (
                                 <button
                                   key={category}
                                   className={`flex items-center gap-2 w-full px-5 py-3 font-medium rounded-full mb-2 last:mb-0 transition-all ${
-                                    hasIcon ? 'justify-start pl-6' : 'justify-center'
+                                    hasIcon
+                                      ? "justify-start pl-6"
+                                      : "justify-center"
                                   } ${
                                     selectedCategory === category
-                                      ? 'bg-yellow-400 text-black'
-                                      : 'bg-yellow-300 text-gray-700 hover:bg-yellow-400'
+                                      ? "bg-yellow-400 text-black"
+                                      : "bg-yellow-300 text-gray-700 hover:bg-yellow-400"
                                   }`}
                                   onClick={() => {
                                     setSelectedCategory(category);
                                     setShowCategoryDropdown(false);
                                   }}
                                 >
-                                  {hasIcon && (categoryIcons[category] || <Blocks size={18} />)} 
+                                  {hasIcon &&
+                                    (categoryIcons[category] || (
+                                      <Blocks size={18} />
+                                    ))}
                                   {category}
                                 </button>
                               );
@@ -388,11 +418,12 @@ export default function LostandFoundContent() {
                 )}
               </AnimatePresence>
             </div>
-            {/* --- END OF FILTER BAR UPDATE --- */}
 
-
-            {/* Container for Star Pills + Star Button (z-20) */}
-            <div className="flex items-center justify-end gap-4 mt-6 relative z-20" ref={starRef}>
+            {/* --- Filter Pills --- */}
+            <div
+              className="flex items-center justify-end gap-4 mt-6 relative z-20"
+              ref={starRef}
+            >
               <AnimatePresence>
                 {showStarOptions && (
                   <motion.div
@@ -402,30 +433,48 @@ export default function LostandFoundContent() {
                     animate="visible"
                     exit="exit"
                   >
-                    <motion.button 
+                    <motion.button
                       key="all"
                       variants={buttonVariants}
-                      onClick={() => { setActiveStarFilter('All'); }}
+                      onClick={() => {
+                        setActiveStarFilter("All");
+                      }}
                       className={`px-8 py-3 rounded-full font-semibold shadow-md
-                                  ${activeStarFilter === 'All' ? 'bg-yellow-400 text-black scale-105' : 'bg-white text-gray-700'}`}
+                                  ${
+                                    activeStarFilter === "All"
+                                      ? "bg-yellow-400 text-black scale-105"
+                                      : "bg-white text-gray-700"
+                                  }`}
                     >
                       All
                     </motion.button>
-                    <motion.button 
+                    <motion.button
                       key="found"
                       variants={buttonVariants}
-                      onClick={() => { setActiveStarFilter('Found'); }}
+                      onClick={() => {
+                        setActiveStarFilter("Found");
+                      }}
                       className={`px-8 py-3 rounded-full font-semibold shadow-md
-                                  ${activeStarFilter === 'Found' ? 'bg-yellow-400 text-black scale-105' : 'bg-white text-gray-700'}`}
+                                  ${
+                                    activeStarFilter === "Found"
+                                      ? "bg-yellow-400 text-black scale-105"
+                                      : "bg-white text-gray-700"
+                                  }`}
                     >
                       Found
                     </motion.button>
-                    <motion.button 
+                    <motion.button
                       key="lost"
                       variants={buttonVariants}
-                      onClick={() => { setActiveStarFilter('Lost'); }}
+                      onClick={() => {
+                        setActiveStarFilter("Lost");
+                      }}
                       className={`px-8 py-3 rounded-full font-semibold shadow-md
-                                  ${activeStarFilter === 'Lost' ? 'bg-yellow-400 text-black scale-105' : 'bg-white text-gray-700'}`}
+                                  ${
+                                    activeStarFilter === "Lost"
+                                      ? "bg-yellow-400 text-black scale-105"
+                                      : "bg-white text-gray-700"
+                                  }`}
                     >
                       Lost
                     </motion.button>
@@ -433,11 +482,10 @@ export default function LostandFoundContent() {
                 )}
               </AnimatePresence>
 
-              {/* Star Button */}
               <div className="relative">
-                <button 
+                <button
                   className="p-3 bg-[#800000] text-white rounded-full hover:bg-red-900 w-14 h-14 flex items-center justify-center flex-shrink-0 transition-transform duration-100 ease-out active:scale-90 hover:scale-110"
-                  onClick={() => setShowStarOptions(!showStarOptions)} 
+                  onClick={() => setShowStarOptions(!showStarOptions)}
                 >
                   <Star size={24} fill="white" />
                 </button>
@@ -462,10 +510,10 @@ export default function LostandFoundContent() {
           )}
         </div>
 
-        {/* --- 1. CONVERT TO motion.button & ADD layoutId --- */}
-        <motion.button 
-          layoutId="post-item-modal" // This is the magic key
-          transition={{ type: "spring", stiffness: 300, damping: 25 }} // Bouncy spring
+        {/* --- Add Post Button --- */}
+        <motion.button
+          layoutId="post-item-modal"
+          transition={{ type: "spring", stiffness: 300, damping: 25 }}
           className="fixed bottom-10 right-10 bg-[#800000] text-white rounded-full w-20 h-20 flex items-center justify-center shadow-lg hover:bg-red-900 transition-all z-40 hover:scale-110"
           onClick={() => setShowPostModal(true)}
         >
@@ -473,8 +521,7 @@ export default function LostandFoundContent() {
         </motion.button>
       </main>
 
-      {/* --- RENDER MODALS --- */}
-      {/* --- 2. WRAP PostItemModal IN AnimatePresence --- */}
+      {/* --- Modals --- */}
       <AnimatePresence>
         {showPostModal && (
           <PostItemModal

@@ -2,10 +2,18 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { X, ChevronDown, Check, Laptop, Book, Shirt, Blocks, UploadCloud } from "lucide-react";
+import {
+  X,
+  ChevronDown,
+  Laptop,
+  Book,
+  Shirt,
+  Blocks,
+  UploadCloud,
+} from "lucide-react";
 
-// --- Type definitions (No Change) ---
-type ModalCategory =
+// --- Type definitions ---
+export type ModalCategory =
   | "Electronics"
   | "Wallets"
   | "Books"
@@ -13,31 +21,47 @@ type ModalCategory =
   | "Other"
   | "Select Category";
 
-// --- Icon Helper (No Change) ---
+// Define the shape of the data this modal produces
+export interface ModalPostData {
+  itemName: string;
+  itemDescription: string;
+  itemType: "Lost" | "Found";
+  itemLocation: string;
+  itemCategory: ModalCategory;
+  attachment: File;
+}
+
+// --- Icon Helper ---
 const modalCategoryIcons: { [key in ModalCategory]?: React.ReactNode } = {
-  "Electronics": <Laptop size={18} />,
-  "Books": <Book size={18} />,
-  "Clothing": <Shirt size={18} />,
-  "Other": <Blocks size={18} />,
+  Electronics: <Laptop size={18} />,
+  Books: <Book size={18} />,
+  Clothing: <Shirt size={18} />,
+  Other: <Blocks size={18} />,
 };
 
 interface PostItemModalProps {
   onClose: () => void;
-  onPublish: (data: any) => void;
+  // Updated from 'any' to the specific interface
+  onPublish: (data: ModalPostData) => void;
 }
 
-export default function PostItemModal({ onClose, onPublish }: PostItemModalProps) {
-  // --- State for Modal Inputs (No Change) ---
+export default function PostItemModal({
+  onClose,
+  onPublish,
+}: PostItemModalProps) {
+  // --- State for Modal Inputs ---
   const [itemName, setItemName] = useState<string>("");
   const [itemDescription, setItemDescription] = useState<string>("");
   const [itemType, setItemType] = useState<"Lost" | "Found" | null>(null);
   const [itemLocation, setItemLocation] = useState<string>("");
   const [attachment, setAttachment] = useState<File | null>(null);
 
-  // --- State for Category Dropdown in Modal (No Change) ---
-  const [showModalCategoryDropdown, setShowModalCategoryDropdown] = useState<boolean>(false);
+  // --- State for Category Dropdown in Modal ---
+  const [showModalCategoryDropdown, setShowModalCategoryDropdown] =
+    useState<boolean>(false);
   const [selectedModalCategory, setSelectedModalCategory] =
     useState<ModalCategory>("Select Category");
+
   const modalCategories: ModalCategory[] = [
     "Electronics",
     "Books",
@@ -45,14 +69,17 @@ export default function PostItemModal({ onClose, onPublish }: PostItemModalProps
     "Other",
   ];
 
-  // --- Ref for Modal Click-Away (No Change) ---
+  // --- Ref for Modal Click-Away ---
   const modalRef = useRef<HTMLDivElement>(null);
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
 
-  // --- Click-Away Logic (No Change) ---
+  // --- Click-Away Logic ---
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target as Node)) {
+      if (
+        categoryDropdownRef.current &&
+        !categoryDropdownRef.current.contains(event.target as Node)
+      ) {
         setShowModalCategoryDropdown(false);
       }
     }
@@ -62,7 +89,7 @@ export default function PostItemModal({ onClose, onPublish }: PostItemModalProps
     };
   }, []);
 
-  // --- Drag & Drop Handlers (No Change) ---
+  // --- Drag & Drop Handlers ---
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
@@ -82,20 +109,31 @@ export default function PostItemModal({ onClose, onPublish }: PostItemModalProps
     }
   };
 
-  // --- Publish Handler (No Change) ---
+  // --- Publish Handler ---
   const handlePublishClick = () => {
-    if (!itemName || !itemDescription || !itemType || !itemLocation || selectedModalCategory === "Select Category" || !attachment) {
+    // validate fields
+    if (
+      !itemName ||
+      !itemDescription ||
+      !itemType ||
+      !itemLocation ||
+      selectedModalCategory === "Select Category" ||
+      !attachment
+    ) {
       alert("Please fill in all fields and add an attachment.");
       return;
     }
-    const postData = {
+
+    // Construct the data object matches the interface
+    const postData: ModalPostData = {
       itemName,
       itemDescription,
-      itemType,
+      itemType, // Type narrowing ensures this is "Lost" | "Found" due to the check above
       itemLocation,
       itemCategory: selectedModalCategory,
       attachment,
     };
+
     onPublish(postData);
     onClose();
   };
@@ -114,8 +152,7 @@ export default function PostItemModal({ onClose, onPublish }: PostItemModalProps
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, transition: { duration: 0.15 } }}
     >
-      
-      <motion.div 
+      <motion.div
         layoutId="post-item-modal"
         transition={{
           type: "spring",
@@ -124,11 +161,12 @@ export default function PostItemModal({ onClose, onPublish }: PostItemModalProps
         }}
         className="relative rounded-3xl w-[600px] max-h-[95vh] overflow-y-auto"
         ref={modalRef}
-        onClick={(e) => e.stopPropagation()} 
+        onClick={(e) => e.stopPropagation()}
         style={{
           backgroundColor: "rgba(255, 250, 245, 0.75)",
           border: "1px solid rgba(255, 255, 255, 0.3)",
-          boxShadow: "0 4px 60px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.2)",
+          boxShadow:
+            "0 4px 60px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.2)",
         }}
       >
         <motion.div
@@ -145,7 +183,9 @@ export default function PostItemModal({ onClose, onPublish }: PostItemModalProps
             <X size={20} />
           </button>
 
-          <h2 className="text-3xl font-extrabold text-[#800000] mb-4">Post Item</h2>
+          <h2 className="text-3xl font-extrabold text-[#800000] mb-4">
+            Post Item
+          </h2>
 
           {/* Input: Item Name */}
           <div className="mb-4">
@@ -172,11 +212,13 @@ export default function PostItemModal({ onClose, onPublish }: PostItemModalProps
           {/* Type & Category Selection */}
           <div className="flex items-center space-x-4 mb-4">
             <span className="text-lg font-semibold text-gray-700">Type</span>
-            
+
             <div className="flex space-x-2">
               <button
                 className={`px-6 py-3 rounded-full font-semibold transition-all text-white ${
-                  itemType === "Lost" ? "bg-red-900 ring-4 ring-yellow-400" : "bg-[#800000] hover:bg-red-900"
+                  itemType === "Lost"
+                    ? "bg-red-900 ring-4 ring-yellow-400"
+                    : "bg-[#800000] hover:bg-red-900"
                 }`}
                 onClick={() => setItemType("Lost")}
               >
@@ -184,7 +226,9 @@ export default function PostItemModal({ onClose, onPublish }: PostItemModalProps
               </button>
               <button
                 className={`px-6 py-3 rounded-full font-semibold transition-all text-white ${
-                  itemType === "Found" ? "bg-red-900 ring-4 ring-yellow-400" : "bg-[#800000] hover:bg-red-900"
+                  itemType === "Found"
+                    ? "bg-red-900 ring-4 ring-yellow-400"
+                    : "bg-[#800000] hover:bg-red-900"
                 }`}
                 onClick={() => setItemType("Found")}
               >
@@ -192,34 +236,36 @@ export default function PostItemModal({ onClose, onPublish }: PostItemModalProps
               </button>
             </div>
 
-            {/* --- CATEGORY DROPDOWN FIXES: Covers button and has consistent glassmorphism --- */}
+            {/* --- CATEGORY DROPDOWN --- */}
             <div className="relative flex-grow" ref={categoryDropdownRef}>
               <button
                 className="flex items-center justify-between px-5 py-3 bg-[#800000] text-white rounded-full font-medium hover:bg-red-900 w-full"
-                onClick={() => setShowModalCategoryDropdown(!showModalCategoryDropdown)}
+                onClick={() =>
+                  setShowModalCategoryDropdown(!showModalCategoryDropdown)
+                }
               >
                 <span className="truncate">{selectedModalCategory}</span>
                 <ChevronDown size={20} />
               </button>
               {showModalCategoryDropdown && (
-                <div 
+                <div
                   className="absolute top-0 left-0 w-full rounded-xl shadow-lg z-50 overflow-hidden p-2 animate-fadeIn"
-                  // --- STYLE MATCHES MAIN MODAL ---
                   style={{
                     backgroundColor: "rgba(255, 250, 245, 0.75)",
                     border: "1px solid rgba(255, 255, 255, 0.3)",
-                    boxShadow: "0 4px 60px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.2)",
+                    boxShadow:
+                      "0 4px 60px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.2)",
                     backdropFilter: "blur(10px)",
                     WebkitBackdropFilter: "blur(10px)",
                   }}
                 >
-                  {modalCategories.map(category => (
+                  {modalCategories.map((category) => (
                     <button
                       key={category}
                       className={`flex items-center justify-start gap-2 w-full px-5 pl-6 py-3 font-medium rounded-full mb-1 last:mb-0 transition-all ${
                         selectedModalCategory === category
-                          ? 'bg-yellow-400 text-black'
-                          : 'bg-yellow-300 text-gray-700 hover:bg-yellow-400'
+                          ? "bg-yellow-400 text-black"
+                          : "bg-yellow-300 text-gray-700 hover:bg-yellow-400"
                       }`}
                       onClick={() => {
                         setSelectedModalCategory(category);
@@ -233,13 +279,13 @@ export default function PostItemModal({ onClose, onPublish }: PostItemModalProps
                 </div>
               )}
             </div>
-            {/* --- END OF CATEGORY DROPDOWN FIXES --- */}
-
           </div>
 
           {/* Input: Location */}
           <div className="mb-4">
-            <span className="text-lg font-semibold text-gray-700 block mb-2">Location</span>
+            <span className="text-lg font-semibold text-gray-700 block mb-2">
+              Location
+            </span>
             <input
               type="text"
               placeholder="Enter location where it was lost or found..."
@@ -251,12 +297,14 @@ export default function PostItemModal({ onClose, onPublish }: PostItemModalProps
 
           {/* Attachment */}
           <div className="mb-6">
-            <span className="text-lg font-semibold text-gray-700 block mb-2">Attachment</span>
+            <span className="text-lg font-semibold text-gray-700 block mb-2">
+              Attachment
+            </span>
             <div
               className="w-full h-32 bg-[#800000] rounded-xl flex items-center justify-center border-2 border-dashed border-white text-white p-4 text-center cursor-pointer relative"
               onDragOver={handleDragOver}
               onDrop={handleDrop}
-              onClick={() => document.getElementById('fileInput')?.click()}
+              onClick={() => document.getElementById("fileInput")?.click()}
             >
               {attachment ? (
                 <p>{attachment.name}</p>
@@ -291,7 +339,6 @@ export default function PostItemModal({ onClose, onPublish }: PostItemModalProps
               Publish
             </button>
           </div>
-
         </motion.div>
       </motion.div>
     </motion.div>
