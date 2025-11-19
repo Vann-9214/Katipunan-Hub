@@ -249,12 +249,6 @@ export default function LostandFoundContent() {
       {/* Decorative blobs (z-0) */}
       <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-red-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob z-0" />
       <div className="absolute top-1/2 right-1/4 w-48 h-48 bg-yellow-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000 z-0" />
-
-      {/* Sticky header (z-40) */}
-      <div className="sticky top-0 z-40 bg-white/70 backdrop-blur-md">
-        <HomepageTab />
-      </div>
-
       {/* Main content (z-20) */}
       <main className="max-w-6xl mx-auto px-8 pb-28 relative z-20 pt-8">
         <div className="grid grid-cols-12 items-start gap-8 mt-20">
