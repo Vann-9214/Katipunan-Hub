@@ -26,7 +26,7 @@ export default function PLC() {
   return (
     <div className="min-h-screen bg-white">
       <HomepageTab user={user} />
-      <div className="pt-[120px] px-[50px] pb-10">
+      <div className="pt-[90px] px-[50px] pb-10">
         <PLCContent />
       </div>
     </div>
