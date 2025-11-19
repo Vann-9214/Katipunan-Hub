@@ -14,7 +14,7 @@ import {
   Shirt,
   Blocks,
 } from "lucide-react";
-import PostItemModal, { type ModalPostData } from "./PostItemModal";
+import PostItemModal, { ModalPostData } from "./PostItemModal";
 import PostViewModal from "./PostViewModal";
 
 // --- Types ---
@@ -45,7 +45,7 @@ export type NewPostData = Omit<Post, "id" | "createdAt">;
 type StarFilter = "Lost" | "Found" | "All";
 type SortOrder = "Latest" | "Oldest";
 
-// --- Dummy Data (INITIAL_POSTS) ---
+// --- Dummy Data ---
 const INITIAL_POSTS: Post[] = [
   {
     id: 1,
@@ -62,7 +62,7 @@ const INITIAL_POSTS: Post[] = [
   {
     id: 2,
     type: "Found",
-    imageUrl: "/cat.svg",
+    imageUrl: "/cat.svg", 
     title: "Scientific Calculator",
     postedBy: "Maria S. | BSME",
     lostOn: "Oct 30",
@@ -129,13 +129,38 @@ const categoryIcons: { [key in Category]?: React.ReactNode } = {
   Other: <Blocks size={18} />,
 };
 
-// --- Animation Variants ---
+// --- ANIMATION CONFIGURATION ---
+
+// 1. Fast & Liquid Spring
+const liquidSpring: Transition = {
+  type: "spring",
+  stiffness: 700, // High stiffness for speed
+  damping: 25,    // Balanced damping for a snappy stop without too much wobble
+  mass: 0.5,      // Lightweight feel
+};
+
+// 2. Content Fade (Inside the liquid container)
+const contentVariants: Variants = {
+  hidden: { opacity: 0, scale: 0.95 },
+  visible: { 
+    opacity: 1, 
+    scale: 1, 
+    transition: { duration: 0.1 } // Very fast fade
+  },
+  exit: { 
+    opacity: 0, 
+    scale: 0.95, 
+    transition: { duration: 0.1 } 
+  },
+};
+
+// 3. Filter Pills Animation
 const buttonContainerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.07,
+      staggerChildren: 0.05,
       staggerDirection: -1,
     },
   },
@@ -149,8 +174,8 @@ const buttonVariants: Variants = {
     x: 0,
     transition: {
       type: "spring",
-      stiffness: 400,
-      damping: 15,
+      stiffness: 500,
+      damping: 20,
     },
   },
   exit: {
@@ -159,53 +184,14 @@ const buttonVariants: Variants = {
     x: 50,
     transition: {
       type: "spring",
-      stiffness: 400,
-      damping: 15,
+      stiffness: 500,
+      damping: 20,
     },
-  },
-};
-
-const searchSpring: Transition = {
-  type: "spring",
-  stiffness: 400,
-  damping: 17,
-};
-
-const searchBarVariants: Variants = {
-  hidden: { opacity: 0, scale: 0.8, x: 20 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    x: 0,
-    transition: searchSpring,
-  },
-  exit: {
-    opacity: 0,
-    scale: 0.8,
-    x: 20,
-    transition: searchSpring,
-  },
-};
-
-const searchClosedVariants: Variants = {
-  hidden: { opacity: 0, scale: 0.8, x: -20 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    x: 0,
-    transition: searchSpring,
-  },
-  exit: {
-    opacity: 0,
-    scale: 0.8,
-    x: -20,
-    transition: searchSpring,
   },
 };
 
 // --- Main Component ---
 export default function LostandFoundContent() {
-  // --- CREATE STATE FOR POSTS ---
   const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
 
   const [showStarOptions, setShowStarOptions] = useState<boolean>(false);
@@ -265,7 +251,6 @@ export default function LostandFoundContent() {
     };
   }, [sortRef, categoryRef, starRef, searchRef, isSearchOpen]);
 
-  // --- FILTER TO USE STATE (posts) INSTEAD OF CONSTANT ---
   const filteredPosts = posts
     .filter((post) => {
       if (activeStarFilter === "All") return true;
@@ -286,7 +271,6 @@ export default function LostandFoundContent() {
       return dateA - dateB;
     });
 
-  // --- Handle modal publish action ---
   const handlePublishPost = (data: ModalPostData) => {
     const objectUrl = URL.createObjectURL(data.attachment);
 
@@ -304,7 +288,6 @@ export default function LostandFoundContent() {
       createdAt: new Date().toISOString(),
     };
 
-    // --- UPDATE STATE TO INCLUDE NEW POST ---
     setPosts((prevPosts) => [newPost, ...prevPosts]);
   };
 
@@ -323,10 +306,7 @@ export default function LostandFoundContent() {
 
       <main className="max-w-6xl mx-auto px-8 pb-28 relative z-20 pt-[100px]">
         
-        {/* --- FIXED TITLE --- */}
-        <h1 className="font-bold font-montserrat text-[32px] text-maroon mb-[15px]">
-          Lost and Found
-        </h1>
+        {/* TITLE REMOVED */}
 
         <div className="grid grid-cols-12 items-start gap-8 mt-5">
           {/* --- Title Section --- */}
@@ -344,128 +324,152 @@ export default function LostandFoundContent() {
           {/* --- Filter & Search Section --- */}
           <div className="col-span-5 flex flex-col items-end">
             <div
-              className="flex justify-end items-center gap-4 w-full h-14 relative z-30"
+              className="flex justify-end items-center w-full h-14 relative z-30"
               ref={searchRef}
             >
-              <AnimatePresence mode="wait">
+              {/* Use AnimatePresence to handle content swapping */}
+              <AnimatePresence mode="popLayout" initial={false}>
                 {isSearchOpen ? (
                   <motion.div
                     key="search-bar"
-                    className="relative w-full"
-                    variants={searchBarVariants}
-                    initial="hidden"
-                    animate="visible"
-                    exit="exit"
+                    layoutId="search-container"
+                    // originX: 0 anchors the morph to the left side (where the search icon is)
+                    style={{ originX: 0 }}
+                    className="relative w-full h-14 bg-white rounded-full shadow-lg ring-2 ring-[#fde68a] flex items-center overflow-hidden"
+                    transition={liquidSpring}
                   >
-                    <input
-                      type="text"
-                      placeholder="Search items..."
-                      className="p-3 pl-12 h-14 bg-white text-gray-700 rounded-full w-full focus:outline-none shadow-lg ring-2 ring-[#fde68a]"
-                      autoFocus
-                    />
-                    <Search
-                      className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                      size={20}
-                    />
+                    <motion.div
+                      className="w-full h-full flex items-center"
+                      variants={contentVariants}
+                      initial="hidden"
+                      animate="visible"
+                      exit="exit"
+                    >
+                      <input
+                        type="text"
+                        placeholder="Search items..."
+                        className="w-full h-full pl-12 pr-4 bg-transparent focus:outline-none text-gray-700"
+                        autoFocus
+                      />
+                      <Search
+                        className="absolute left-4 text-gray-400"
+                        size={20}
+                      />
+                    </motion.div>
                   </motion.div>
                 ) : (
                   <motion.div
-                    key="search-closed"
-                    className="flex justify-end items-center gap-4 w-full"
-                    variants={searchClosedVariants}
-                    initial="hidden"
-                    animate="visible"
-                    exit="exit"
+                    key="search-buttons"
+                    layoutId="search-container"
+                    // w-fit creates the tight cluster shape
+                    // originX: 0 anchors the morph to the left side (Search Button)
+                    style={{ originX: 0 }}
+                    className="flex justify-end items-center gap-4 w-fit h-14"
+                    transition={liquidSpring}
                   >
-                    <div className="flex-grow">
-                      <button
-                        onClick={() => setIsSearchOpen(true)}
-                        className="p-3 bg-white text-gray-600 rounded-full shadow-lg ring-2 ring-[#fde68a] hover:bg-gray-50 flex items-center justify-center w-14 h-14 ml-auto transition-transform duration-200 hover:scale-110"
-                      >
-                        <Search size={24} />
-                      </button>
-                    </div>
-
-                    <div className="flex items-center space-x-2 bg-white p-2 rounded-full shadow-lg ring-2 ring-[#fde68a]">
-                      <div className="relative" ref={sortRef}>
+                    <motion.div
+                      className="flex justify-end items-center gap-4 w-full"
+                      variants={contentVariants}
+                      initial="hidden"
+                      animate="visible"
+                      exit="exit"
+                    >
+                      {/* Search Button (Leftmost element of the cluster) */}
+                      <div className="flex-grow flex justify-end">
                         <button
-                          className="flex items-center justify-between px-5 py-3 bg-white text-gray-600 rounded-full font-medium hover:bg-gray-50 w-32 transition-transform duration-200 hover:scale-105"
-                          onClick={() => {
-                            setShowSortDropdown(!showSortDropdown);
-                            setShowCategoryDropdown(false);
-                          }}
+                          onClick={() => setIsSearchOpen(true)}
+                          className="p-3 bg-white text-gray-600 rounded-full shadow-lg ring-2 ring-[#fde68a] hover:bg-gray-50 flex items-center justify-center w-14 h-14 transition-transform duration-200 hover:scale-110"
                         >
-                          <span>{selectedSort}</span>
-                          <ChevronDown size={20} />
+                          <Search size={24} />
                         </button>
-                        {showSortDropdown && (
-                          <div className="absolute top-0 right-0 w-56 bg-[#FFFBEB] rounded-2xl shadow-lg z-50 overflow-hidden p-3 animate-fadeIn">
-                            {sortOptions.map((option) => (
-                              <button
-                                key={option}
-                                className={`flex items-center justify-center gap-2 w-full px-5 py-3 font-medium rounded-full mb-2 last:mb-0 transition-all ${
-                                  selectedSort === option
-                                    ? "bg-yellow-400 text-black"
-                                    : "bg-yellow-300 text-gray-700 hover:bg-yellow-400"
-                                }`}
-                                onClick={() => {
-                                  setSelectedSort(option);
-                                  setShowSortDropdown(false);
-                                }}
-                              >
-                                {selectedSort === option && <Check size={18} />}
-                                {option} First
-                              </button>
-                            ))}
-                          </div>
-                        )}
                       </div>
 
-                      <div className="relative" ref={categoryRef}>
-                        <button
-                          className="flex items-center justify-between px-5 py-3 bg-white text-gray-600 rounded-full font-medium hover:bg-gray-50 w-48 transition-transform duration-200 hover:scale-105"
-                          onClick={() => {
-                            setShowCategoryDropdown(!showCategoryDropdown);
-                            setShowSortDropdown(false);
-                          }}
-                        >
-                          <span className="truncate">{selectedCategory}</span>
-                          <ChevronDown size={20} />
-                        </button>
-                        {showCategoryDropdown && (
-                          <div className="absolute top-0 right-0 w-56 bg-[#FFFBEB] rounded-2xl shadow-lg z-50 overflow-hidden p-3 animate-fadeIn">
-                            {categories.map((category) => {
-                              const hasIcon = category !== "All Categories";
-
-                              return (
+                      {/* Dropdowns Container */}
+                      <div className="flex items-center space-x-2 bg-white p-2 rounded-full shadow-lg ring-2 ring-[#fde68a]">
+                        {/* Latest Dropdown */}
+                        <div className="relative" ref={sortRef}>
+                          <button
+                            className="flex items-center justify-between px-5 py-3 bg-white text-gray-600 rounded-full font-medium hover:bg-gray-50 w-32 transition-transform duration-200 hover:scale-105"
+                            onClick={() => {
+                              setShowSortDropdown(!showSortDropdown);
+                              setShowCategoryDropdown(false);
+                            }}
+                          >
+                            <span>{selectedSort}</span>
+                            <ChevronDown size={20} />
+                          </button>
+                          {showSortDropdown && (
+                            <div className="absolute top-0 right-0 w-56 bg-[#FFFBEB] rounded-2xl shadow-lg z-50 overflow-hidden p-3 animate-fadeIn">
+                              {sortOptions.map((option) => (
                                 <button
-                                  key={category}
-                                  className={`flex items-center gap-2 w-full px-5 py-3 font-medium rounded-full mb-2 last:mb-0 transition-all ${
-                                    hasIcon
-                                      ? "justify-start pl-6"
-                                      : "justify-center"
-                                  } ${
-                                    selectedCategory === category
+                                  key={option}
+                                  className={`flex items-center justify-center gap-2 w-full px-5 py-3 font-medium rounded-full mb-2 last:mb-0 transition-all ${
+                                    selectedSort === option
                                       ? "bg-yellow-400 text-black"
                                       : "bg-yellow-300 text-gray-700 hover:bg-yellow-400"
                                   }`}
                                   onClick={() => {
-                                    setSelectedCategory(category);
-                                    setShowCategoryDropdown(false);
+                                    setSelectedSort(option);
+                                    setShowSortDropdown(false);
                                   }}
                                 >
-                                  {hasIcon &&
-                                    (categoryIcons[category] || (
-                                      <Blocks size={18} />
-                                    ))}
-                                  {category}
+                                  {selectedSort === option && (
+                                    <Check size={18} />
+                                  )}
+                                  {option} First
                                 </button>
-                              );
-                            })}
-                          </div>
-                        )}
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Category Dropdown */}
+                        <div className="relative" ref={categoryRef}>
+                          <button
+                            className="flex items-center justify-between px-5 py-3 bg-white text-gray-600 rounded-full font-medium hover:bg-gray-50 w-48 transition-transform duration-200 hover:scale-105"
+                            onClick={() => {
+                              setShowCategoryDropdown(!showCategoryDropdown);
+                              setShowSortDropdown(false);
+                            }}
+                          >
+                            <span className="truncate">{selectedCategory}</span>
+                            <ChevronDown size={20} />
+                          </button>
+                          {showCategoryDropdown && (
+                            <div className="absolute top-0 right-0 w-56 bg-[#FFFBEB] rounded-2xl shadow-lg z-50 overflow-hidden p-3 animate-fadeIn">
+                              {categories.map((category) => {
+                                const hasIcon = category !== "All Categories";
+
+                                return (
+                                  <button
+                                    key={category}
+                                    className={`flex items-center gap-2 w-full px-5 py-3 font-medium rounded-full mb-2 last:mb-0 transition-all ${
+                                      hasIcon
+                                        ? "justify-start pl-6"
+                                        : "justify-center"
+                                    } ${
+                                      selectedCategory === category
+                                        ? "bg-yellow-400 text-black"
+                                        : "bg-yellow-300 text-gray-700 hover:bg-yellow-400"
+                                    }`}
+                                    onClick={() => {
+                                      setSelectedCategory(category);
+                                      setShowCategoryDropdown(false);
+                                    }}
+                                  >
+                                    {hasIcon &&
+                                      (categoryIcons[category] || (
+                                        <Blocks size={18} />
+                                      ))}
+                                    {category}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    </motion.div>
                   </motion.div>
                 )}
               </AnimatePresence>
