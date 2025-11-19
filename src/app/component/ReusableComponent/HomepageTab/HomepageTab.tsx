@@ -58,7 +58,7 @@ export default function HomepageTab({ user }: HomepageTabProps) {
 
   // Render
   return (
-    <header className="h-[80px] w-full fixed top-0 left-0 z-20 flex items-center justify-between px-8 bg-gradient-to-r from-[#FFF7CD] to-[#FFC9C9] shadow-md">
+    <header className="h-[80px] w-full fixed top-0 left-0 z-50 flex items-center justify-between px-8 bg-gradient-to-r from-[#FFF7CD] to-[#FFC9C9] shadow-md">
       {/* Left: Logo */}
       <Logo width={50} height={55} href="/Announcement" />
 

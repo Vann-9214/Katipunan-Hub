@@ -23,13 +23,8 @@ export default function LostandFoundPage() {
 
   // 3. Pass the 'user' variable to HomepageTab
   return (
-    <div className="p-[25px]">
+    <div className="w-full">
       <HomepageTab user={user} /> 
-      
-      {/* Your main content */}
-      <h1 className="font-bold font-montserrat text-[32px] text-maroon mt-[160px] mb-[15px]">
-        Lost and Found
-      </h1>
       <LostAndFoundContent />
     </div>
   );

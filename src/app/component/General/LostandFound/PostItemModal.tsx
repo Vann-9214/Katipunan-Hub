@@ -41,7 +41,6 @@ const modalCategoryIcons: { [key in ModalCategory]?: React.ReactNode } = {
 
 interface PostItemModalProps {
   onClose: () => void;
-  // Updated from 'any' to the specific interface
   onPublish: (data: ModalPostData) => void;
 }
 
@@ -52,7 +51,7 @@ export default function PostItemModal({
   // --- State for Modal Inputs ---
   const [itemName, setItemName] = useState<string>("");
   const [itemDescription, setItemDescription] = useState<string>("");
-  const [itemType, setItemType] = useState<"Lost" | "Found" | null>(null);
+  // REMOVED itemType state since we are defaulting to "Lost"
   const [itemLocation, setItemLocation] = useState<string>("");
   const [attachment, setAttachment] = useState<File | null>(null);
 
@@ -115,7 +114,6 @@ export default function PostItemModal({
     if (
       !itemName ||
       !itemDescription ||
-      !itemType ||
       !itemLocation ||
       selectedModalCategory === "Select Category" ||
       !attachment
@@ -128,7 +126,7 @@ export default function PostItemModal({
     const postData: ModalPostData = {
       itemName,
       itemDescription,
-      itemType, // Type narrowing ensures this is "Lost" | "Found" due to the check above
+      itemType: "Lost", // Hardcoded to "Lost"
       itemLocation,
       itemCategory: selectedModalCategory,
       attachment,
@@ -209,76 +207,48 @@ export default function PostItemModal({
             ></textarea>
           </div>
 
-          {/* Type & Category Selection */}
-          <div className="flex items-center space-x-4 mb-4">
-            <span className="text-lg font-semibold text-gray-700">Type</span>
-
-            <div className="flex space-x-2">
-              <button
-                className={`px-6 py-3 rounded-full font-semibold transition-all text-white ${
-                  itemType === "Lost"
-                    ? "bg-red-900 ring-4 ring-yellow-400"
-                    : "bg-[#800000] hover:bg-red-900"
-                }`}
-                onClick={() => setItemType("Lost")}
+          {/* --- CATEGORY DROPDOWN (Full Width) --- */}
+          <div className="mb-4 relative" ref={categoryDropdownRef}>
+            <button
+              className="flex items-center justify-between px-5 py-3 bg-[#800000] text-white rounded-full font-medium hover:bg-red-900 w-full"
+              onClick={() =>
+                setShowModalCategoryDropdown(!showModalCategoryDropdown)
+              }
+            >
+              <span className="truncate">{selectedModalCategory}</span>
+              <ChevronDown size={20} />
+            </button>
+            {showModalCategoryDropdown && (
+              <div
+                className="absolute top-full left-0 w-full rounded-xl shadow-lg z-50 overflow-hidden p-2 mt-1 animate-fadeIn"
+                style={{
+                  backgroundColor: "rgba(255, 250, 245, 0.95)",
+                  border: "1px solid rgba(255, 255, 255, 0.3)",
+                  boxShadow:
+                    "0 4px 60px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.2)",
+                  backdropFilter: "blur(10px)",
+                  WebkitBackdropFilter: "blur(10px)",
+                }}
               >
-                Lost
-              </button>
-              <button
-                className={`px-6 py-3 rounded-full font-semibold transition-all text-white ${
-                  itemType === "Found"
-                    ? "bg-red-900 ring-4 ring-yellow-400"
-                    : "bg-[#800000] hover:bg-red-900"
-                }`}
-                onClick={() => setItemType("Found")}
-              >
-                Found
-              </button>
-            </div>
-
-            {/* --- CATEGORY DROPDOWN --- */}
-            <div className="relative flex-grow" ref={categoryDropdownRef}>
-              <button
-                className="flex items-center justify-between px-5 py-3 bg-[#800000] text-white rounded-full font-medium hover:bg-red-900 w-full"
-                onClick={() =>
-                  setShowModalCategoryDropdown(!showModalCategoryDropdown)
-                }
-              >
-                <span className="truncate">{selectedModalCategory}</span>
-                <ChevronDown size={20} />
-              </button>
-              {showModalCategoryDropdown && (
-                <div
-                  className="absolute top-0 left-0 w-full rounded-xl shadow-lg z-50 overflow-hidden p-2 animate-fadeIn"
-                  style={{
-                    backgroundColor: "rgba(255, 250, 245, 0.75)",
-                    border: "1px solid rgba(255, 255, 255, 0.3)",
-                    boxShadow:
-                      "0 4px 60px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.2)",
-                    backdropFilter: "blur(10px)",
-                    WebkitBackdropFilter: "blur(10px)",
-                  }}
-                >
-                  {modalCategories.map((category) => (
-                    <button
-                      key={category}
-                      className={`flex items-center justify-start gap-2 w-full px-5 pl-6 py-3 font-medium rounded-full mb-1 last:mb-0 transition-all ${
-                        selectedModalCategory === category
-                          ? "bg-yellow-400 text-black"
-                          : "bg-yellow-300 text-gray-700 hover:bg-yellow-400"
-                      }`}
-                      onClick={() => {
-                        setSelectedModalCategory(category);
-                        setShowModalCategoryDropdown(false);
-                      }}
-                    >
-                      {modalCategoryIcons[category] || <Blocks size={18} />}
-                      {category}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+                {modalCategories.map((category) => (
+                  <button
+                    key={category}
+                    className={`flex items-center justify-start gap-2 w-full px-5 pl-6 py-3 font-medium rounded-full mb-1 last:mb-0 transition-all ${
+                      selectedModalCategory === category
+                        ? "bg-yellow-400 text-black"
+                        : "bg-yellow-300 text-gray-700 hover:bg-yellow-400"
+                    }`}
+                    onClick={() => {
+                      setSelectedModalCategory(category);
+                      setShowModalCategoryDropdown(false);
+                    }}
+                  >
+                    {modalCategoryIcons[category] || <Blocks size={18} />}
+                    {category}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Input: Location */}
@@ -288,7 +258,7 @@ export default function PostItemModal({
             </span>
             <input
               type="text"
-              placeholder="Enter location where it was lost or found..."
+              placeholder="Enter location where it was lost..."
               className="w-full p-4 bg-[#800000] text-white rounded-xl focus:outline-none placeholder-white placeholder-opacity-70"
               value={itemLocation}
               onChange={(e) => setItemLocation(e.target.value)}
