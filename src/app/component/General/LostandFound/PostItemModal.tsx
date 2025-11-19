@@ -51,7 +51,7 @@ export default function PostItemModal({
   // --- State for Modal Inputs ---
   const [itemName, setItemName] = useState<string>("");
   const [itemDescription, setItemDescription] = useState<string>("");
-  // REMOVED itemType state, defaulting to "Lost" in logic
+  // REMOVED itemType state since we are defaulting to "Lost"
   const [itemLocation, setItemLocation] = useState<string>("");
   const [attachment, setAttachment] = useState<File | null>(null);
 
@@ -207,7 +207,7 @@ export default function PostItemModal({
             ></textarea>
           </div>
 
-          {/* --- CATEGORY DROPDOWN (Moved to its own full-width block) --- */}
+          {/* --- CATEGORY DROPDOWN (Full Width) --- */}
           <div className="mb-4 relative" ref={categoryDropdownRef}>
             <button
               className="flex items-center justify-between px-5 py-3 bg-[#800000] text-white rounded-full font-medium hover:bg-red-900 w-full"

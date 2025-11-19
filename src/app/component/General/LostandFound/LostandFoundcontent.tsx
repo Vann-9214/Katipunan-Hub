@@ -14,7 +14,7 @@ import {
   Shirt,
   Blocks,
 } from "lucide-react";
-import PostItemModal, { ModalPostData } from "./PostItemModal";
+import PostItemModal, { type ModalPostData } from "./PostItemModal";
 import PostViewModal from "./PostViewModal";
 
 // --- Types ---
@@ -45,7 +45,7 @@ export type NewPostData = Omit<Post, "id" | "createdAt">;
 type StarFilter = "Lost" | "Found" | "All";
 type SortOrder = "Latest" | "Oldest";
 
-// --- Dummy Data (Updated with more items) ---
+// --- Dummy Data (INITIAL_POSTS) ---
 const INITIAL_POSTS: Post[] = [
   {
     id: 1,
@@ -62,7 +62,7 @@ const INITIAL_POSTS: Post[] = [
   {
     id: 2,
     type: "Found",
-    imageUrl: "/cat.svg", // Using placeholder, replace with real image if available
+    imageUrl: "/cat.svg",
     title: "Scientific Calculator",
     postedBy: "Maria S. | BSME",
     lostOn: "Oct 30",
@@ -265,7 +265,7 @@ export default function LostandFoundContent() {
     };
   }, [sortRef, categoryRef, starRef, searchRef, isSearchOpen]);
 
-  // --- UPDATE FILTER TO USE STATE (posts) INSTEAD OF CONSTANT ---
+  // --- FILTER TO USE STATE (posts) INSTEAD OF CONSTANT ---
   const filteredPosts = posts
     .filter((post) => {
       if (activeStarFilter === "All") return true;
@@ -322,7 +322,11 @@ export default function LostandFoundContent() {
       <div className="absolute top-1/2 right-1/4 w-48 h-48 bg-yellow-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000 z-0" />
 
       <main className="max-w-6xl mx-auto px-8 pb-28 relative z-20 pt-[100px]">
-        {/* --- TITLE REMOVED --- */}
+        
+        {/* --- FIXED TITLE --- */}
+        <h1 className="font-bold font-montserrat text-[32px] text-maroon mb-[15px]">
+          Lost and Found
+        </h1>
 
         <div className="grid grid-cols-12 items-start gap-8 mt-5">
           {/* --- Title Section --- */}
