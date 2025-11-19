@@ -74,9 +74,20 @@ export default function BookingModal({
       setFormData({ subject: "", description: "", startTime: "" });
       if (onSuccess) onSuccess();
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      // --- FIXED: Type-safe error handling ---
       console.error("Booking Error:", err);
-      setError(err.message || "Failed to submit booking. Please try again.");
+
+      let errorMessage = "Failed to submit booking. Please try again.";
+
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === "object" && err !== null && "message" in err) {
+        // Handle Supabase PostgrestError which might be an object with a message property
+        errorMessage = String((err as { message: unknown }).message);
+      }
+
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

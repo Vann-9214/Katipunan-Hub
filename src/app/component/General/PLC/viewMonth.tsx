@@ -76,6 +76,7 @@ export default function PLCViewMonth({
       await cancelBooking(bookingId);
       setIsRequestModalOpen(false);
     } catch (error) {
+      console.error("Cancel Request Error:", error);
       alert("Failed to cancel request.");
     }
   };

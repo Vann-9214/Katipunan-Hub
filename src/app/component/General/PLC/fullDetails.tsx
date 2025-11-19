@@ -3,7 +3,6 @@
 import React from "react";
 import { X } from "lucide-react";
 import { Montserrat, PT_Sans } from "next/font/google";
-import { supabase } from "../../../../../supabase/Lib/General/supabaseClient";
 import Avatar from "@/app/component/ReusableComponent/Avatar";
 
 /* Fonts */
