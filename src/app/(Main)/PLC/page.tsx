@@ -1,17 +1,19 @@
 "use client";
 
-// Imports
+/* Header */
 import HomepageTab from "@/app/component/ReusableComponent/HomepageTab/HomepageTab";
 import { useState, useEffect } from "react";
 import { getCurrentUserDetails } from "../../../../supabase/Lib/General/getUser";
 import type { User } from "../../../../supabase/Lib/General/user";
 
-// Component
+/* Components */
+import PLCContent from "@/app/component/General/PLC/PLCContent";
+
 export default function PLC() {
-  // State
+  /* State */
   const [user, setUser] = useState<User | null>(null);
 
-  // Data Fetching
+  /* Effects */
   useEffect(() => {
     const loadUser = async () => {
       const userDetails = await getCurrentUserDetails();
@@ -20,13 +22,13 @@ export default function PLC() {
     loadUser();
   }, []);
 
-  // Render
+  /* Render */
   return (
-    <div className="p-[25px]">
+    <div className="min-h-screen bg-white">
       <HomepageTab user={user} />
-      <h1 className="font-bold font-montserrat text-[32px] text-maroon mt-[160px] mb-[15px]">
-        PLC
-      </h1>
+      <div className="pt-[120px] px-[50px] pb-10">
+        <PLCContent />
+      </div>
     </div>
   );
 }
