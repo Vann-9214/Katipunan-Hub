@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { X } from "lucide-react";
+import { X, Check, Ban, Trash2, MessageCircle } from "lucide-react";
 import { Montserrat, PT_Sans } from "next/font/google";
 import Avatar from "@/app/component/ReusableComponent/Avatar";
 
@@ -18,11 +18,13 @@ interface BookingDetails {
   description?: string;
   bookingDate: string;
   studentId: string;
+  hasRejected?: boolean;
   studentName?: string;
   studentCourse?: string;
   studentYear?: string;
   studentIDNum?: string;
   avatarURL?: string;
+  tutorName?: string;
 }
 
 interface RequestSessionModalProps {
@@ -30,9 +32,14 @@ interface RequestSessionModalProps {
   onClose: () => void;
   booking: BookingDetails | null;
   onCancelRequest: (bookingId: string) => void;
+  isTutor?: boolean;
+  onApproveRequest?: (bookingId: string) => void;
+  onRejectRequest?: (bookingId: string) => void;
+  rejectionCount?: number;
+  totalTutors?: number;
 }
 
-/* Helper to format date */
+/* Helpers */
 const formatDate = (dateStr: string) => {
   if (!dateStr) return "";
   const date = new Date(dateStr);
@@ -43,7 +50,6 @@ const formatDate = (dateStr: string) => {
   });
 };
 
-/* Helper to format time */
 const formatTime = (timeStr: string) => {
   if (!timeStr) return "";
   const [hours, minutes] = timeStr.split(":");
@@ -63,8 +69,30 @@ export default function FullDetails({
   onClose,
   booking,
   onCancelRequest,
+  isTutor = false,
+  onApproveRequest,
+  onRejectRequest,
+  rejectionCount = 0,
+  totalTutors = 10,
 }: RequestSessionModalProps) {
   if (!isOpen || !booking) return null;
+
+  // --- Status Logic ---
+  let displayStatus = booking.status;
+  let statusColor = "text-gray-600";
+
+  if (isTutor && booking.hasRejected && booking.status === "Pending") {
+    displayStatus = "Rejected";
+    statusColor = "text-red-600";
+  } else {
+    if (booking.status === "Pending") statusColor = "text-[#D97706]";
+    else if (booking.status === "Approved") statusColor = "text-green-600";
+    else if (booking.status === "Rejected") statusColor = "text-red-600";
+  }
+
+  const handleChatClick = () => {
+    alert("Chat feature coming soon!");
+  };
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -147,33 +175,124 @@ export default function FullDetails({
                   {formatTime(booking.startTime)}
                 </span>
               </p>
-              <p className={`${montserrat.className} text-[24px] text-black`}>
-                Declined Request: <span className="font-medium">0/10</span>
-              </p>
 
-              {/* Status */}
+              {/* --- MOVED TUTOR NAME HERE (Right Side) --- */}
+              {/* Display for BOTH Student and Tutor if booking is Approved */}
+              {booking.status === "Approved" && booking.tutorName && (
+                <p className={`${montserrat.className} text-[24px] text-black`}>
+                  Tutor:{" "}
+                  <span className="font-medium text-[#800000]">
+                    {booking.tutorName}
+                  </span>
+                </p>
+              )}
+
+              {/* Only show Declined Request count if NOT approved */}
+              {booking.status !== "Approved" && (
+                <p className={`${montserrat.className} text-[24px] text-black`}>
+                  Declined Request:{" "}
+                  <span className="font-medium">
+                    {rejectionCount}/{totalTutors}
+                  </span>
+                </p>
+              )}
+
+              {/* Status Display */}
               <p
-                className={`${
-                  montserrat.className
-                } text-[24px] font-medium mt-1 ${
-                  booking.status === "Pending"
-                    ? "text-[#D97706]"
-                    : booking.status === "Approved"
-                    ? "text-green-600"
-                    : "text-red-600"
-                }`}
+                className={`${montserrat.className} text-[24px] font-medium mt-1 ${statusColor}`}
               >
-                {booking.status}
+                {displayStatus}
               </p>
             </div>
 
-            <div className="flex justify-end mt-6">
-              <button
-                onClick={() => onCancelRequest(booking.id)}
-                className={`${montserrat.className} bg-[#8B0E0E] text-white cursor-pointer text-[12px] font-bold py-2 px-4 rounded-full hover:bg-[#6d0b0b] transition-colors`}
-              >
-                Cancel Request
-              </button>
+            {/* Buttons */}
+            <div className="flex justify-end mt-6 gap-3">
+              {/* TUTOR VIEW - PENDING */}
+              {isTutor &&
+                booking.status === "Pending" &&
+                (booking.hasRejected ? (
+                  <span className="text-red-600 font-bold text-sm self-center py-2 px-4">
+                    Waiting for other tutors...
+                  </span>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => onRejectRequest?.(booking.id)}
+                      className={`${montserrat.className} flex items-center gap-2 bg-red-100 text-red-700 cursor-pointer text-[12px] font-bold py-2 px-6 rounded-full hover:bg-red-200 transition-colors`}
+                    >
+                      <Ban size={18} />
+                      Deny Request
+                    </button>
+                    <button
+                      onClick={() => onApproveRequest?.(booking.id)}
+                      className={`${montserrat.className} flex items-center gap-2 bg-[#8B0E0E] text-white cursor-pointer text-[12px] font-bold py-2 px-6 rounded-full hover:bg-[#6d0b0b] transition-colors`}
+                    >
+                      <Check size={18} />
+                      Confirm Request
+                    </button>
+                  </>
+                ))}
+
+              {/* OTHER STATES */}
+              {(!isTutor || booking.status !== "Pending") && (
+                <>
+                  {/* Student Cancel */}
+                  {booking.status === "Pending" && !isTutor && (
+                    <button
+                      onClick={() => onCancelRequest(booking.id)}
+                      className={`${montserrat.className} bg-[#8B0E0E] text-white cursor-pointer text-[12px] font-bold py-2 px-4 rounded-full hover:bg-[#6d0b0b] transition-colors`}
+                    >
+                      Cancel Request
+                    </button>
+                  )}
+
+                  {/* Student Delete Rejected */}
+                  {booking.status === "Rejected" && !isTutor && (
+                    <button
+                      onClick={() => onCancelRequest(booking.id)}
+                      className={`${montserrat.className} flex items-center gap-2 bg-red-600 text-white cursor-pointer text-[12px] font-bold py-2 px-4 rounded-full hover:bg-red-700 transition-colors`}
+                    >
+                      <Trash2 size={16} />
+                      Delete Booking
+                    </button>
+                  )}
+
+                  {/* Approved Actions (Chat) */}
+                  {booking.status === "Approved" && (
+                    <>
+                      <button
+                        onClick={handleChatClick}
+                        className={`${montserrat.className} flex items-center gap-2 bg-[#FFB74D] text-black cursor-pointer text-[12px] font-bold py-2 px-6 rounded-full hover:bg-[#ffa726] transition-colors`}
+                      >
+                        <MessageCircle size={18} />
+                        {isTutor ? "Chat with Student" : "Chat with Tutor"}
+                      </button>
+                      <button
+                        onClick={onClose}
+                        className={`${montserrat.className} bg-gray-200 text-black cursor-pointer text-[12px] font-bold py-2 px-4 rounded-full hover:bg-gray-300 transition-colors`}
+                      >
+                        Close
+                      </button>
+                    </>
+                  )}
+
+                  {/* Generic Close for other cases */}
+                  {((isTutor &&
+                    booking.status !== "Pending" &&
+                    booking.status !== "Approved") ||
+                    (!isTutor &&
+                      booking.status !== "Pending" &&
+                      booking.status !== "Rejected" &&
+                      booking.status !== "Approved")) && (
+                    <button
+                      onClick={onClose}
+                      className={`${montserrat.className} bg-gray-200 text-black cursor-pointer text-[12px] font-bold py-2 px-4 rounded-full hover:bg-gray-300 transition-colors`}
+                    >
+                      Close
+                    </button>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>

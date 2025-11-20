@@ -3,16 +3,12 @@
 import { useState } from "react";
 import { X, Loader2 } from "lucide-react";
 import { Montserrat, PT_Sans } from "next/font/google";
-
-/* --- FIX: Import the pre-configured client from your project --- */
 import { supabase } from "../../../../../supabase/Lib/General/supabaseClient";
 import { getCurrentUserDetails } from "../../../../../supabase/Lib/General/getUser";
 
-/* Fonts */
 const montserrat = Montserrat({ subsets: ["latin"], weight: ["600", "700"] });
 const ptSans = PT_Sans({ subsets: ["latin"], weight: ["400", "700"] });
 
-/* Types */
 interface BookingModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -20,14 +16,12 @@ interface BookingModalProps {
   onSuccess?: () => void;
 }
 
-/* Main Component */
 export default function BookingModal({
   isOpen,
   onClose,
   selectedDate,
   onSuccess,
 }: BookingModalProps) {
-  /* State */
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     subject: "",
@@ -44,6 +38,36 @@ export default function BookingModal({
     year: "numeric",
   });
 
+  /* Time Validation Helpers */
+  const validateTime = (timeStr: string, date: Date) => {
+    const [hours, minutes] = timeStr.split(":").map(Number);
+    const totalMinutes = hours * 60 + minutes;
+
+    // Constraint 1: 7:30 AM to 9:00 PM
+    const minLimit = 7 * 60 + 30; // 7:30 AM in minutes
+    const maxLimit = 21 * 60; // 9:00 PM in minutes
+
+    if (totalMinutes < minLimit || totalMinutes > maxLimit) {
+      throw new Error(
+        "Bookings are only available between 7:30 AM and 9:00 PM."
+      );
+    }
+
+    // Constraint 2: No past times if date is today
+    const now = new Date();
+    const isToday =
+      date.getDate() === now.getDate() &&
+      date.getMonth() === now.getMonth() &&
+      date.getFullYear() === now.getFullYear();
+
+    if (isToday) {
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      if (totalMinutes <= currentMinutes) {
+        throw new Error("Cannot book a time in the past.");
+      }
+    }
+  };
+
   /* Handlers */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,15 +75,21 @@ export default function BookingModal({
     setError(null);
 
     try {
+      // 1. Validate Time
+      validateTime(formData.startTime, selectedDate);
+
+      // 2. Get User
       const user = await getCurrentUserDetails();
       if (!user) throw new Error("You must be logged in to book a session.");
 
-      // Adjust for timezone offset to ensure correct date is saved (YYYY-MM-DD)
+      // 3. Format Date for DB (YYYY-MM-DD)
+      // Use local time to prevent timezone shifting
       const offset = selectedDate.getTimezoneOffset();
       const dateForDB = new Date(selectedDate.getTime() - offset * 60 * 1000)
         .toISOString()
         .split("T")[0];
 
+      // 4. Insert to Supabase
       const { error: insertError } = await supabase.from("PLCBookings").insert({
         studentId: user.id,
         bookingDate: dateForDB,
@@ -71,19 +101,17 @@ export default function BookingModal({
 
       if (insertError) throw insertError;
 
+      // 5. Reset and Close
       setFormData({ subject: "", description: "", startTime: "" });
       if (onSuccess) onSuccess();
       onClose();
     } catch (err: unknown) {
-      // --- FIXED: Type-safe error handling ---
       console.error("Booking Error:", err);
-
       let errorMessage = "Failed to submit booking. Please try again.";
 
       if (err instanceof Error) {
         errorMessage = err.message;
       } else if (typeof err === "object" && err !== null && "message" in err) {
-        // Handle Supabase PostgrestError which might be an object with a message property
         errorMessage = String((err as { message: unknown }).message);
       }
 
@@ -93,7 +121,6 @@ export default function BookingModal({
     }
   };
 
-  /* Render */
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="bg-white rounded-[20px] w-full max-w-[500px] shadow-2xl animate-in fade-in zoom-in duration-200">
@@ -138,12 +165,18 @@ export default function BookingModal({
             <input
               type="time"
               required
+              // Basic browser-level constraints (Optional UX helper)
+              min="07:30"
+              max="21:00"
               value={formData.startTime}
               onChange={(e) =>
                 setFormData({ ...formData, startTime: e.target.value })
               }
               className={`${ptSans.className} w-full p-3 rounded-lg border border-black focus:outline-none focus:ring-2 focus:ring-[#8B0E0E]/20`}
             />
+            <span className="text-xs text-gray-500">
+              Available from 7:30 AM to 9:00 PM
+            </span>
           </div>
 
           {/* Subject Input */}
@@ -186,7 +219,7 @@ export default function BookingModal({
 
           {/* Error Message */}
           {error && (
-            <div className="text-red-600 text-sm bg-red-50 p-3 rounded-md">
+            <div className="text-red-600 text-sm bg-red-50 p-3 rounded-md border border-red-100">
               {error}
             </div>
           )}
