@@ -35,7 +35,7 @@ export default function PLCContent() {
         <div className="flex items-center gap-0 bg-white border border-black rounded-lg overflow-hidden h-[40px]">
           <button
             onClick={() => setViewMode("month")}
-            className={`px-3 h-full flex items-center justify-center transition-colors ${
+            className={`cursor-pointer px-3 h-full flex items-center justify-center transition-colors ${
               viewMode === "month" ? "bg-gray-200" : "hover:bg-gray-100"
             }`}
           >
@@ -44,7 +44,7 @@ export default function PLCContent() {
           <div className="w-[1px] h-full bg-black" />
           <button
             onClick={() => setViewMode("year")}
-            className={`px-3 h-full flex items-center justify-center transition-colors ${
+            className={`cursor-pointer px-3 h-full flex items-center justify-center transition-colors ${
               viewMode === "year" ? "bg-gray-200" : "hover:bg-gray-100"
             }`}
           >
