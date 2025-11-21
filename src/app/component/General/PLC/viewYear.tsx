@@ -1,4 +1,3 @@
-// src/app/component/General/PLC/viewYear.tsx
 "use client";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -15,6 +14,22 @@ interface PLCViewYearProps {
   onPrevYear: () => void;
   onNextYear: () => void;
 }
+
+// --- Helper: Map Status to Hex Color ---
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "Pending":
+      return "#FFB74D"; // Orange
+    case "Approved":
+    case "Completed":
+      return "#81C784"; // Green
+    case "Rejected":
+    case "Cancelled":
+      return "#EF9A9A"; // Red (Tailwind Red-200/300 approx)
+    default:
+      return "#FFFFFF";
+  }
+};
 
 export default function PLCViewYear({
   year,
@@ -83,44 +98,59 @@ export default function PLCViewYear({
 
               <div className="grid grid-cols-7 border-t border-l border-gray-300">
                 {gridCells.map((day, i) => {
-                  // Color Logic
-                  let bgClass = "bg-transparent";
+                  let cellStyle: React.CSSProperties = {};
+
+                  // Default classes for day cells
+                  let className = `
+                    h-[26px] flex items-center justify-center 
+                    border-b border-r border-gray-300 
+                    text-[11px] ${ptSans.className}
+                  `;
 
                   if (day !== null) {
+                    className += " text-black";
+
                     const dateStr = getDateString(year, monthIndex, day);
 
-                    const booking = yearBookings.find(
+                    // Find ALL bookings for this day to determine colors
+                    const bookingsOnDay = yearBookings.filter(
                       (b) => b.bookingDate === dateStr
                     );
 
-                    if (booking) {
-                      if (booking.status === "Pending") {
-                        bgClass = "bg-[#FFB74D]";
-                      } else if (
-                        booking.status === "Approved" ||
-                        booking.status === "Completed"
-                      ) {
-                        bgClass = "bg-[#81C784]";
-                      } else if (
-                        booking.status === "Rejected" ||
-                        booking.status === "Cancelled"
-                      ) {
-                        bgClass = "bg-red-200";
-                      }
+                    // Get unique colors based on statuses
+                    const uniqueColors = Array.from(
+                      new Set(
+                        bookingsOnDay.map((b) => getStatusColor(b.status))
+                      )
+                    );
+
+                    if (uniqueColors.length === 0) {
+                      // No bookings: Transparent/White
+                      className += " bg-transparent";
+                    } else if (uniqueColors.length === 1) {
+                      // Single Color
+                      cellStyle = { backgroundColor: uniqueColors[0] };
+                    } else {
+                      // Multiple Colors -> Gradient
+                      const step = 100 / uniqueColors.length;
+                      const gradientStops = uniqueColors
+                        .map(
+                          (color, idx) =>
+                            `${color} ${idx * step}% ${(idx + 1) * step}%`
+                        )
+                        .join(", ");
+
+                      cellStyle = {
+                        background: `linear-gradient(135deg, ${gradientStops})`,
+                      };
                     }
+                  } else {
+                    // Empty cell (padding days)
+                    className += " bg-transparent";
                   }
 
                   return (
-                    <div
-                      key={i}
-                      className={`
-                        h-[26px] flex items-center justify-center 
-                        border-b border-r border-gray-300 
-                        text-[11px] ${ptSans.className}
-                        ${day ? "text-black" : ""}
-                        ${bgClass} 
-                      `}
-                    >
+                    <div key={i} className={className} style={cellStyle}>
                       {day}
                     </div>
                   );
