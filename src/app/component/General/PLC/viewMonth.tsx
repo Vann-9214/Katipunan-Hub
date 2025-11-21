@@ -62,6 +62,16 @@ export default function PLCViewMonth({
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
+  // --- FIX 1: Use state for 'today' to ensure it uses Client time ---
+  const [today, setToday] = useState<Date | null>(null);
+
+  useEffect(() => {
+    // This runs only on the client, ensuring we get the user's local date
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    setToday(now);
+  }, []);
+
   const [bookingStats, setBookingStats] = useState({
     rejectionCount: 0,
     totalTutors: 0,
@@ -82,9 +92,9 @@ export default function PLCViewMonth({
   } = usePLCBookings(year, monthIndex, selectedDate);
 
   useEffect(() => {
-    const today = new Date();
-    if (today.getFullYear() === year && today.getMonth() === monthIndex) {
-      setSelectedDate(today.getDate());
+    const d = new Date();
+    if (d.getFullYear() === year && d.getMonth() === monthIndex) {
+      setSelectedDate(d.getDate());
     } else {
       setSelectedDate(1);
     }
@@ -155,8 +165,6 @@ export default function PLCViewMonth({
     : new Date(year, monthIndex, 1);
   const dayName = dateObject.toLocaleString("en-US", { weekday: "long" });
   const displayDate = selectedDate || 1;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
 
   return (
     <>
@@ -211,7 +219,11 @@ export default function PLCViewMonth({
 
               if (day !== null) {
                 const checkDate = new Date(year, monthIndex, day);
-                if (checkDate < today) {
+
+                // --- FIX 2: Check 'today' state instead of a local var ---
+                // If 'today' is null (initial render), we assume NOT past to avoid hydration mismatch
+                // Once useEffect runs, 'today' sets to client time, and this re-renders correctly.
+                if (today && checkDate < today) {
                   isPastDate = true;
                 }
 
@@ -241,7 +253,7 @@ export default function PLCViewMonth({
                     cellStyle = { backgroundColor: uniqueColors[0] };
                   } else {
                     // Multiple Colors -> Gradient
-                    // Calculate percentage steps: e.g., 50% for 2 colors, 33.3% for 3
+                    // Calculate percentage steps
                     const step = 100 / uniqueColors.length;
                     const gradientStops = uniqueColors
                       .map(
@@ -261,12 +273,10 @@ export default function PLCViewMonth({
 
               // Selected State Styles
               if (isSelected && !isPastDate) {
-                // If it has colors, we keep the background but add a thick border or overlay
-                // If no colors, we use the default selection color
                 const hasColors = Object.keys(cellStyle).length > 0;
 
                 if (hasColors) {
-                  baseClasses += " font-bold z-10 ring-4 ring-black/20";
+                  baseClasses += " font-bold z-10";
                 } else {
                   baseClasses += " bg-[#8B0E0E]/20 font-bold z-10";
                 }
@@ -441,9 +451,8 @@ export default function PLCViewMonth({
               "ID",
             avatarURL:
               selectedBooking.Accounts?.avatarURL || currentUser.avatarURL,
-            hasRejected: selectedBooking.hasRejected, // Pass this through
-
-            // --- ADDED: Pass the tutor name to the modal ---
+            hasRejected: selectedBooking.hasRejected,
+            // --- Pass Tutor Name ---
             tutorName: selectedBooking.Tutor?.fullName,
           }}
           isTutor={isTutor}
