@@ -17,6 +17,7 @@ export interface Booking {
   studentId: string;
   approvedBy?: string;
   hasRejected?: boolean;
+  createdAt?: string;
   Accounts?: {
     fullName: string;
     course: string;
@@ -27,10 +28,8 @@ export interface Booking {
   Tutor?: {
     fullName: string;
   };
-  created_at?: string; 
 }
 
-// UPDATED: Added startTime and endTime here so Calendar grids can use them
 export type MonthBooking = Pick<Booking, "id" | "bookingDate" | "status" | "approvedBy" | "startTime" | "endTime">;
 
 const getDateString = (y: number, m: number, d: number) => {
@@ -65,31 +64,30 @@ export const usePLCBookings = (
   }, []);
 
   // --- 1. FETCH FUNCTIONS ---
-  
+
   // Month Fetch
   const fetchMonthBookings = useCallback(async () => {
     if (!currentUser) return;
-    
+
     const startStr = getDateString(year, monthIndex, 1);
     const lastDay = new Date(year, monthIndex + 1, 0).getDate();
     const endStr = getDateString(year, monthIndex, lastDay);
 
-    // UPDATED: Added startTime, endTime to select
     let query = supabase
       .from("PLCBookings")
-      .select("id, bookingDate, status, approvedBy, startTime, endTime") 
+      .select("id, bookingDate, status, approvedBy, startTime, endTime")
       .gte("bookingDate", startStr)
       .lte("bookingDate", endStr)
-      .in("status", ["Pending", "Approved", "Rejected"]); 
+      .in("status", ["Pending", "Approved", "Rejected", "Completed"]);
 
     if (!isTutor) query = query.eq("studentId", currentUser.id);
 
     const { data, error } = await query;
-    
+
     if (error) console.error("Error fetching month bookings:", error);
 
     if (data) {
-      const filtered = isTutor 
+      const filtered = isTutor
         ? data.filter(b => b.status === 'Approved' ? b.approvedBy === currentUser.id : true)
         : data;
       setMonthBookings(filtered);
@@ -99,49 +97,50 @@ export const usePLCBookings = (
   // Day Fetch
   const fetchDayBookings = useCallback(async (silent = false) => {
     if (!currentUser || !selectedDate) return;
-    
+
     if (!silent) setIsLoadingDayBookings(true);
-    
+
     const dateQuery = getDateString(year, monthIndex, selectedDate);
 
     let query = supabase
       .from("PLCBookings")
-      .select(`
-        *, 
-        Accounts:Accounts!PLCBookings_studentId_fkey (fullName, course, year, studentID, avatarURL), 
-        Tutor:Accounts!PLCBookings_approvedBy_fkey (fullName)
-      `)
+      .select("*, Accounts:Accounts!PLCBookings_studentId_fkey (fullName, course, year, studentID, avatarURL), Tutor:Accounts!PLCBookings_approvedBy_fkey (fullName)")
       .eq("bookingDate", dateQuery)
-      .in("status", ["Pending", "Approved", "Rejected"]); 
+      .in("status", ["Pending", "Approved", "Rejected", "Completed"])
+      .order("createdAt", { ascending: false });
 
     if (!isTutor) query = query.eq("studentId", currentUser.id);
 
-    const { data, error } = await query;
+    const { data, error } = await query as { data: Booking[] | null; error: any };
 
     if (error) {
       console.error("Error fetching day bookings:", error);
     }
 
     if (data) {
-      let filtered = isTutor 
+      let filtered = isTutor
         ? data.filter(b => b.status === 'Approved' ? b.approvedBy === currentUser.id : true)
         : data;
 
-      filtered.sort((a: any, b: any) => {
-        if (a.created_at && b.created_at) {
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      // Client-side filter: Hide expired Pending items immediately
+      const now = new Date();
+      filtered = filtered.filter((b) => {
+        if (b.status === "Pending") {
+          const bookingDateTime = new Date(`${b.bookingDate}T${b.startTime}`);
+          // If time has passed, hide it
+          if (bookingDateTime < now) return false;
         }
-        return 0;
+        return true;
       });
 
       const mappedData = filtered.map((booking) => ({
         ...booking,
         hasRejected: myRejections.includes(booking.id),
       }));
-      
+
       setDayBookings(mappedData);
     }
-    
+
     if (!silent) setIsLoadingDayBookings(false);
   }, [currentUser, selectedDate, monthIndex, year, isTutor, myRejections]);
 
@@ -149,12 +148,18 @@ export const usePLCBookings = (
   const fetchHistoryBookings = useCallback(async () => {
     if (!currentUser) return;
     let query = supabase
-      .from("PLCBookingHistory") 
+      .from("PLCBookingHistory")
       .select(`*, Accounts:Accounts!plcbookinghistory_studentid_fkey (fullName, course, year, studentID, avatarURL), Tutor:Accounts!plcbookinghistory_approvedby_fkey (fullName)`)
       .order("bookingDate", { ascending: false });
 
-    if (!isTutor) query = query.eq("studentId", currentUser.id);
-    else query = query.eq("approvedBy", currentUser.id);
+    // STRICT FILTERING:
+    if (!isTutor) {
+      // Student sees their own
+      query = query.eq("studentId", currentUser.id);
+    } else {
+      // Tutor sees only what they approved
+      query = query.eq("approvedBy", currentUser.id);
+    }
 
     const { data, error } = await query;
     if (error) console.error("Error fetching history:", error);
@@ -169,61 +174,63 @@ export const usePLCBookings = (
       .eq("tutorId", currentUser.id);
 
     if (data) {
-        setMyRejections(data.map((r: any) => r.bookingId || r.bookingid));
+      setMyRejections(data.map((r: any) => r.bookingId || r.bookingid));
     }
   }, [currentUser, isTutor]);
 
   // --- 2. CENTRAL REFRESH ---
   const refreshBookings = useCallback((silent = false) => {
-    fetchMyRejections().then(() => {
-        fetchMonthBookings();
-        fetchDayBookings(silent); 
-        fetchHistoryBookings();
-    });
+    Promise.all([
+      fetchMyRejections(),
+      fetchMonthBookings(),
+      fetchDayBookings(silent),
+      fetchHistoryBookings()
+    ]);
   }, [fetchMyRejections, fetchMonthBookings, fetchDayBookings, fetchHistoryBookings]);
 
   // --- 3. CLEANUP ENGINE ---
   const cleanupExpired = useCallback(async () => {
     const now = new Date();
     const dateStr = getDateString(now.getFullYear(), now.getMonth(), now.getDate());
-    const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+    const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0') + ':00';
 
     try {
-        await supabase.rpc('move_and_archive_bookings', {
-            check_date: dateStr,
-            check_time: timeStr
-        });
+      // 1. Move to History (SQL handles the date check so it only moves yesterday's items)
+      await supabase.rpc('move_and_archive_bookings', {
+        check_date: dateStr,
+        check_time: timeStr
+      });
 
-        const { error: deleteError } = await supabase.rpc("delete_expired_pending_bookings", {
-            check_date: dateStr,
-            check_time: timeStr
-        });
+      // 2. Delete Pending (Happens instantly if time passed)
+      await supabase.rpc("delete_expired_pending_bookings", {
+        check_date: dateStr,
+        check_time: timeStr
+      });
 
-        if (deleteError && deleteError.message?.includes("does not exist")) {
-             await supabase.from("PLCBookings")
-                .delete()
-                .eq("status", "Pending")
-                .or(`bookingDate.lt.${dateStr},and(bookingDate.eq.${dateStr},startTime.lte.${timeStr})`);
-        }
+      // 3. Manual Fallback for Pending
+      const { error: manualError } = await supabase.from("PLCBookings")
+        .delete()
+        .eq("status", "Pending")
+        .or(`bookingDate.lt.${dateStr},and(bookingDate.eq.${dateStr},startTime.lte.${timeStr})`);
 
-        refreshBookings(true);
+      // Force refresh slightly later to allow DB commit
+      setTimeout(() => refreshBookings(true), 500);
 
     } catch (err) {
-        console.error("Cleanup error:", err);
+      console.error("Cleanup error:", err);
     }
   }, [refreshBookings]);
 
-  // --- UTILS ---
+  // --- UTILS & ACTIONS ---
   const getBookingStats = async (bookingId: string) => {
     const { data, error } = await supabase.rpc("get_booking_stats", { booking_id: bookingId });
     if (error || !data) return { totalTutors: 0, rejectionCount: 0 };
     return { totalTutors: data.totalTutors || 0, rejectionCount: data.rejectionCount || 0 };
   };
 
-  // --- ACTIONS ---
   const cancelBooking = async (bookingId: string) => {
     const { error } = await supabase.from("PLCBookings").delete().eq("id", bookingId);
-    if (!error) refreshBookings(false); 
+    if (!error) refreshBookings(false);
   };
 
   const deleteHistoryBooking = async (bookingId: string) => {
@@ -232,8 +239,8 @@ export const usePLCBookings = (
   };
 
   const approveBooking = async (bookingId: string) => {
-     if (!currentUser) return;
-     const { error } = await supabase
+    if (!currentUser) return;
+    const { error } = await supabase
       .from("PLCBookings")
       .update({ status: "Approved", approvedBy: currentUser.id })
       .eq("id", bookingId);
@@ -243,23 +250,56 @@ export const usePLCBookings = (
   const denyBooking = async (bookingId: string) => {
     const { error } = await supabase.rpc("deny_booking", { booking_id: bookingId });
     if (!error) {
-        setMyRejections(prev => [...prev, bookingId]);
-        refreshBookings(false); 
+      setMyRejections(prev => [...prev, bookingId]);
+      refreshBookings(false);
     }
   };
 
   // --- EFFECTS ---
+
+  // 1. On Load
   useEffect(() => {
     cleanupExpired().then(() => {});
   }, [cleanupExpired]);
 
+  // 2. LIVE TIMER & OPTIMISTIC UPDATES
+  // This runs every 5 seconds to update the UI *immediately*
   useEffect(() => {
     const interval = setInterval(() => {
+      const now = new Date();
+      
+      // A: OPTIMISTIC UI UPDATE
+      // Visually remove expired Pending items immediately from local state
+      setDayBookings(prev => {
+        const hasExpiredItem = prev.some(b => {
+          if (b.status !== 'Pending') return false;
+          const bookingTime = new Date(`${b.bookingDate}T${b.startTime}`);
+          return bookingTime < now;
+        });
+
+        // Only update state if something actually changed to avoid re-renders
+        if (hasExpiredItem) {
+          return prev.filter(b => {
+            if (b.status === 'Pending') {
+              const bookingTime = new Date(`${b.bookingDate}T${b.startTime}`);
+              // Keep only future pending items
+              return bookingTime >= now;
+            }
+            return true;
+          });
+        }
+        return prev;
+      });
+
+      // B: DB SYNC
+      // Call DB cleanup in background
       cleanupExpired();
-    }, 10000);
+
+    }, 5000); // Run every 5 seconds for "Instant" feel
     return () => clearInterval(interval);
   }, [cleanupExpired]);
 
+  // 3. Realtime Subscription
   useEffect(() => {
     if (!currentUser) return;
 
@@ -268,12 +308,19 @@ export const usePLCBookings = (
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'PLCBookings' },
-        () => refreshBookings(true)
+        () => {
+            // Double refresh to catch race conditions
+            refreshBookings(true);
+            setTimeout(() => refreshBookings(true), 500);
+        }
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'PLCBookingHistory' },
-        () => fetchHistoryBookings()
+        () => {
+            fetchHistoryBookings();
+            setTimeout(() => fetchHistoryBookings(), 500);
+        }
       )
       .subscribe();
 
@@ -290,7 +337,7 @@ export const usePLCBookings = (
     historyBookings,
     isLoadingDayBookings,
     cancelBooking,
-    deleteHistoryBooking, 
+    deleteHistoryBooking,
     approveBooking,
     denyBooking,
     getBookingStats,
@@ -300,39 +347,38 @@ export const usePLCBookings = (
 };
 
 export const usePLCYearBookings = (year: number) => {
-    const [currentUser, setCurrentUser] = useState<User | null>(null);
-    const [yearBookings, setYearBookings] = useState<MonthBooking[]>([]);
-    const [isTutor, setIsTutor] = useState(false);
-  
-    useEffect(() => {
-      const fetchUser = async () => {
-        const user = await getCurrentUserDetails();
-        setCurrentUser(user);
-         if (user?.role?.includes("Tutor")) setIsTutor(true);
-      };
-      fetchUser();
-    }, []);
-  
-    const fetchYearBookings = useCallback(async () => {
-      if (!currentUser) return;
-      const startStr = `${year}-01-01`;
-      const endStr = `${year}-12-31`;
-      // UPDATED: Added startTime, endTime here too
-      let query = supabase.from("PLCBookings").select("id, bookingDate, status, approvedBy, startTime, endTime").gte("bookingDate", startStr).lte("bookingDate", endStr);
-      if (!isTutor) query = query.eq("studentId", currentUser.id);
-      const { data, error } = await query;
-      if (data) {
-          let filtered = data;
-          if (isTutor) {
-              filtered = filtered.filter(b => {
-                  if (b.status === 'Approved') return b.approvedBy === currentUser.id;
-                  return true;
-              });
-          }
-          setYearBookings(filtered);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [yearBookings, setYearBookings] = useState<MonthBooking[]>([]);
+  const [isTutor, setIsTutor] = useState(false);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const user = await getCurrentUserDetails();
+      setCurrentUser(user);
+      if (user?.role?.includes("Tutor")) setIsTutor(true);
+    };
+    fetchUser();
+  }, []);
+
+  const fetchYearBookings = useCallback(async () => {
+    if (!currentUser) return;
+    const startStr = `${year}-01-01`;
+    const endStr = `${year}-12-31`;
+    let query = supabase.from("PLCBookings").select("id, bookingDate, status, approvedBy, startTime, endTime").gte("bookingDate", startStr).lte("bookingDate", endStr);
+    if (!isTutor) query = query.eq("studentId", currentUser.id);
+    const { data, error } = await query;
+    if (data) {
+      let filtered = data;
+      if (isTutor) {
+        filtered = filtered.filter(b => {
+          if (b.status === 'Approved') return b.approvedBy === currentUser.id;
+          return true;
+        });
       }
-    }, [currentUser, year, isTutor]);
-  
-    useEffect(() => { fetchYearBookings(); }, [fetchYearBookings]);
-    return { yearBookings, getDateString };
+      setYearBookings(filtered);
+    }
+  }, [currentUser, year, isTutor]);
+
+  useEffect(() => { fetchYearBookings(); }, [fetchYearBookings]);
+  return { yearBookings, getDateString };
 };

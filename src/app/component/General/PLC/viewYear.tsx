@@ -31,7 +31,7 @@ const getStatusColor = (status: string) => {
     case "Rejected":
       return "#EF9A9A";
     case "Starting...":
-      return "#EFBF04"; // Gold
+      return "#FFD239"; // Gold
     default:
       return "#FFFFFF";
   }
