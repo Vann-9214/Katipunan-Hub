@@ -19,8 +19,13 @@ export default function PLCContent() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   // --- Hook to fetch History Data & Delete Action ---
-  const { historyBookings, isTutor, refreshBookings, deleteHistoryBooking } =
-    usePLCBookings(currentYear, currentMonth, null);
+  const {
+    historyBookings,
+    isTutor,
+    refreshBookings,
+    deleteHistoryBooking,
+    rateTutor,
+  } = usePLCBookings(currentYear, currentMonth, null);
 
   const handleMonthClick = (monthIndex: number) => {
     setCurrentMonth(monthIndex);
@@ -52,7 +57,7 @@ export default function PLCContent() {
           {/* History Button */}
           <button
             onClick={handleHistoryClick}
-            className={`${montserrat.className} flex items-center gap-2 px-4 h-[40px] bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 hover:shadow text-[#8B0E0E] font-bold transition-all`}
+            className={`${montserrat.className} cursor-pointer flex items-center gap-2 px-4 h-[40px] bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 hover:shadow text-[#8B0E0E] font-bold transition-all`}
           >
             <History size={20} />
             <span>History</span>
@@ -120,6 +125,7 @@ export default function PLCContent() {
         onClose={() => setIsHistoryOpen(false)}
         bookings={historyBookings}
         isTutor={isTutor}
+        onRateTutor={rateTutor}
         onDelete={handleDeleteHistory}
       />
     </div>

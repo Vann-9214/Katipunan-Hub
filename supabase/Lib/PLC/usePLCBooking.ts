@@ -26,8 +26,15 @@ export interface Booking {
     avatarURL: string;
   };
   Tutor?: {
+    id: string;
     fullName: string;
   };
+  TutorRatings?: TutorRating[];
+}
+
+export interface TutorRating {
+  rating: number;
+  review: string;
 }
 
 export type MonthBooking = Pick<Booking, "id" | "bookingDate" | "status" | "approvedBy" | "startTime" | "endTime">;
@@ -104,7 +111,7 @@ export const usePLCBookings = (
 
     let query = supabase
       .from("PLCBookings")
-      .select("*, Accounts:Accounts!PLCBookings_studentId_fkey (fullName, course, year, studentID, avatarURL), Tutor:Accounts!PLCBookings_approvedBy_fkey (fullName)")
+      .select("*, Accounts:Accounts!PLCBookings_studentId_fkey (fullName, course, year, studentID, avatarURL), Tutor:Accounts!PLCBookings_approvedBy_fkey (id, fullName), TutorRatings(rating, review)")
       .eq("bookingDate", dateQuery)
       .in("status", ["Pending", "Approved", "Rejected", "Completed"])
       .order("createdAt", { ascending: false });
@@ -149,7 +156,7 @@ export const usePLCBookings = (
     if (!currentUser) return;
     let query = supabase
       .from("PLCBookingHistory")
-      .select(`*, Accounts:Accounts!plcbookinghistory_studentid_fkey (fullName, course, year, studentID, avatarURL), Tutor:Accounts!plcbookinghistory_approvedby_fkey (fullName)`)
+      .select(`*, Accounts:Accounts!plcbookinghistory_studentid_fkey (fullName, course, year, studentID, avatarURL), Tutor:Accounts!plcbookinghistory_approvedby_fkey (id, fullName), TutorRatings(rating, review)`)
       .order("bookingDate", { ascending: false });
 
     // STRICT FILTERING:
@@ -305,15 +312,7 @@ export const usePLCBookings = (
 
     const channel = supabase
       .channel('plc-bookings-realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'PLCBookings' },
-        () => {
-            // Double refresh to catch race conditions
-            refreshBookings(true);
-            setTimeout(() => refreshBookings(true), 500);
-        }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'TutorRatings' }, () => { refreshBookings(true); })
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'PLCBookingHistory' },
@@ -328,7 +327,24 @@ export const usePLCBookings = (
       supabase.removeChannel(channel);
     };
   }, [currentUser, refreshBookings, fetchHistoryBookings]);
+  const rateTutor = async (bookingId: string, tutorId: string, rating: number, review: string) => {
+    if (!currentUser) return;
+    
+    const { error } = await supabase.from("TutorRatings").insert({
+      booking_id: bookingId,
+      student_id: currentUser.id,
+      tutor_id: tutorId,
+      rating,
+      review
+    });
 
+    if (error) {
+      console.error("Error rating tutor:", error);
+      throw error;
+    }
+    
+    refreshBookings(false);
+  };
   return {
     currentUser,
     isTutor,
@@ -343,6 +359,7 @@ export const usePLCBookings = (
     getBookingStats,
     refreshBookings,
     getDateString,
+    rateTutor,
   };
 };
 

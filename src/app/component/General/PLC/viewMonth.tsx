@@ -87,6 +87,7 @@ export default function PLCViewMonth({
     getBookingStats,
     refreshBookings,
     getDateString,
+    rateTutor,
   } = usePLCBookings(year, monthIndex, selectedDate);
 
   // --- REALTIME CLOCK ---
@@ -310,7 +311,7 @@ export default function PLCViewMonth({
             {!isTutor && (
               <button
                 onClick={() => setIsBookingModalOpen(true)}
-                className={`${montserrat.className} text-[20px] font-semibold text-black hover:underline`}
+                className={`${montserrat.className} text-[20px] cursor-pointer font-semibold text-black hover:underline`}
               >
                 + Book a Session
               </button>
@@ -481,6 +482,7 @@ export default function PLCViewMonth({
           onCancelRequest={handleCancelRequest}
           onApproveRequest={handleApprove}
           onRejectRequest={handleDeny}
+          onRateTutor={rateTutor}
           rejectionCount={bookingStats.rejectionCount}
           totalTutors={bookingStats.totalTutors}
         />
