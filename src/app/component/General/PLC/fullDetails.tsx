@@ -14,6 +14,7 @@ interface BookingDetails {
   id: string;
   subject: string;
   startTime: string;
+  endTime?: string; // Added endTime
   status: string;
   description?: string;
   bookingDate: string;
@@ -62,6 +63,13 @@ const formatTime = (timeStr: string) => {
       hour12: true,
     })
     .replace(":", " : ");
+};
+
+// Helper to show range
+const formatTimeRange = (start: string, end?: string) => {
+  const s = formatTime(start);
+  const e = end ? formatTime(end) : "";
+  return e ? `${s} - ${e}` : s;
 };
 
 export default function FullDetails({
@@ -172,7 +180,7 @@ export default function FullDetails({
               <p className={`${montserrat.className} text-[24px] text-black`}>
                 Time:{" "}
                 <span className="font-medium">
-                  {formatTime(booking.startTime)}
+                  {formatTimeRange(booking.startTime, booking.endTime)}
                 </span>
               </p>
 

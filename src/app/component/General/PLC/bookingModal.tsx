@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Loader2 } from "lucide-react";
 import { Montserrat, PT_Sans } from "next/font/google";
 import { supabase } from "../../../../../supabase/Lib/General/supabaseClient";
@@ -27,8 +27,27 @@ export default function BookingModal({
     subject: "",
     description: "",
     startTime: "",
+    endTime: "", // Added endTime
   });
   const [error, setError] = useState<string | null>(null);
+
+  // --- Set Default Start Time to Now when Modal Opens ---
+  useEffect(() => {
+    if (isOpen) {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, "0");
+      const minutes = String(now.getMinutes()).padStart(2, "0");
+
+      setFormData((prev) => ({
+        ...prev,
+        subject: "",
+        description: "",
+        startTime: `${hours}:${minutes}`,
+        endTime: "", // Reset end time
+      }));
+      setError(null);
+    }
+  }, [isOpen]);
 
   if (!isOpen || !selectedDate) return null;
 
@@ -39,21 +58,36 @@ export default function BookingModal({
   });
 
   /* Time Validation Helpers */
-  const validateTime = (timeStr: string, date: Date) => {
-    const [hours, minutes] = timeStr.split(":").map(Number);
-    const totalMinutes = hours * 60 + minutes;
-
-    // Constraint 1: 7:30 AM to 9:00 PM
-    const minLimit = 7 * 60 + 30; // 7:30 AM in minutes
-    const maxLimit = 21 * 60; // 9:00 PM in minutes
-
-    if (totalMinutes < minLimit || totalMinutes > maxLimit) {
-      throw new Error(
-        "Bookings are only available between 7:30 AM and 9:00 PM."
-      );
+  const validateTime = (startStr: string, endStr: string, date: Date) => {
+    if (!startStr || !endStr) {
+      throw new Error("Please provide both start and end times.");
     }
 
-    // Constraint 2: No past times if date is today
+    const getMinutes = (time: string) => {
+      const [h, m] = time.split(":").map(Number);
+      return h * 60 + m;
+    };
+
+    const startTotal = getMinutes(startStr);
+    const endTotal = getMinutes(endStr);
+
+    // 1. Check order
+    if (endTotal <= startTotal) {
+      throw new Error("End time must be after start time.");
+    }
+
+    // 2. Constraint: 7:30 AM to 9:00 PM
+    const minLimit = 7 * 60 + 30; // 7:30 AM
+    const maxLimit = 21 * 60; // 9:00 PM
+
+    if (startTotal < minLimit || startTotal > maxLimit) {
+      throw new Error("Bookings must start between 7:30 AM and 9:00 PM.");
+    }
+    if (endTotal > maxLimit) {
+      throw new Error("Bookings cannot end after 9:00 PM.");
+    }
+
+    // 3. Constraint: No past times if date is today
     const now = new Date();
     const isToday =
       date.getDate() === now.getDate() &&
@@ -62,7 +96,7 @@ export default function BookingModal({
 
     if (isToday) {
       const currentMinutes = now.getHours() * 60 + now.getMinutes();
-      if (totalMinutes <= currentMinutes) {
+      if (startTotal <= currentMinutes) {
         throw new Error("Cannot book a time in the past.");
       }
     }
@@ -76,24 +110,24 @@ export default function BookingModal({
 
     try {
       // 1. Validate Time
-      validateTime(formData.startTime, selectedDate);
+      validateTime(formData.startTime, formData.endTime, selectedDate);
 
       // 2. Get User
       const user = await getCurrentUserDetails();
       if (!user) throw new Error("You must be logged in to book a session.");
 
       // 3. Format Date for DB (YYYY-MM-DD)
-      // Use local time to prevent timezone shifting
       const offset = selectedDate.getTimezoneOffset();
       const dateForDB = new Date(selectedDate.getTime() - offset * 60 * 1000)
         .toISOString()
         .split("T")[0];
 
-      // 4. Insert to Supabase
+      // 4. Insert to Supabase (Include endTime)
       const { error: insertError } = await supabase.from("PLCBookings").insert({
         studentId: user.id,
         bookingDate: dateForDB,
         startTime: formData.startTime,
+        endTime: formData.endTime, // Passing endTime
         subject: formData.subject,
         description: formData.description,
         status: "Pending",
@@ -102,7 +136,6 @@ export default function BookingModal({
       if (insertError) throw insertError;
 
       // 5. Reset and Close
-      setFormData({ subject: "", description: "", startTime: "" });
       if (onSuccess) onSuccess();
       onClose();
     } catch (err: unknown) {
@@ -155,29 +188,47 @@ export default function BookingModal({
             </div>
           </div>
 
-          {/* Time Input */}
-          <div className="flex flex-col gap-2">
-            <label
-              className={`${montserrat.className} text-[14px] font-bold text-black`}
-            >
-              Preferred Start Time <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="time"
-              required
-              // Basic browser-level constraints (Optional UX helper)
-              min="07:30"
-              max="21:00"
-              value={formData.startTime}
-              onChange={(e) =>
-                setFormData({ ...formData, startTime: e.target.value })
-              }
-              className={`${ptSans.className} w-full p-3 rounded-lg border border-black focus:outline-none focus:ring-2 focus:ring-[#8B0E0E]/20`}
-            />
-            <span className="text-xs text-gray-500">
-              Available from 7:30 AM to 9:00 PM
-            </span>
+          {/* Time Inputs Row */}
+          <div className="flex gap-4">
+            {/* Start Time */}
+            <div className="flex-1 flex flex-col gap-2">
+              <label
+                className={`${montserrat.className} text-[14px] font-bold text-black`}
+              >
+                Start Time <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="time"
+                required
+                value={formData.startTime}
+                onChange={(e) =>
+                  setFormData({ ...formData, startTime: e.target.value })
+                }
+                className={`${ptSans.className} w-full p-3 rounded-lg border border-black focus:outline-none focus:ring-2 focus:ring-[#8B0E0E]/20`}
+              />
+            </div>
+
+            {/* End Time */}
+            <div className="flex-1 flex flex-col gap-2">
+              <label
+                className={`${montserrat.className} text-[14px] font-bold text-black`}
+              >
+                End Time <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="time"
+                required
+                value={formData.endTime}
+                onChange={(e) =>
+                  setFormData({ ...formData, endTime: e.target.value })
+                }
+                className={`${ptSans.className} w-full p-3 rounded-lg border border-black focus:outline-none focus:ring-2 focus:ring-[#8B0E0E]/20`}
+              />
+            </div>
           </div>
+          <span className="text-xs text-gray-500 -mt-3">
+            Available from 7:30 AM to 9:00 PM
+          </span>
 
           {/* Subject Input */}
           <div className="flex flex-col gap-2">
