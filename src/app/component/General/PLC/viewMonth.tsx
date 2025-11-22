@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, MoveRight } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { ChevronLeft, ChevronRight, MoveRight, Loader2 } from "lucide-react";
 import { Montserrat, PT_Sans } from "next/font/google";
 import { WEEKDAYS, MONTHS, getDaysInMonth, getFirstDayOfMonth } from "./Utils";
 import BookingModal from "./bookingModal";
@@ -21,31 +21,35 @@ interface PLCViewMonthProps {
   onNextMonth: () => void;
 }
 
-const formatTimeDisplay = (timeStr: string) => {
+// Helper to format "HH:mm" -> "10:30 AM"
+const formatTimeStr = (timeStr: string) => {
   if (!timeStr) return "";
   const [hours, minutes] = timeStr.split(":");
   const date = new Date();
   date.setHours(parseInt(hours), parseInt(minutes));
-  return date
-    .toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    })
-    .replace(":", " : ");
+  return date.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
 };
 
-// --- Helper: Map Status to Hex Color ---
+const formatTimeDisplay = (startStr: string, endStr?: string) => {
+  const start = formatTimeStr(startStr);
+  const end = endStr ? formatTimeStr(endStr) : "";
+  return end ? `${start} - ${end}` : start;
+};
+
 const getStatusColor = (status: string) => {
   switch (status) {
     case "Pending":
-      return "#FFB74D"; // Orange
+      return "#FFB74D";
     case "Approved":
     case "Completed":
-      return "#81C784"; // Green
+      return "#81C784";
     case "Rejected":
     case "Cancelled":
-      return "#EF9A9A"; // Red (Tailwind Red-200/300 approx)
+      return "#EF9A9A";
     default:
       return "#FFFFFF";
   }
@@ -62,15 +66,8 @@ export default function PLCViewMonth({
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
-  // --- FIX 1: Use state for 'today' to ensure it uses Client time ---
-  const [today, setToday] = useState<Date | null>(null);
-
-  useEffect(() => {
-    // This runs only on the client, ensuring we get the user's local date
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    setToday(now);
-  }, []);
+  // State to force re-render every second for "Starting..." status
+  const [now, setNow] = useState<Date>(new Date());
 
   const [bookingStats, setBookingStats] = useState({
     rejectionCount: 0,
@@ -91,6 +88,24 @@ export default function PLCViewMonth({
     getDateString,
   } = usePLCBookings(year, monthIndex, selectedDate);
 
+  // --- REALTIME UI TIMER ---
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentTime = new Date();
+      setNow(currentTime); // Force re-render every second
+
+      // Check if we just hit a new minute (seconds == 0)
+      // This ensures we trigger the database cleanup/move logic promptly
+      if (currentTime.getSeconds() === 0) {
+        console.log("New minute detected, checking for expired bookings...");
+        refreshBookings();
+      }
+    }, 1000); // Run every 1 second
+
+    return () => clearInterval(interval);
+  }, [refreshBookings]);
+
+  // Reset selection when month changes
   useEffect(() => {
     const d = new Date();
     if (d.getFullYear() === year && d.getMonth() === monthIndex) {
@@ -115,43 +130,70 @@ export default function PLCViewMonth({
     setIsRequestModalOpen(true);
   };
 
+  // Action Handlers
   const handleCancelRequest = async (bookingId: string) => {
-    if (!confirm("Are you sure you want to cancel this request?")) return;
-    try {
-      await cancelBooking(bookingId);
-      setIsRequestModalOpen(false);
-    } catch (error) {
-      console.error("Cancel Request Error:", error);
-      alert("Failed to cancel request.");
-    }
+    if (!confirm("Are you sure you want to cancel?")) return;
+    await cancelBooking(bookingId);
+    setIsRequestModalOpen(false);
   };
-
   const handleApprove = async (bookingId: string) => {
     if (!confirm("Confirm this booking?")) return;
-    try {
-      await approveBooking(bookingId);
-      setIsRequestModalOpen(false);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to confirm request.");
-    }
+    await approveBooking(bookingId);
+    setIsRequestModalOpen(false);
   };
-
   const handleDeny = async (bookingId: string) => {
     if (!confirm("Deny this booking?")) return;
-    try {
-      await denyBooking(bookingId);
-      await refreshStats(bookingId);
-      setSelectedBooking((prev) =>
-        prev ? { ...prev, hasRejected: true } : null
-      );
-    } catch (err) {
-      console.error(err);
-      alert("Failed to deny request.");
-    }
+    await denyBooking(bookingId);
+    setSelectedBooking((prev) =>
+      prev ? { ...prev, hasRejected: true } : null
+    );
   };
 
-  /* Grid Logic */
+  /* Helper to check if session is active (Realtime calculation) */
+  const getSessionStatus = (booking: Booking) => {
+    if (booking.status !== "Approved") return null;
+
+    // Parse Dates
+    // Note: bookingDate string is YYYY-MM-DD
+    const [bYear, bMonth, bDay] = booking.bookingDate.split("-").map(Number);
+
+    // Check if today matches booking date
+    const isSameDay =
+      bDay === now.getDate() &&
+      bMonth - 1 === now.getMonth() &&
+      bYear === now.getFullYear();
+
+    if (!isSameDay) return null;
+
+    // Parse Times
+    const [startH, startM] = booking.startTime.split(":").map(Number);
+    const start = new Date(now);
+    start.setHours(startH, startM, 0, 0);
+
+    const current = new Date(now); // Use the 'now' state variable
+
+    if (booking.endTime) {
+      const [endH, endM] = booking.endTime.split(":").map(Number);
+      const end = new Date(now);
+      end.setHours(endH, endM, 0, 0);
+
+      // Logic: If Current Time is between Start and End
+      if (current >= start && current < end) {
+        return "Starting...";
+      }
+    } else {
+      // Fallback if no endTime
+      if (
+        current >= start &&
+        current.getTime() < start.getTime() + 60 * 60 * 1000
+      ) {
+        return "Starting...";
+      }
+    }
+    return null;
+  };
+
+  /* Grid Setup */
   const daysInMonth = getDaysInMonth(year, monthIndex);
   const startOffset = getFirstDayOfMonth(year, monthIndex);
   const blanks: null[] = Array(startOffset).fill(null);
@@ -160,11 +202,11 @@ export default function PLCViewMonth({
   while (totalSlots.length % 7 !== 0) totalSlots.push(null);
 
   const currentMonthName = MONTHS[monthIndex];
-  const dateObject = selectedDate
-    ? new Date(year, monthIndex, selectedDate)
-    : new Date(year, monthIndex, 1);
-  const dayName = dateObject.toLocaleString("en-US", { weekday: "long" });
-  const displayDate = selectedDate || 1;
+  const dayName = (
+    selectedDate
+      ? new Date(year, monthIndex, selectedDate)
+      : new Date(year, monthIndex, 1)
+  ).toLocaleString("en-US", { weekday: "long" });
 
   return (
     <>
@@ -180,13 +222,13 @@ export default function PLCViewMonth({
             <div className="flex gap-4 text-black">
               <button
                 onClick={onPrevMonth}
-                className="hover:bg-gray-100 cursor-pointer p-1 rounded-full transition-colors"
+                className="hover:bg-gray-100 p-1 rounded-full"
               >
                 <ChevronLeft size={24} />
               </button>
               <button
                 onClick={onNextMonth}
-                className="hover:bg-gray-100 cursor-pointer p-1 rounded-full transition-colors"
+                className="hover:bg-gray-100 p-1 rounded-full"
               >
                 <ChevronRight size={24} />
               </button>
@@ -208,92 +250,59 @@ export default function PLCViewMonth({
             {totalSlots.map((day, index) => {
               const isSelected = day === selectedDate;
               let isPastDate = false;
-
-              // We will calculate background style dynamically
               let cellStyle: React.CSSProperties = {};
-              let baseClasses = `
-                w-full h-full flex items-center justify-center text-[18px] 
-                transition-all duration-150 ${ptSans.className}
-                border-b border-r border-black 
-              `;
+              let baseClasses = `relative w-full h-full flex items-center justify-center text-[18px] transition-all duration-150 ${ptSans.className} border-b border-r border-black `;
 
               if (day !== null) {
                 const checkDate = new Date(year, monthIndex, day);
+                const checkToday = new Date();
+                checkToday.setHours(0, 0, 0, 0);
+                if (checkDate < checkToday) isPastDate = true;
 
-                // --- FIX 2: Check 'today' state instead of a local var ---
-                // If 'today' is null (initial render), we assume NOT past to avoid hydration mismatch
-                // Once useEffect runs, 'today' sets to client time, and this re-renders correctly.
-                if (today && checkDate < today) {
-                  isPastDate = true;
-                }
-
-                if (isPastDate) {
-                  // Past dates: Gray, disabled
+                if (isPastDate)
                   baseClasses +=
                     " bg-gray-200 text-gray-400 cursor-not-allowed";
-                } else {
-                  // Future/Present dates: Calculate Colors
+                else {
                   baseClasses += " cursor-pointer text-black hover:opacity-90";
-
-                  const dateStr = getDateString(year, monthIndex, day);
-                  // Get all bookings for this day
                   const bookingsOnDay = monthBookings.filter(
-                    (b) => b.bookingDate === dateStr
+                    (b) =>
+                      b.bookingDate === getDateString(year, monthIndex, day)
                   );
-
-                  // Extract unique status colors
                   const uniqueColors = Array.from(
                     new Set(bookingsOnDay.map((b) => getStatusColor(b.status)))
                   );
 
-                  if (uniqueColors.length === 0) {
+                  if (uniqueColors.length === 0)
                     baseClasses += " bg-white hover:bg-gray-50";
-                  } else if (uniqueColors.length === 1) {
-                    // Single Color
+                  else if (uniqueColors.length === 1)
                     cellStyle = { backgroundColor: uniqueColors[0] };
-                  } else {
-                    // Multiple Colors -> Gradient
-                    // Calculate percentage steps
+                  else {
                     const step = 100 / uniqueColors.length;
                     const gradientStops = uniqueColors
-                      .map(
-                        (color, i) => `${color} ${i * step}% ${(i + 1) * step}%`
-                      )
+                      .map((c, i) => `${c} ${i * step}% ${(i + 1) * step}%`)
                       .join(", ");
-
                     cellStyle = {
                       background: `linear-gradient(135deg, ${gradientStops})`,
                     };
                   }
                 }
-              } else {
-                // Empty slot
-                baseClasses += " bg-gray-50/30";
-              }
+              } else baseClasses += " bg-gray-50/30";
 
-              // Selected State Styles
-              if (isSelected && !isPastDate) {
-                const hasColors = Object.keys(cellStyle).length > 0;
-
-                if (hasColors) {
-                  baseClasses += " font-bold z-10";
-                } else {
-                  baseClasses += " bg-[#8B0E0E]/20 font-bold z-10";
-                }
-              }
+              if (isSelected && !isPastDate) baseClasses += " font-bold z-10";
 
               return (
                 <div key={index} className="relative h-[80px]">
                   {day !== null ? (
                     <button
-                      onClick={() => {
-                        if (!isPastDate) setSelectedDate(day);
-                      }}
+                      onClick={() => !isPastDate && setSelectedDate(day)}
                       disabled={isPastDate}
                       className={baseClasses}
-                      style={cellStyle} // Apply dynamic gradient here
+                      style={cellStyle}
                     >
-                      {day}
+                      {isSelected && !isPastDate && (
+                        <div className="absolute inset-0 bg-[#8B0E0E]/20 z-20 pointer-events-none" />
+                      )}
+                      <span className="relative z-30">{day}</span>
                     </button>
                   ) : (
                     <div className="w-full h-full border-b border-r border-black bg-gray-50/30" />
@@ -310,12 +319,12 @@ export default function PLCViewMonth({
             <h2
               className={`${montserrat.className} text-[28px] font-semibold text-black leading-none pb-1`}
             >
-              {dayName}, {displayDate}
+              {dayName}, {selectedDate || 1}
             </h2>
             {!isTutor && (
               <button
                 onClick={() => setIsBookingModalOpen(true)}
-                className={`${montserrat.className} cursor-pointer text-[20px] font-semibold text-black hover:underline leading-none`}
+                className={`${montserrat.className} text-[20px] font-semibold text-black hover:underline`}
               >
                 + Book a Session
               </button>
@@ -324,17 +333,20 @@ export default function PLCViewMonth({
 
           <div className="flex-1 flex flex-col gap-4 overflow-y-auto py-2 px-1">
             {isLoadingDayBookings ? (
-              <div className="flex items-center justify-center h-full">
-                <p className={`${montserrat.className} text-gray-400`}>
-                  Loading...
-                </p>
+              <div className="flex justify-center pt-10">
+                <Loader2 className="animate-spin text-gray-400" />
               </div>
             ) : dayBookings.length > 0 ? (
               dayBookings.map((booking) => {
                 let displayStatus = booking.status;
                 let statusColor = "text-gray-600";
 
-                if (
+                // Check for "Starting..."
+                const activeStatus = getSessionStatus(booking);
+                if (activeStatus) {
+                  displayStatus = activeStatus;
+                  statusColor = "text-blue-600 animate-pulse"; // Visual cue
+                } else if (
                   isTutor &&
                   booking.hasRejected &&
                   booking.status === "Pending"
@@ -342,20 +354,21 @@ export default function PLCViewMonth({
                   displayStatus = "Rejected";
                   statusColor = "text-red-600";
                 } else {
-                  if (booking.status === "Pending") {
+                  if (booking.status === "Pending")
                     statusColor = "text-[#D97706]";
-                  } else if (booking.status === "Approved") {
+                  else if (booking.status === "Approved")
                     statusColor = "text-green-600";
-                  } else if (booking.status === "Rejected") {
+                  else if (booking.status === "Rejected")
                     statusColor = "text-red-600";
-                  }
                 }
 
                 return (
                   <div
                     key={booking.id}
                     onClick={() => handleBookingClick(booking)}
-                    className="relative w-full bg-[#F4E4E4] rounded-[10px] p-4 flex flex-col gap-2 transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-lg cursor-pointer group border border-transparent hover:border-black/5 shrink-0"
+                    className={`relative w-full bg-[#F4E4E4] rounded-[10px] p-4 flex flex-col gap-2 hover:-translate-y-1 hover:shadow-lg cursor-pointer group transition-all ${
+                      activeStatus ? "ring-2 ring-blue-400 border-blue-400" : ""
+                    }`}
                   >
                     <span
                       className={`absolute top-3 right-4 text-[12px] font-bold ${statusColor} ${montserrat.className}`}
@@ -363,7 +376,6 @@ export default function PLCViewMonth({
                       {displayStatus}
                     </span>
 
-                    {/* Subject */}
                     <div className="flex gap-1 text-black text-[14px]">
                       <span className={`${montserrat.className} font-bold`}>
                         Subject :
@@ -373,38 +385,41 @@ export default function PLCViewMonth({
                       </span>
                     </div>
 
-                    {/* Dynamic Middle Line */}
                     <div className="flex gap-1 text-black text-[14px]">
                       <span className={`${montserrat.className} font-bold`}>
                         {isTutor
                           ? "Student :"
                           : booking.status === "Approved"
                           ? "Tutor :"
-                          : "Requested Time :"}
+                          : "Time :"}
                       </span>
                       <span className={`${montserrat.className} font-normal`}>
                         {isTutor
-                          ? booking.Accounts?.fullName || "Unknown Student"
+                          ? booking.Accounts?.fullName
                           : booking.status === "Approved"
-                          ? booking.Tutor?.fullName || "Unknown Tutor"
-                          : formatTimeDisplay(booking.startTime)}
+                          ? booking.Tutor?.fullName
+                          : formatTimeDisplay(
+                              booking.startTime,
+                              booking.endTime
+                            )}
                       </span>
                     </div>
 
-                    {/* Time Line (Always show for Tutor, and for Student if Approved) */}
                     {(isTutor || booking.status === "Approved") && (
                       <div className="flex gap-1 text-black text-[14px]">
                         <span className={`${montserrat.className} font-bold`}>
-                          Requested Time :
+                          Time :
                         </span>
                         <span className={`${montserrat.className} font-normal`}>
-                          {formatTimeDisplay(booking.startTime)}
+                          {formatTimeDisplay(
+                            booking.startTime,
+                            booking.endTime
+                          )}
                         </span>
                       </div>
                     )}
-
                     <div className="absolute bottom-3 right-3 group-hover:translate-x-1 transition-transform">
-                      <MoveRight size={18} className="text-black" />
+                      <MoveRight size={18} />
                     </div>
                   </div>
                 );
@@ -414,7 +429,7 @@ export default function PLCViewMonth({
                 <p
                   className={`${montserrat.className} text-[16px] font-bold text-black`}
                 >
-                  Nothing in schedule for you today.
+                  Nothing scheduled.
                 </p>
               </div>
             )}
@@ -425,7 +440,9 @@ export default function PLCViewMonth({
       <BookingModal
         isOpen={isBookingModalOpen}
         onClose={() => setIsBookingModalOpen(false)}
-        selectedDate={dateObject}
+        selectedDate={
+          selectedDate ? new Date(year, monthIndex, selectedDate) : null
+        }
         onSuccess={refreshBookings}
       />
 
@@ -452,7 +469,6 @@ export default function PLCViewMonth({
             avatarURL:
               selectedBooking.Accounts?.avatarURL || currentUser.avatarURL,
             hasRejected: selectedBooking.hasRejected,
-            // --- Pass Tutor Name ---
             tutorName: selectedBooking.Tutor?.fullName,
           }}
           isTutor={isTutor}

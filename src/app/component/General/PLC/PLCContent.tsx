@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Calendar as CalendarIcon, LayoutGrid } from "lucide-react";
+import { Calendar as CalendarIcon, LayoutGrid, History } from "lucide-react";
 import { Montserrat } from "next/font/google";
-
-/* Import Sub-Components */
 import PLCViewMonth from "./viewMonth";
 import PLCViewYear from "./viewYear";
+import HistoryModal from "./historyModal";
+import { usePLCBookings } from "../../../../../supabase/Lib/PLC/usePLCBooking";
 
 const montserrat = Montserrat({ subsets: ["latin"], weight: ["600", "700"] });
 
@@ -16,10 +16,26 @@ export default function PLCContent() {
   const [viewMode, setViewMode] = useState<"year" | "month">("month");
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+
+  // --- Hook to fetch History Data & Delete Action ---
+  const { historyBookings, isTutor, refreshBookings, deleteHistoryBooking } =
+    usePLCBookings(currentYear, currentMonth, null);
 
   const handleMonthClick = (monthIndex: number) => {
     setCurrentMonth(monthIndex);
     setViewMode("month");
+  };
+
+  const handleHistoryClick = () => {
+    refreshBookings();
+    setIsHistoryOpen(true);
+  };
+
+  const handleDeleteHistory = async (id: string) => {
+    if (confirm("Are you sure you want to delete this history record?")) {
+      await deleteHistoryBooking(id);
+    }
   };
 
   return (
@@ -32,24 +48,36 @@ export default function PLCContent() {
           Peer Learning Center
         </h1>
 
-        <div className="flex items-center gap-0 bg-white border border-black rounded-lg overflow-hidden h-[40px]">
+        <div className="flex items-center gap-4">
+          {/* History Button */}
           <button
-            onClick={() => setViewMode("month")}
-            className={`cursor-pointer px-3 h-full flex items-center justify-center transition-colors ${
-              viewMode === "month" ? "bg-gray-200" : "hover:bg-gray-100"
-            }`}
+            onClick={handleHistoryClick}
+            className={`${montserrat.className} flex items-center gap-2 px-4 h-[40px] bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 hover:shadow text-[#8B0E0E] font-bold transition-all`}
           >
-            <CalendarIcon size={20} className="text-black" />
+            <History size={20} />
+            <span>History</span>
           </button>
-          <div className="w-[1px] h-full bg-black" />
-          <button
-            onClick={() => setViewMode("year")}
-            className={`cursor-pointer px-3 h-full flex items-center justify-center transition-colors ${
-              viewMode === "year" ? "bg-gray-200" : "hover:bg-gray-100"
-            }`}
-          >
-            <LayoutGrid size={20} className="text-black" />
-          </button>
+
+          {/* View Toggles */}
+          <div className="flex items-center gap-0 bg-white border border-black rounded-lg overflow-hidden h-[40px]">
+            <button
+              onClick={() => setViewMode("month")}
+              className={`cursor-pointer px-3 h-full flex items-center justify-center transition-colors ${
+                viewMode === "month" ? "bg-gray-200" : "hover:bg-gray-100"
+              }`}
+            >
+              <CalendarIcon size={20} className="text-black" />
+            </button>
+            <div className="w-[1px] h-full bg-black" />
+            <button
+              onClick={() => setViewMode("year")}
+              className={`cursor-pointer px-3 h-full flex items-center justify-center transition-colors ${
+                viewMode === "year" ? "bg-gray-200" : "hover:bg-gray-100"
+              }`}
+            >
+              <LayoutGrid size={20} className="text-black" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -85,6 +113,15 @@ export default function PLCContent() {
           />
         )}
       </div>
+
+      {/* History Modal */}
+      <HistoryModal
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        bookings={historyBookings}
+        isTutor={isTutor}
+        onDelete={handleDeleteHistory}
+      />
     </div>
   );
 }
