@@ -22,7 +22,6 @@ interface PLCViewMonthProps {
   onNextMonth: () => void;
 }
 
-// ... (Format helpers are unchanged) ...
 const formatTimeStr = (timeStr: string) => {
   if (!timeStr) return "";
   const [hours, minutes] = timeStr.split(":");
@@ -41,7 +40,6 @@ const formatTimeDisplay = (startStr: string, endStr?: string) => {
   return end ? `${start} - ${end}` : start;
 };
 
-// UPDATED: Added 'Starting...' case
 const getStatusColor = (status: string) => {
   switch (status) {
     case "Pending":
@@ -53,7 +51,7 @@ const getStatusColor = (status: string) => {
     case "Cancelled":
       return "#EF9A9A";
     case "Starting...":
-      return "#EFBF04"; // Gold
+      return "#FFD239";
     default:
       return "#FFFFFF";
   }
@@ -99,14 +97,6 @@ export default function PLCViewMonth({
     return () => clearInterval(interval);
   }, []);
 
-  // --- DATA REFRESH ---
-  useEffect(() => {
-    if (now.getSeconds() === 0) {
-      refreshBookings();
-    }
-  }, [now, refreshBookings]);
-
-  // ... (Reset selection logic unchanged) ...
   useEffect(() => {
     const d = new Date();
     if (d.getFullYear() === year && d.getMonth() === monthIndex) {
@@ -116,7 +106,6 @@ export default function PLCViewMonth({
     }
   }, [year, monthIndex]);
 
-  // ... (Handlers unchanged: refreshStats, handleBookingClick, actions) ...
   const refreshStats = async (id: string) => {
     try {
       const stats = await getBookingStats(id);
@@ -150,7 +139,6 @@ export default function PLCViewMonth({
     );
   };
 
-  /* REUSABLE STATUS CHECKER (Used for both DayList and MonthGrid) */
   const getStatusForBooking = (booking: MonthBooking | Booking) => {
     if (booking.status !== "Approved") return booking.status;
 
@@ -160,8 +148,6 @@ export default function PLCViewMonth({
 
     if (bookingDate < today) return "Completed";
     if (bookingDate > today) return "Approved";
-
-    // If we don't have time info (old hook version), return approved
     if (!booking.startTime) return "Approved";
 
     const [startH, startM] = booking.startTime.split(":").map(Number);
@@ -260,7 +246,6 @@ export default function PLCViewMonth({
                       b.bookingDate === getDateString(year, monthIndex, day)
                   );
 
-                  // --- UPDATED: Calculate status dynamically for the grid indicators ---
                   const uniqueColors = Array.from(
                     new Set(
                       bookingsOnDay.map((b) =>
@@ -339,7 +324,6 @@ export default function PLCViewMonth({
               </div>
             ) : dayBookings.length > 0 ? (
               dayBookings.map((booking) => {
-                // --- UPDATED: Use helper logic for the card list too ---
                 const activeStatus = getStatusForBooking(booking);
                 let displayStatus = activeStatus;
 
@@ -367,7 +351,6 @@ export default function PLCViewMonth({
                   cardBg = "bg-red-100";
                 }
 
-                // Tutor Special Case: If they rejected it locally
                 if (
                   isTutor &&
                   booking.hasRejected &&
@@ -394,7 +377,6 @@ export default function PLCViewMonth({
                       {displayStatus}
                     </span>
 
-                    {/* ... (Rest of card details unchanged) ... */}
                     <div className="flex gap-1 text-black text-[14px]">
                       <span className={`${montserrat.className} font-bold`}>
                         Subject :
