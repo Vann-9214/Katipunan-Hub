@@ -301,7 +301,7 @@ export default function FullDetails({
                             key={i}
                             size={16}
                             className={
-                              i < ratingData.rating
+                              i < ratingData!.rating
                                 ? "fill-[#EFBF04] text-[#EFBF04]"
                                 : "text-gray-300"
                             }
@@ -309,9 +309,9 @@ export default function FullDetails({
                         ))}
                       </div>
                     </div>
-                    {ratingData.review && (
+                    {ratingData!.review && (
                       <p className="text-sm text-gray-600 italic">
-                        "{ratingData.review}"
+                        &quot;{ratingData!.review}&quot;
                       </p>
                     )}
                   </div>
@@ -364,7 +364,7 @@ export default function FullDetails({
                   </button>
                 )}
 
-                {/* APPROVED VIEW (CHAT) */}
+                {/* APPROVED VIEW (CHAT) - Hidden if Starting or Completed */}
                 {computedStatus === "Approved" && (
                   <button
                     onClick={handleChatClick}
