@@ -62,7 +62,7 @@ export default function HistoryModal({
 
   return (
     <>
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/10 backdrop-blur-sm p-4">
         <div className="bg-white rounded-[20px] w-full max-w-[800px] h-[80vh] shadow-2xl flex flex-col animate-in fade-in zoom-in duration-200">
           {/* Header */}
           <div className="flex justify-between items-center p-6 border-b border-gray-200 shrink-0">
