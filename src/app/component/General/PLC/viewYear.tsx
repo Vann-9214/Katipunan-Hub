@@ -1,9 +1,13 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Montserrat, PT_Sans } from "next/font/google";
 import { MONTHS, getDaysInMonth, getFirstDayOfMonth } from "../PLC/Utils";
-import { usePLCYearBookings } from "../../../../../supabase/Lib/PLC/usePLCBooking";
+import {
+  usePLCYearBookings,
+  MonthBooking,
+} from "../../../../../supabase/Lib/PLC/usePLCBooking";
 
 const montserrat = Montserrat({ subsets: ["latin"], weight: ["600", "700"] });
 const ptSans = PT_Sans({ subsets: ["latin"], weight: ["400"] });
@@ -19,13 +23,15 @@ interface PLCViewYearProps {
 const getStatusColor = (status: string) => {
   switch (status) {
     case "Pending":
-      return "#FFB74D"; // Orange
+      return "#FFB74D";
     case "Approved":
+      return "#81C784";
     case "Completed":
-      return "#81C784"; // Green
+      return "#81C784";
     case "Rejected":
-    case "Cancelled":
-      return "#EF9A9A"; // Red (Tailwind Red-200/300 approx)
+      return "#EF9A9A";
+    case "Starting...":
+      return "#EFBF04"; // Gold
     default:
       return "#FFFFFF";
   }
@@ -39,6 +45,45 @@ export default function PLCViewYear({
 }: PLCViewYearProps) {
   // Data Fetching
   const { yearBookings, getDateString } = usePLCYearBookings(year);
+
+  // --- 1. Add Realtime Clock ---
+  const [now, setNow] = useState<Date>(new Date());
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // --- 2. Add Status Logic ---
+  const getStatusForBooking = (booking: MonthBooking) => {
+    if (booking.status !== "Approved") return booking.status;
+
+    const [bYear, bMonth, bDay] = booking.bookingDate.split("-").map(Number);
+    const bookingDate = new Date(bYear, bMonth - 1, bDay);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    if (bookingDate < today) return "Completed";
+    if (bookingDate > today) return "Approved";
+
+    if (!booking.startTime) return "Approved";
+
+    const [startH, startM] = booking.startTime.split(":").map(Number);
+    const start = new Date(now);
+    start.setHours(startH, startM, 0, 0);
+
+    const end = new Date(now);
+    if (booking.endTime) {
+      const [endH, endM] = booking.endTime.split(":").map(Number);
+      end.setHours(endH, endM, 0, 0);
+    } else {
+      end.setTime(start.getTime() + 60 * 60 * 1000);
+    }
+
+    const current = new Date(now);
+    if (current >= start && current < end) return "Starting...";
+    if (current >= end) return "Completed";
+
+    return "Approved";
+  };
 
   return (
     <div className="bg-white rounded-[30px] border border-black/20 shadow-sm p-8 w-full">
@@ -99,39 +144,29 @@ export default function PLCViewYear({
               <div className="grid grid-cols-7 border-t border-l border-gray-300">
                 {gridCells.map((day, i) => {
                   let cellStyle: React.CSSProperties = {};
-
-                  // Default classes for day cells
-                  let className = `
-                    h-[26px] flex items-center justify-center 
-                    border-b border-r border-gray-300 
-                    text-[11px] ${ptSans.className}
-                  `;
+                  let className = `h-[26px] flex items-center justify-center border-b border-r border-gray-300 text-[11px] ${ptSans.className}`;
 
                   if (day !== null) {
                     className += " text-black";
-
                     const dateStr = getDateString(year, monthIndex, day);
-
-                    // Find ALL bookings for this day to determine colors
                     const bookingsOnDay = yearBookings.filter(
                       (b) => b.bookingDate === dateStr
                     );
 
-                    // Get unique colors based on statuses
+                    // --- 3. USE DYNAMIC STATUS ---
                     const uniqueColors = Array.from(
                       new Set(
-                        bookingsOnDay.map((b) => getStatusColor(b.status))
+                        bookingsOnDay.map((b) =>
+                          getStatusColor(getStatusForBooking(b))
+                        )
                       )
                     );
 
                     if (uniqueColors.length === 0) {
-                      // No bookings: Transparent/White
                       className += " bg-transparent";
                     } else if (uniqueColors.length === 1) {
-                      // Single Color
                       cellStyle = { backgroundColor: uniqueColors[0] };
                     } else {
-                      // Multiple Colors -> Gradient
                       const step = 100 / uniqueColors.length;
                       const gradientStops = uniqueColors
                         .map(
@@ -139,13 +174,11 @@ export default function PLCViewYear({
                             `${color} ${idx * step}% ${(idx + 1) * step}%`
                         )
                         .join(", ");
-
                       cellStyle = {
                         background: `linear-gradient(135deg, ${gradientStops})`,
                       };
                     }
                   } else {
-                    // Empty cell (padding days)
                     className += " bg-transparent";
                   }
 

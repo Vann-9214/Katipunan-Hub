@@ -80,7 +80,7 @@ export default function HistoryModal({
                 : "bg-green-100 border-green-200 text-green-700";
 
               // Logic for displaying names
-              let otherPartyLabel = isTutor ? "Student:" : "Tutor:";
+              const otherPartyLabel = isTutor ? "Student:" : "Tutor:";
               let otherPartyName = "Unknown";
 
               if (isTutor) {

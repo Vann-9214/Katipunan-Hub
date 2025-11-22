@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, MoveRight, Loader2 } from "lucide-react";
 import { Montserrat, PT_Sans } from "next/font/google";
 import { WEEKDAYS, MONTHS, getDaysInMonth, getFirstDayOfMonth } from "./Utils";
@@ -9,6 +9,7 @@ import FullDetails from "./fullDetails";
 import {
   usePLCBookings,
   Booking,
+  MonthBooking,
 } from "../../../../../supabase/Lib/PLC/usePLCBooking";
 
 const montserrat = Montserrat({ subsets: ["latin"], weight: ["600", "700"] });
@@ -21,7 +22,7 @@ interface PLCViewMonthProps {
   onNextMonth: () => void;
 }
 
-// Helper to format "HH:mm" -> "10:30 AM"
+// ... (Format helpers are unchanged) ...
 const formatTimeStr = (timeStr: string) => {
   if (!timeStr) return "";
   const [hours, minutes] = timeStr.split(":");
@@ -40,6 +41,7 @@ const formatTimeDisplay = (startStr: string, endStr?: string) => {
   return end ? `${start} - ${end}` : start;
 };
 
+// UPDATED: Added 'Starting...' case
 const getStatusColor = (status: string) => {
   switch (status) {
     case "Pending":
@@ -50,6 +52,8 @@ const getStatusColor = (status: string) => {
     case "Rejected":
     case "Cancelled":
       return "#EF9A9A";
+    case "Starting...":
+      return "#EFBF04"; // Gold
     default:
       return "#FFFFFF";
   }
@@ -66,7 +70,6 @@ export default function PLCViewMonth({
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
-  // State to force re-render every second for "Starting..." status
   const [now, setNow] = useState<Date>(new Date());
 
   const [bookingStats, setBookingStats] = useState({
@@ -88,24 +91,22 @@ export default function PLCViewMonth({
     getDateString,
   } = usePLCBookings(year, monthIndex, selectedDate);
 
-  // --- REALTIME UI TIMER ---
+  // --- REALTIME CLOCK ---
   useEffect(() => {
     const interval = setInterval(() => {
-      const currentTime = new Date();
-      setNow(currentTime); // Force re-render every second
-
-      // Check if we just hit a new minute (seconds == 0)
-      // This ensures we trigger the database cleanup/move logic promptly
-      if (currentTime.getSeconds() === 0) {
-        console.log("New minute detected, checking for expired bookings...");
-        refreshBookings();
-      }
-    }, 1000); // Run every 1 second
-
+      setNow(new Date());
+    }, 1000);
     return () => clearInterval(interval);
-  }, [refreshBookings]);
+  }, []);
 
-  // Reset selection when month changes
+  // --- DATA REFRESH ---
+  useEffect(() => {
+    if (now.getSeconds() === 0) {
+      refreshBookings();
+    }
+  }, [now, refreshBookings]);
+
+  // ... (Reset selection logic unchanged) ...
   useEffect(() => {
     const d = new Date();
     if (d.getFullYear() === year && d.getMonth() === monthIndex) {
@@ -115,6 +116,7 @@ export default function PLCViewMonth({
     }
   }, [year, monthIndex]);
 
+  // ... (Handlers unchanged: refreshStats, handleBookingClick, actions) ...
   const refreshStats = async (id: string) => {
     try {
       const stats = await getBookingStats(id);
@@ -130,7 +132,6 @@ export default function PLCViewMonth({
     setIsRequestModalOpen(true);
   };
 
-  // Action Handlers
   const handleCancelRequest = async (bookingId: string) => {
     if (!confirm("Are you sure you want to cancel?")) return;
     await cancelBooking(bookingId);
@@ -149,48 +150,37 @@ export default function PLCViewMonth({
     );
   };
 
-  /* Helper to check if session is active (Realtime calculation) */
-  const getSessionStatus = (booking: Booking) => {
-    if (booking.status !== "Approved") return null;
+  /* REUSABLE STATUS CHECKER (Used for both DayList and MonthGrid) */
+  const getStatusForBooking = (booking: MonthBooking | Booking) => {
+    if (booking.status !== "Approved") return booking.status;
 
-    // Parse Dates
-    // Note: bookingDate string is YYYY-MM-DD
     const [bYear, bMonth, bDay] = booking.bookingDate.split("-").map(Number);
+    const bookingDate = new Date(bYear, bMonth - 1, bDay);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    // Check if today matches booking date
-    const isSameDay =
-      bDay === now.getDate() &&
-      bMonth - 1 === now.getMonth() &&
-      bYear === now.getFullYear();
+    if (bookingDate < today) return "Completed";
+    if (bookingDate > today) return "Approved";
 
-    if (!isSameDay) return null;
+    // If we don't have time info (old hook version), return approved
+    if (!booking.startTime) return "Approved";
 
-    // Parse Times
     const [startH, startM] = booking.startTime.split(":").map(Number);
     const start = new Date(now);
     start.setHours(startH, startM, 0, 0);
 
-    const current = new Date(now); // Use the 'now' state variable
-
+    const end = new Date(now);
     if (booking.endTime) {
       const [endH, endM] = booking.endTime.split(":").map(Number);
-      const end = new Date(now);
       end.setHours(endH, endM, 0, 0);
-
-      // Logic: If Current Time is between Start and End
-      if (current >= start && current < end) {
-        return "Starting...";
-      }
     } else {
-      // Fallback if no endTime
-      if (
-        current >= start &&
-        current.getTime() < start.getTime() + 60 * 60 * 1000
-      ) {
-        return "Starting...";
-      }
+      end.setTime(start.getTime() + 60 * 60 * 1000);
     }
-    return null;
+
+    const current = new Date(now);
+    if (current >= start && current < end) return "Starting...";
+    if (current >= end) return "Completed";
+
+    return "Approved";
   };
 
   /* Grid Setup */
@@ -210,9 +200,10 @@ export default function PLCViewMonth({
 
   return (
     <>
-      <div className="w-full h-[700px] bg-white rounded-[20px] border border-gray-800 shadow-md flex overflow-hidden p-8">
+      <div className="w-full h-[580px] bg-white rounded-[20px] border border-gray-800 shadow-md flex overflow-hidden p-8">
         {/* Calendar Left */}
         <div className="flex-1 pr-8 flex flex-col border-r border-gray-300 overflow-y-auto custom-scrollbar">
+          {/* ... (Header and Days Header unchanged) ... */}
           <div className="flex justify-between items-center mb-6 px-2">
             <h2
               className={`${montserrat.className} text-[24px] font-bold text-black`}
@@ -268,8 +259,14 @@ export default function PLCViewMonth({
                     (b) =>
                       b.bookingDate === getDateString(year, monthIndex, day)
                   );
+
+                  // --- UPDATED: Calculate status dynamically for the grid indicators ---
                   const uniqueColors = Array.from(
-                    new Set(bookingsOnDay.map((b) => getStatusColor(b.status)))
+                    new Set(
+                      bookingsOnDay.map((b) =>
+                        getStatusColor(getStatusForBooking(b))
+                      )
+                    )
                   );
 
                   if (uniqueColors.length === 0)
@@ -279,7 +276,10 @@ export default function PLCViewMonth({
                   else {
                     const step = 100 / uniqueColors.length;
                     const gradientStops = uniqueColors
-                      .map((c, i) => `${c} ${i * step}% ${(i + 1) * step}%`)
+                      .map(
+                        (color, idx) =>
+                          `${color} ${idx * step}% ${(idx + 1) * step}%`
+                      )
                       .join(", ");
                     cellStyle = {
                       background: `linear-gradient(135deg, ${gradientStops})`,
@@ -315,6 +315,7 @@ export default function PLCViewMonth({
 
         {/* Details Right */}
         <div className="w-[40%] pl-8 flex flex-col h-full">
+          {/* ... (Right Side Header unchanged) ... */}
           <div className="flex justify-between items-end mb-8 mt-2 shrink-0">
             <h2
               className={`${montserrat.className} text-[28px] font-semibold text-black leading-none pb-1`}
@@ -338,36 +339,53 @@ export default function PLCViewMonth({
               </div>
             ) : dayBookings.length > 0 ? (
               dayBookings.map((booking) => {
-                let displayStatus = booking.status;
-                let statusColor = "text-gray-600";
+                // --- UPDATED: Use helper logic for the card list too ---
+                const activeStatus = getStatusForBooking(booking);
+                let displayStatus = activeStatus;
 
-                // Check for "Starting..."
-                const activeStatus = getSessionStatus(booking);
-                if (activeStatus) {
-                  displayStatus = activeStatus;
-                  statusColor = "text-blue-600 animate-pulse"; // Visual cue
+                // Set Colors
+                let statusColor = "text-gray-600";
+                let cardBg = "bg-[#F4E4E4]";
+
+                if (activeStatus === "Starting...") {
+                  statusColor = "text-[#EFBF04] animate-pulse";
+                  cardBg = "bg-[#EFBF04]/20";
+                } else if (activeStatus === "Completed") {
+                  statusColor = "text-green-600";
+                  cardBg = "bg-green-100";
+                } else if (activeStatus === "Approved") {
+                  statusColor = "text-green-600";
+                  cardBg = "bg-green-100";
+                } else if (activeStatus === "Pending") {
+                  statusColor = "text-[#D97706]";
+                  cardBg = "bg-orange-100";
                 } else if (
+                  activeStatus === "Rejected" ||
+                  activeStatus === "Cancelled"
+                ) {
+                  statusColor = "text-red-600";
+                  cardBg = "bg-red-100";
+                }
+
+                // Tutor Special Case: If they rejected it locally
+                if (
                   isTutor &&
                   booking.hasRejected &&
                   booking.status === "Pending"
                 ) {
                   displayStatus = "Rejected";
                   statusColor = "text-red-600";
-                } else {
-                  if (booking.status === "Pending")
-                    statusColor = "text-[#D97706]";
-                  else if (booking.status === "Approved")
-                    statusColor = "text-green-600";
-                  else if (booking.status === "Rejected")
-                    statusColor = "text-red-600";
+                  cardBg = "bg-red-100";
                 }
 
                 return (
                   <div
                     key={booking.id}
                     onClick={() => handleBookingClick(booking)}
-                    className={`relative w-full bg-[#F4E4E4] rounded-[10px] p-4 flex flex-col gap-2 hover:-translate-y-1 hover:shadow-lg cursor-pointer group transition-all ${
-                      activeStatus ? "ring-2 ring-blue-400 border-blue-400" : ""
+                    className={`relative w-full ${cardBg} rounded-[10px] p-4 flex flex-col gap-2 hover:-translate-y-1 hover:shadow-lg cursor-pointer group transition-all ${
+                      activeStatus === "Starting..."
+                        ? "ring-2 ring-[#EFBF04] border-[#EFBF04]"
+                        : ""
                     }`}
                   >
                     <span
@@ -376,6 +394,7 @@ export default function PLCViewMonth({
                       {displayStatus}
                     </span>
 
+                    {/* ... (Rest of card details unchanged) ... */}
                     <div className="flex gap-1 text-black text-[14px]">
                       <span className={`${montserrat.className} font-bold`}>
                         Subject :
@@ -384,19 +403,22 @@ export default function PLCViewMonth({
                         {booking.subject}
                       </span>
                     </div>
-
                     <div className="flex gap-1 text-black text-[14px]">
                       <span className={`${montserrat.className} font-bold`}>
                         {isTutor
                           ? "Student :"
-                          : booking.status === "Approved"
+                          : activeStatus === "Approved" ||
+                            activeStatus === "Starting..." ||
+                            activeStatus === "Completed"
                           ? "Tutor :"
                           : "Time :"}
                       </span>
                       <span className={`${montserrat.className} font-normal`}>
                         {isTutor
                           ? booking.Accounts?.fullName
-                          : booking.status === "Approved"
+                          : activeStatus === "Approved" ||
+                            activeStatus === "Starting..." ||
+                            activeStatus === "Completed"
                           ? booking.Tutor?.fullName
                           : formatTimeDisplay(
                               booking.startTime,
@@ -404,8 +426,10 @@ export default function PLCViewMonth({
                             )}
                       </span>
                     </div>
-
-                    {(isTutor || booking.status === "Approved") && (
+                    {(isTutor ||
+                      activeStatus === "Approved" ||
+                      activeStatus === "Starting..." ||
+                      activeStatus === "Completed") && (
                       <div className="flex gap-1 text-black text-[14px]">
                         <span className={`${montserrat.className} font-bold`}>
                           Time :
