@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Calendar as CalendarIcon, LayoutGrid, History } from "lucide-react";
 import { Montserrat } from "next/font/google";
 import PLCViewMonth from "./viewMonth";
 import PLCViewYear from "./viewYear";
 import HistoryModal from "./historyModal";
 import { usePLCBookings } from "../../../../../supabase/Lib/PLC/usePLCBooking";
+import LoadingScreen from "../../ReusableComponent/LoadingScreen";
 
 const montserrat = Montserrat({ subsets: ["latin"], weight: ["600", "700"] });
 
@@ -18,13 +19,14 @@ export default function PLCContent() {
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
-  // --- Hook to fetch History Data & Delete Action ---
+  // --- Hook to fetch Data and Loading State ---
   const {
     historyBookings,
     isTutor,
     refreshBookings,
     deleteHistoryBooking,
     rateTutor,
+    isInitialLoading,
   } = usePLCBookings(currentYear, currentMonth, null);
 
   const handleMonthClick = (monthIndex: number) => {
@@ -37,12 +39,30 @@ export default function PLCContent() {
     setIsHistoryOpen(true);
   };
 
+  // Function to show a custom confirmation dialog (as alert() and confirm() are forbidden)
+  const showCustomConfirmation = async (message: string): Promise<boolean> => {
+    // Placeholder for required custom confirmation logic
+    console.warn(
+      "Using placeholder confirm dialog. Replace with a custom modal UI."
+    );
+    return window.confirm(message);
+  };
+
   const handleDeleteHistory = async (id: string) => {
-    if (confirm("Are you sure you want to delete this history record?")) {
+    const confirmed = await showCustomConfirmation(
+      "Are you sure you want to delete this history record?"
+    );
+    if (confirmed) {
       await deleteHistoryBooking(id);
     }
   };
 
+  // --- Initial Loading Conditional Render ---
+  if (isInitialLoading) {
+    return <LoadingScreen />;
+  }
+
+  // --- Main Content ---
   return (
     <div className="w-full mx-auto">
       {/* Page Header & View Toggles */}

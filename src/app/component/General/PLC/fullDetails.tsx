@@ -379,7 +379,7 @@ export default function FullDetails({
                 {!isTutor && computedStatus === "Completed" && !hasRated && (
                   <button
                     onClick={() => setIsRateModalOpen(true)}
-                    className={`${montserrat.className} flex items-center gap-2 bg-[#EFBF04] text-black cursor-pointer text-[12px] font-bold py-2 px-6 rounded-full hover:bg-[#d4a903] transition-colors`}
+                    className={`${montserrat.className} flex items-center gap-2 bg-[#d9af09] text-white cursor-pointer text-[12px] font-bold py-2 px-6 rounded-full hover:bg-[#deb304] transition-colors`}
                   >
                     <Star size={18} /> Rate Tutor
                   </button>
