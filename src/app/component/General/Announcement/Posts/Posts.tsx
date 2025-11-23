@@ -152,7 +152,7 @@ export default function Posts(props: PostsProps) {
               </div>
             )}
           </div>
-
+          <hr className="mx-4 mt-2 border-white/20" />
           {/* Post Title */}
           <div className="font-montserrat font-semibold text-[20px] my-[10px] mx-[20px] text-white select-text">
             {title}

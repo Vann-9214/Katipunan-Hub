@@ -17,7 +17,7 @@ import ChatPopup from "../../General/Message/ChatPopup/chatPopup";
 import Avatar from "../../ReusableComponent/Avatar";
 import AccountDropdown from "../../General/Account/accountDropdown";
 import type { User } from "../../../../../supabase/Lib/General/user";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion"; // ADDED AnimatePresence
 
 // Component Interface
 interface HomepageTabProps {
@@ -64,8 +64,8 @@ export default function HomepageTab({ user }: HomepageTabProps) {
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
       // Fixed Height: 80px always
       className="
-        w-full fixed top-0 left-0 z-[60] shadow-md 
-        bg-gradient-to-r from-[#FFF7CD] to-[#FFC9C9]
+        w-full fixed top-0 left-0 z-[20] shadow-md 
+        bg-[#FFE6CE]
         h-[80px]
         flex items-center 
         justify-between
@@ -153,20 +153,29 @@ export default function HomepageTab({ user }: HomepageTabProps) {
                 />
               </div>
             </button>
-            {isChatPopupOpen && (
-              <>
-                <div
-                  className="absolute top-14 right-0 z-30 w-[280px] sm:w-[350px]"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <ChatPopup />
-                </div>
-                <div
-                  className="fixed inset-0 z-20"
-                  onClick={() => setIsChatPopupOpen(false)}
-                />
-              </>
-            )}
+            <AnimatePresence>
+              {" "}
+              {/* ADDED AnimatePresence */}
+              {isChatPopupOpen && (
+                <>
+                  <motion.div
+                    key="chat-popup"
+                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute top-14 right-0 z-30 w-[280px] sm:w-[350px] origin-top-right" // ADDED origin-top-right
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <ChatPopup />
+                  </motion.div>
+                  <div
+                    className="fixed inset-0 z-20"
+                    onClick={() => setIsChatPopupOpen(false)}
+                  />
+                </>
+              )}
+            </AnimatePresence>
           </div>
         )}
 
@@ -189,23 +198,32 @@ export default function HomepageTab({ user }: HomepageTabProps) {
               className="w-[30px] h-[30px] sm:w-[36px] sm:h-[36px] lg:w-[43px] lg:h-[43px]"
             />
           </button>
-          {isProfileOpen && (
-            <>
-              <div
-                className="absolute top-14 right-0 z-30"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <AccountDropdown
-                  user={user}
-                  onClose={() => setIsProfileOpen(false)}
+          <AnimatePresence>
+            {" "}
+            {/* ADDED AnimatePresence */}
+            {isProfileOpen && (
+              <>
+                <motion.div
+                  key="profile-dropdown"
+                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute top-14 right-0 z-30 origin-top-right" // ADDED origin-top-right
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <AccountDropdown
+                    user={user}
+                    onClose={() => setIsProfileOpen(false)}
+                  />
+                </motion.div>
+                <div
+                  className="fixed inset-0 z-20"
+                  onClick={() => setIsProfileOpen(false)}
                 />
-              </div>
-              <div
-                className="fixed inset-0 z-20"
-                onClick={() => setIsProfileOpen(false)}
-              />
-            </>
-          )}
+              </>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </motion.header>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Maximize2 } from "lucide-react";
+import { Search, Maximize2, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
@@ -8,6 +8,33 @@ import { getCurrentUserDetails } from "../../../../../../supabase/Lib/General/ge
 import type { User } from "../../../../../../supabase/Lib/General/user";
 import { ConversationItem } from "../Utils/types";
 import PopupConversationItem from "./popupConversationitem";
+import { motion, Variants } from "framer-motion";
+
+// ADDED List/Item Variants
+const listVariants: Variants = {
+  visible: {
+    opacity: 1,
+    transition: {
+      when: "beforeChildren",
+      staggerChildren: 0.05,
+    },
+  },
+  hidden: {
+    opacity: 0,
+    transition: {
+      when: "afterChildren",
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 400, damping: 25 },
+  },
+  hidden: { opacity: 0, y: 10 },
+};
 
 // Main Chat Popup Component
 export default function ChatPopup() {
@@ -157,7 +184,12 @@ export default function ChatPopup() {
       </div>
 
       {/* Search Bar */}
-      <div className="p-4 border-b border-gray-200">
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2, delay: 0.05 }}
+        className="p-4 border-b border-gray-200"
+      >
         <div className="relative">
           <input
             type="text"
@@ -171,25 +203,40 @@ export default function ChatPopup() {
             className="absolute left-3 top-1/2 -translate-y-1/2 text-black/70"
           />
         </div>
-      </div>
+      </motion.div>
 
       {/* Conversation List */}
-      <div className="p-2 space-y-1 max-h-[350px] overflow-y-auto">
+      <motion.div
+        variants={listVariants}
+        initial="hidden"
+        animate="visible"
+        className="p-2 space-y-1 max-h-[350px] overflow-y-auto"
+      >
         {loading ? (
-          <div className="text-center py-4 text-sm text-gray-500">
-            Loading recent chats...
+          <div className="flex justify-center items-center py-4 space-x-2 text-gray-500">
+            <Loader2 className="h-5 w-5 animate-spin text-[#8B0E0E]" />
+            <span className="text-sm font-medium">Loading recent chats...</span>
           </div>
         ) : filteredConversations.length === 0 ? (
-          <div className="text-center py-4 text-sm text-gray-500">
-            No chats found.
-          </div>
+          <motion.div
+            variants={itemVariants}
+            className="text-center py-4 text-sm text-gray-500"
+          >
+            {search.length > 0
+              ? `No results for "${search}"`
+              : "No chats found."}
+          </motion.div>
         ) : (
           filteredConversations.map((item) => (
-            // --- Use the imported component ---
-            <PopupConversationItem key={item.id} conversation={item} />
+            // Pass itemVariants to the child component
+            <PopupConversationItem
+              key={item.id}
+              conversation={item}
+              variants={itemVariants}
+            />
           ))
         )}
-      </div>
+      </motion.div>
 
       {/* Footer Link - This click is also fixed */}
       <button

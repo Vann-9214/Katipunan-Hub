@@ -11,6 +11,7 @@ import { OtherUser, Message } from "../Utils/types";
 import ConversationHeader from "./conversationHeader";
 import MessageBubble from "./messageBubble";
 import MessageInput from "./messageInput";
+import { motion } from "framer-motion"; // ADDED motion
 
 // --- Main Component ---
 export default function ConversationWindow() {
@@ -183,8 +184,14 @@ export default function ConversationWindow() {
       {/* Header --- REPLACED --- */}
       <ConversationHeader otherUser={otherUser} />
 
-      {/* Message List --- REPLACED --- */}
-      <div className="flex-1 p-4 space-y-4 overflow-y-auto">
+      {/* Message List --- WRAPPED WITH motion.div --- */}
+      <motion.div
+        key={conversationId} // Key ensures re-animation when switching chats
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="flex-1 p-4 space-y-4 overflow-y-auto"
+      >
         {messages.map((msg) => (
           <MessageBubble
             key={msg.id}
@@ -193,7 +200,7 @@ export default function ConversationWindow() {
           />
         ))}
         <div ref={messagesEndRef} />
-      </div>
+      </motion.div>
 
       {/* Message Input --- REPLACED --- */}
       <MessageInput
