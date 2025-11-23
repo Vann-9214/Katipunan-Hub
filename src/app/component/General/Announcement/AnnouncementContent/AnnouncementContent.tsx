@@ -2,8 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
-
-// --- Child Components ---
+import LoadingScreen from "@/app/component/ReusableComponent/LoadingScreen";
 import HomepageTab from "@/app/component/ReusableComponent/HomepageTab/HomepageTab";
 import AnnouncementLeftBar from "./AnnouncementLeftBar";
 import AnnouncementFeed from "./AnnouncementFeed";
@@ -311,9 +310,7 @@ export default function AnnouncementPageContent() {
     return (
       <div className="p-[25px]">
         <HomepageTab user={null} />
-        <p className="mt-20 text-gray-500 text-lg font-montserrat">
-          Loading user data...
-        </p>
+        <LoadingScreen />
       </div>
     );
   }

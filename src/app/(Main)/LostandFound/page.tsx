@@ -2,7 +2,7 @@
 
 // Imports
 import HomepageTab from "@/app/component/ReusableComponent/HomepageTab/HomepageTab";
-import LostAndFoundContent from "@/app/component/General/LostandFound/LostandFoundcontent"; 
+import LostAndFoundContent from "@/app/component/General/LostandFound/LostandFoundcontent";
 import { useState, useEffect } from "react";
 import { getCurrentUserDetails } from "../../../../supabase/Lib/General/getUser";
 import type { User } from "../../../../supabase/Lib/General/user";
@@ -24,7 +24,9 @@ export default function LostandFoundPage() {
   // 3. Pass the 'user' variable to HomepageTab
   return (
     <div className="w-full">
-      <HomepageTab user={user} /> 
+      <div className="fixed top-0 left-0 w-full z-50">
+        <HomepageTab user={user} />
+      </div>
       <LostAndFoundContent />
     </div>
   );

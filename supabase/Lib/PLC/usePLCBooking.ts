@@ -45,12 +45,30 @@ const getDateString = (y: number, m: number, d: number) => {
   return `${y}-${mm}-${dd}`;
 };
 
+interface UsePLCBookingsResult {
+  currentUser: User | null;
+  isTutor: boolean;
+  monthBookings: MonthBooking[];
+  dayBookings: Booking[];
+  historyBookings: Booking[];
+  isLoadingDayBookings: boolean;
+  isInitialLoading: boolean;
+  cancelBooking: (bookingId: string) => Promise<void>;
+  deleteHistoryBooking: (bookingId: string) => Promise<void>;
+  approveBooking: (bookingId: string) => Promise<void>;
+  denyBooking: (bookingId: string) => Promise<void>;
+  getBookingStats: (bookingId: string) => Promise<{ totalTutors: number; rejectionCount: number }>;
+  refreshBookings: (silent?: boolean) => Promise<void>;
+  getDateString: (y: number, m: number, d: number) => string;
+  rateTutor: (bookingId: string, tutorId: string, rating: number, review: string) => Promise<void>;
+}
+
 // --- Main Hook ---
 export const usePLCBookings = (
   year: number,
   monthIndex: number,
   selectedDate: number | null
-) => {
+) : UsePLCBookingsResult => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [monthBookings, setMonthBookings] = useState<MonthBooking[]>([]);
   const [dayBookings, setDayBookings] = useState<Booking[]>([]);
@@ -58,9 +76,8 @@ export const usePLCBookings = (
   const [isLoadingDayBookings, setIsLoadingDayBookings] = useState(false);
   const [isTutor, setIsTutor] = useState(false);
   const [myRejections, setMyRejections] = useState<string[]>([]);
-  
-  // New state to track which bookings I have rated
   const [myRatedBookingIds, setMyRatedBookingIds] = useState<string[]>([]);
+  const [isInitialLoading, setIsInitialLoading] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -89,19 +106,6 @@ export const usePLCBookings = (
     return ids;
   }, [currentUser]);
 
-  // Helper to inject "TutorRatings" mock object if ID is found in rated list
-  // This tricks the UI into hiding the button (hasRated check)
-  const injectRatingStatus = (bookings: Booking[], ratedIds: string[]) => {
-    return bookings.map((b) => {
-      const isRated = ratedIds.includes(b.id);
-      return {
-        ...b,
-        // If rated, add a dummy array so UI sees booking.TutorRatings.length > 0
-        TutorRatings: isRated ? [{ rating: 5, review: "Rated" }] : [],
-      };
-    });
-  };
-
   // --- 2. FETCH FUNCTIONS ---
 
   // Month Fetch
@@ -123,7 +127,10 @@ export const usePLCBookings = (
 
     const { data, error } = await query;
 
-    if (error) console.error("Error fetching month bookings:", error);
+    if (error) {
+      console.error("Error fetching month bookings:", JSON.stringify(error, null, 2));
+      setMonthBookings([]); // Clear data on error
+    }
 
     if (data) {
       const filtered = isTutor
@@ -141,10 +148,15 @@ export const usePLCBookings = (
 
     const dateQuery = getDateString(year, monthIndex, selectedDate);
 
-    // 1. Removed TutorRatings from SQL (Fixes the crash)
+    // FIX: Using EXACT Mixed-Case constraint names from your DDL for PLCBookings
+    // PLCBookings_studentId_fkey and PLCBookings_approvedBy_fkey
     let query = supabase
       .from("PLCBookings")
-      .select("*, Accounts:Accounts!PLCBookings_studentId_fkey (fullName, course, year, studentID, avatarURL), Tutor:Accounts!PLCBookings_approvedBy_fkey (id, fullName)")
+      .select(`
+        *, 
+        Accounts:Accounts!PLCBookings_studentId_fkey (fullName, course, year, studentID, avatarURL), 
+        Tutor:Accounts!PLCBookings_approvedBy_fkey (id, fullName)
+      `)
       .eq("bookingDate", dateQuery)
       .in("status", ["Pending", "Approved", "Rejected", "Completed"])
       .order("createdAt", { ascending: false });
@@ -154,7 +166,8 @@ export const usePLCBookings = (
     const { data, error } = await query as { data: Booking[] | null; error: any };
 
     if (error) {
-      console.error("Error fetching day bookings:", error);
+      console.error("Error fetching day bookings:", JSON.stringify(error, null, 2));
+      setDayBookings([]); // IMPORTANT: Clear stale data immediately
     }
 
     if (data) {
@@ -171,18 +184,19 @@ export const usePLCBookings = (
         return true;
       });
 
-      // 2. Inject rating status manually
-      // Use passed IDs if available (fresh), otherwise fall back to state
+      // Inject rating status manually
       const idsToCheck = currentRatedIds.length > 0 ? currentRatedIds : myRatedBookingIds;
       
       const mappedData = filtered.map((booking) => ({
         ...booking,
         hasRejected: myRejections.includes(booking.id),
-        // Manual injection logic
         TutorRatings: idsToCheck.includes(booking.id) ? [{ rating: 5, review: "Rated" }] : [],
       }));
 
       setDayBookings(mappedData);
+    } else {
+       // If data is null (due to error), ensure we don't show old data
+       setDayBookings([]);
     }
 
     if (!silent) setIsLoadingDayBookings(false);
@@ -192,10 +206,15 @@ export const usePLCBookings = (
   const fetchHistoryBookings = useCallback(async (currentRatedIds: string[] = []) => {
     if (!currentUser) return;
     
-    // 1. Removed TutorRatings from SQL
+    // FIX: Using LOWERCASE constraint names for History because your DDL for History used lowercase
+    // plcbookinghistory_studentid_fkey and plcbookinghistory_approvedby_fkey
     let query = supabase
       .from("PLCBookingHistory")
-      .select(`*, Accounts:Accounts!plcbookinghistory_studentid_fkey (fullName, course, year, studentID, avatarURL), Tutor:Accounts!plcbookinghistory_approvedby_fkey (id, fullName)`)
+      .select(`
+        *, 
+        Accounts:Accounts!plcbookinghistory_studentid_fkey (fullName, course, year, studentID, avatarURL), 
+        Tutor:Accounts!plcbookinghistory_approvedby_fkey (id, fullName)
+      `)
       .order("bookingDate", { ascending: false });
 
     if (!isTutor) {
@@ -205,10 +224,13 @@ export const usePLCBookings = (
     }
 
     const { data, error } = await query;
-    if (error) console.error("Error fetching history:", error);
+    
+    if (error) {
+      console.error("Error fetching history:", JSON.stringify(error, null, 2));
+      setHistoryBookings([]); // Clear data on error
+    }
     
     if (data) {
-      // 2. Inject rating status manually
       const idsToCheck = currentRatedIds.length > 0 ? currentRatedIds : myRatedBookingIds;
       
       const mappedHistory = data.map((booking: any) => ({
@@ -234,15 +256,25 @@ export const usePLCBookings = (
 
   // --- 3. CENTRAL REFRESH ---
   const refreshBookings = useCallback(async (silent = false) => {
-    // Await fresh ratings first
-    const freshRatedIds = await fetchMyRatings();
+    if (!silent) setIsInitialLoading(true);
     
-    Promise.all([
-      fetchMyRejections(),
-      fetchMonthBookings(),
-      fetchDayBookings(silent, freshRatedIds), // Pass fresh IDs
-      fetchHistoryBookings(freshRatedIds)      // Pass fresh IDs
-    ]);
+    try {
+      const freshRatedIds = await fetchMyRatings();
+      
+      // Promise.all will execute all fetch calls concurrently
+      await Promise.all([
+        fetchMyRejections(),
+        fetchMonthBookings(),
+        fetchDayBookings(silent, freshRatedIds), 
+        fetchHistoryBookings(freshRatedIds)      
+      ]);
+    } catch (error) {
+      // Catch any unexpected error during the fetching process (e.g., severe network failure)
+      console.error("Critical error during refreshBookings:", error);
+    } finally {
+      // IMPORTANT: Always set loading to false, regardless of success or failure.
+      if (!silent) setIsInitialLoading(false);
+    }
   }, [fetchMyRatings, fetchMyRejections, fetchMonthBookings, fetchDayBookings, fetchHistoryBookings]);
 
   // --- 4. CLEANUP ENGINE ---
@@ -324,7 +356,6 @@ export const usePLCBookings = (
       throw error;
     }
 
-    // Archive immediately after rating
     const { error: archiveError } = await supabase.rpc('archive_booking_on_rate', { 
       target_booking_id: bookingId 
     });
@@ -385,7 +416,6 @@ export const usePLCBookings = (
         'postgres_changes',
         { event: '*', schema: 'public', table: 'PLCBookingHistory' },
         () => {
-            // Slight delay to allow DB triggers to finish
             setTimeout(() => refreshBookings(true), 500);
         }
       )
@@ -403,6 +433,7 @@ export const usePLCBookings = (
     dayBookings,
     historyBookings,
     isLoadingDayBookings,
+    isInitialLoading,
     cancelBooking,
     deleteHistoryBooking,
     approveBooking,

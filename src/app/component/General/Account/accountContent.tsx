@@ -9,6 +9,7 @@ import { updateUserAccount } from "../../../../../supabase/Lib/Account/updateUse
 import EditProfileModal from "./editProfileForm";
 import InfoItem from "./infoItem";
 import AvatarEditor from "./avatarEditable";
+import LoadingScreen from "../../ReusableComponent/LoadingScreen";
 import type { User } from "../../../../../supabase/Lib/General/user";
 
 // Component
@@ -56,9 +57,7 @@ export default function AccountPage() {
     return (
       <main className="pt-[110px] p-8 bg-gray-50 min-h-screen">
         <HomepageTab user={user} />
-        <div className="max-w-4xl mx-auto">
-          <p>Loading profile...</p>
-        </div>
+        <LoadingScreen />
       </main>
     );
   }

@@ -204,7 +204,7 @@ export default function HistoryModal({
                       {!isTutor && !isRejected && !hasRated && (
                         <button
                           onClick={() => setSelectedBookingForRate(booking)}
-                          className="flex items-center gap-1 px-3 py-1 bg-[#EFBF04] rounded-full text-[10px] font-bold text-black hover:bg-[#d4a903] transition-colors shadow-sm"
+                          className="flex cursor-pointer items-center gap-1 px-3 py-1 bg-[#d9af09] rounded-full text-[10px] font-bold text-white hover:bg-[#deb304] transition-colors shadow-sm"
                         >
                           <Star size={12} /> Rate
                         </button>
