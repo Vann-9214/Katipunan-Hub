@@ -6,6 +6,8 @@ import LoadingScreen from "@/app/component/ReusableComponent/LoadingScreen";
 import HomepageTab from "@/app/component/ReusableComponent/HomepageTab/HomepageTab";
 import AnnouncementLeftBar from "./AnnouncementLeftBar";
 import AnnouncementFeed from "./AnnouncementFeed";
+// IMPORT
+import PLCAdCard from "./PLCAdCard";
 
 // --- Types ---
 import {
@@ -330,8 +332,10 @@ export default function AnnouncementPageContent() {
         onTagClick={setActiveTags}
       />
 
-      {/* Right Side (Placeholder) */}
-      <div className="w-[350px] right-0 top-0 fixed h-full"></div>
+      {/* Right Side (PLC Ad Card) */}
+      <div className="w-[350px] right-0 top-0 fixed h-full pt-28 flex flex-col items-center">
+        <PLCAdCard />
+      </div>
 
       {/* This is the fix. We only render AnnouncementFeed *after* currentUser is loaded, so isAdmin and currentUserId are guaranteed to be defined.
        */}

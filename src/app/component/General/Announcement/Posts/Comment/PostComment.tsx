@@ -8,6 +8,7 @@ import CommentButton from "./commentButton";
 import ReactionSummary from "../reactionSummary";
 import { usePostReactions } from "../../../../../../../supabase/Lib/Announcement/Posts/usePostReaction";
 import { useComments } from "../../../../../../../supabase/Lib/Announcement/Posts/useComment";
+import { useRef, useEffect } from "react"; // ADDED useRef and useEffect
 
 import Posts from "../Posts";
 
@@ -47,6 +48,20 @@ export default function PostComment() {
     userId: spotlightPost?.userId || "",
   });
 
+  // 1. Create a ref for the scrollable container
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // 2. Scroll to the bottom whenever a new comment is added (with animation)
+  useEffect(() => {
+    if (scrollRef.current) {
+      // Use scrollTo with smooth behavior
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
+  }, [comments.length]); // Trigger when the number of comments changes
+
   if (!spotlightPost) {
     return null;
   }
@@ -83,7 +98,8 @@ export default function PostComment() {
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto">
+          {/* 3. Attach the ref to the scrollable content area */}
+          <div ref={scrollRef} className="flex-1 overflow-y-auto">
             <Posts {...spotlightPost} mode="modal" />
 
             <div className="bg-gold">

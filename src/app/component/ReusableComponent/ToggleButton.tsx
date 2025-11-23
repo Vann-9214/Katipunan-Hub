@@ -1,14 +1,14 @@
 "use client";
 
-import Button, { TextButton } from "@/app/component/ReusableComponent/Buttons";
+import { motion } from "framer-motion";
 
 interface ToggleButtonProps {
   leftLabel?: string;
   rightLabel?: string;
   active?: "left" | "right";
   onToggle?: (side: "left" | "right") => void;
-  leftActiveBg?: string;
-  rightActiveBg?: string;
+  leftActiveBg?: string; // e.g. "bg-maroon"
+  rightActiveBg?: string; // e.g. "bg-gold"
   width?: string;
   height?: string;
   textSize?: string;
@@ -19,73 +19,73 @@ export default function ToggleButton({
   rightLabel = "Right",
   active = "left",
   onToggle,
-  leftActiveBg = "bg-maroon",
-  rightActiveBg = "bg-gold",
+  leftActiveBg = "bg-[#800000]", // Default Maroon hex if tailwind class fails
+  rightActiveBg = "bg-[#D4AF37]", // Default Gold hex
   width = "w-[540px]",
   height = "h-[50px]",
   textSize = "text-[16px]",
 }: ToggleButtonProps) {
+  // Helper to determine which color to use for the sliding background
+  const activeColor = active === "left" ? leftActiveBg : rightActiveBg;
+
   return (
     <div
       className={`
         ${width} ${height} 
         bg-white 
         rounded-[30px] 
-        border 
-        border-black/40 
-        flex 
-        items-center
+        border border-black/40 
+        flex items-center relative p-1
+        isolation-auto
       `}
     >
-      {/* Left slot */}
-      <div className="w-[50%] h-full flex justify-center items-center p-[5px]">
-        {active === "left" ? (
-          <Button
-            font="font-medium"
-            text={leftLabel}
-            textcolor="text-white"
-            textSize={textSize}
-            bg={leftActiveBg}
-            height="h-full"
-            width="w-full"
-            onClick={() => onToggle?.("left")}
-          />
-        ) : (
-          <TextButton
-            fontSize="font-medium"
-            text={leftLabel}
-            className="text-[#7C7C7C]"
-            textSize={textSize}
-            type="button"
-            onClick={() => onToggle?.("left")}
-          />
-        )}
-      </div>
+      {/* LEFT SIDE */}
+      <button
+        type="button"
+        onClick={() => onToggle?.("left")}
+        className={`relative w-[50%] h-full flex justify-center items-center rounded-[25px] z-10 transition-colors duration-200 ${
+          active === "left" ? "text-white" : "text-[#7C7C7C]"
+        }`}
+      >
+        <span
+          className={`font-medium ${textSize} font-montserrat relative z-20`}
+        >
+          {leftLabel}
+        </span>
 
-      {/* Right slot */}
-      <div className="w-[50%] h-full flex justify-center items-center p-[5px]">
-        {active === "right" ? (
-          <Button
-            font="font-medium"
-            text={rightLabel}
-            textcolor="text-white"
-            textSize={textSize}
-            bg={rightActiveBg}
-            height="h-full"
-            width="w-full"
-            onClick={() => onToggle?.("right")}
-          />
-        ) : (
-          <TextButton
-            fontSize="font-medium"
-            text={rightLabel}
-            className="text-[#7C7C7C]"
-            textSize={textSize}
-            type="button"
-            onClick={() => onToggle?.("right")}
+        {/* THE SLIDING BACKGROUND (Only renders here if active is left) */}
+        {active === "left" && (
+          <motion.div
+            layoutId="toggle-pill"
+            className={`absolute inset-0 rounded-[25px] ${activeColor} shadow-sm`}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
           />
         )}
-      </div>
+      </button>
+
+      {/* RIGHT SIDE */}
+      <button
+        type="button"
+        onClick={() => onToggle?.("right")}
+        className={`relative w-[50%] h-full flex justify-center items-center rounded-[25px] z-10 transition-colors duration-200 ${
+          active === "right" ? "text-white" : "text-[#7C7C7C]"
+        }`}
+      >
+        <span
+          className={`font-medium ${textSize} font-montserrat relative z-20`}
+        >
+          {rightLabel}
+        </span>
+
+        {/* THE SLIDING BACKGROUND (Moves here if active is right) */}
+        {active === "right" && (
+          <motion.div
+            layoutId="toggle-pill"
+            className={`absolute inset-0 rounded-[25px] ${activeColor} shadow-sm`}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          />
+        )}
+      </button>
     </div>
   );
 }

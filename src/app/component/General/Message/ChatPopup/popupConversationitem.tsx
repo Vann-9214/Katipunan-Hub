@@ -5,12 +5,17 @@ import { useRouter } from "next/navigation";
 import { MoreHorizontal, Star, Ban, Trash2 } from "lucide-react";
 import { ConversationItem } from "../Utils/types";
 import Avatar from "@/app/component/ReusableComponent/Avatar";
+import { motion, Variants } from "framer-motion"; // ADDED motion, Variants
+
+interface PopupConversationItemProps {
+  conversation: ConversationItem;
+  variants: Variants; // ADDED variants prop
+}
 
 export default function PopupConversationItem({
   conversation,
-}: {
-  conversation: ConversationItem;
-}) {
+  variants, // DESTRUCTURED variants
+}: PopupConversationItemProps) {
   const isActive = conversation.unreadCount > 0;
   const router = useRouter();
 
@@ -88,8 +93,9 @@ export default function PopupConversationItem({
   // --- END of additions ---
 
   return (
-    <div
+    <motion.div // CHANGED to motion.div
       onClick={handleClick}
+      variants={variants} // ADDED variants prop
       className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors w-full relative group
         ${isActive ? "bg-gray-200" : "hover:bg-gray-100"}`}
     >
@@ -187,6 +193,6 @@ export default function PopupConversationItem({
         </div>
       )}
       {/* --- END of additions --- */}
-    </div>
+    </motion.div>
   );
 }

@@ -70,14 +70,14 @@ export default function AccountDropdown({
           <User className="w-[24px] h-[24px] text-black group-hover:text-maroon" />
           <span>Account</span>
         </Link>
-        <Link
+        {/* <Link
           href="/settings"
           className="flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-[16px] text-black hover:bg-maroon/5 hover:text-maroon transition-colors group"
           onClick={onClose}
         >
           <Settings className="w-[24px] h-[24px] text-black group-hover:text-maroon" />
           <span>Settings</span>
-        </Link>
+        </Link> */}
       </nav>
 
       <hr className="border-black/50 mx-4" />
