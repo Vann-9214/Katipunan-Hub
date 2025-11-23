@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../General/supabaseClient";
 import { getCurrentUserDetails } from "../General/getUser";
 import type { User } from "../General/user";
@@ -73,18 +73,30 @@ export const usePLCBookings = (
   const [monthBookings, setMonthBookings] = useState<MonthBooking[]>([]);
   const [dayBookings, setDayBookings] = useState<Booking[]>([]);
   const [historyBookings, setHistoryBookings] = useState<Booking[]>([]);
+  
+  // Loading States
   const [isLoadingDayBookings, setIsLoadingDayBookings] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true); // Start TRUE for immediate feedback
+
   const [isTutor, setIsTutor] = useState(false);
   const [myRejections, setMyRejections] = useState<string[]>([]);
   const [myRatedBookingIds, setMyRatedBookingIds] = useState<string[]>([]);
-  const [isInitialLoading, setIsInitialLoading] = useState(false);
+
+  // Refs to track state without re-rendering
+  const isFetchingRef = useRef(false);
+  const isFirstLoad = useRef(true);
 
   useEffect(() => {
     const fetchUser = async () => {
       const user = await getCurrentUserDetails();
-      setCurrentUser(user);
-      if (user?.role?.includes("Tutor")) {
-        setIsTutor(true);
+      if (user) {
+        setCurrentUser(user);
+        if (user?.role?.includes("Tutor")) {
+          setIsTutor(true);
+        }
+      } else {
+        // If no user is found, stop loading so the app doesn't hang
+        setIsInitialLoading(false);
       }
     };
     fetchUser();
@@ -92,10 +104,8 @@ export const usePLCBookings = (
 
   // --- 1. HELPERS ---
 
-  // Helper to fetch list of IDs I have rated
   const fetchMyRatings = useCallback(async () => {
     if (!currentUser) return [];
-    // If I am a student, I want to know which bookings I rated
     const { data } = await supabase
       .from("TutorRatings")
       .select("booking_id")
@@ -106,9 +116,20 @@ export const usePLCBookings = (
     return ids;
   }, [currentUser]);
 
+  const fetchMyRejections = useCallback(async () => {
+    if (!currentUser || !isTutor) return;
+    const { data } = await supabase
+      .from("TutorRejections")
+      .select("bookingId")
+      .eq("tutorId", currentUser.id);
+
+    if (data) {
+      setMyRejections(data.map((r: any) => r.bookingId || r.bookingid));
+    }
+  }, [currentUser, isTutor]);
+
   // --- 2. FETCH FUNCTIONS ---
 
-  // Month Fetch
   const fetchMonthBookings = useCallback(async () => {
     if (!currentUser) return;
 
@@ -129,7 +150,7 @@ export const usePLCBookings = (
 
     if (error) {
       console.error("Error fetching month bookings:", JSON.stringify(error, null, 2));
-      setMonthBookings([]); // Clear data on error
+      setMonthBookings([]); 
     }
 
     if (data) {
@@ -140,16 +161,27 @@ export const usePLCBookings = (
     }
   }, [currentUser, year, monthIndex, isTutor]);
 
-  // Day Fetch
   const fetchDayBookings = useCallback(async (silent = false, currentRatedIds: string[] = []) => {
-    if (!currentUser || !selectedDate) return;
+    if (!currentUser) return;
+
+    // --- FIX: Determine an effective date to fetch ---
+    // If selectedDate is null (like in PLCContent), default to Today (if in current month) or 1st.
+    // This ensures the promise actually does work and waits, keeping the loading screen up.
+    let targetDay = selectedDate;
+    if (!targetDay) {
+      const now = new Date();
+      if (now.getFullYear() === year && now.getMonth() === monthIndex) {
+        targetDay = now.getDate();
+      } else {
+        targetDay = 1;
+      }
+    }
 
     if (!silent) setIsLoadingDayBookings(true);
 
-    const dateQuery = getDateString(year, monthIndex, selectedDate);
+    const dateQuery = getDateString(year, monthIndex, targetDay);
 
-    // FIX: Using EXACT Mixed-Case constraint names from your DDL for PLCBookings
-    // PLCBookings_studentId_fkey and PLCBookings_approvedBy_fkey
+    // FIX: Using EXACT Mixed-Case constraint names from your DDL
     let query = supabase
       .from("PLCBookings")
       .select(`
@@ -167,7 +199,7 @@ export const usePLCBookings = (
 
     if (error) {
       console.error("Error fetching day bookings:", JSON.stringify(error, null, 2));
-      setDayBookings([]); // IMPORTANT: Clear stale data immediately
+      setDayBookings([]); 
     }
 
     if (data) {
@@ -184,7 +216,6 @@ export const usePLCBookings = (
         return true;
       });
 
-      // Inject rating status manually
       const idsToCheck = currentRatedIds.length > 0 ? currentRatedIds : myRatedBookingIds;
       
       const mappedData = filtered.map((booking) => ({
@@ -195,19 +226,15 @@ export const usePLCBookings = (
 
       setDayBookings(mappedData);
     } else {
-       // If data is null (due to error), ensure we don't show old data
        setDayBookings([]);
     }
 
     if (!silent) setIsLoadingDayBookings(false);
   }, [currentUser, selectedDate, monthIndex, year, isTutor, myRejections, myRatedBookingIds]);
 
-  // History Fetch
   const fetchHistoryBookings = useCallback(async (currentRatedIds: string[] = []) => {
     if (!currentUser) return;
     
-    // FIX: Using LOWERCASE constraint names for History because your DDL for History used lowercase
-    // plcbookinghistory_studentid_fkey and plcbookinghistory_approvedby_fkey
     let query = supabase
       .from("PLCBookingHistory")
       .select(`
@@ -227,7 +254,7 @@ export const usePLCBookings = (
     
     if (error) {
       console.error("Error fetching history:", JSON.stringify(error, null, 2));
-      setHistoryBookings([]); // Clear data on error
+      setHistoryBookings([]); 
     }
     
     if (data) {
@@ -242,26 +269,19 @@ export const usePLCBookings = (
     }
   }, [currentUser, isTutor, myRatedBookingIds]);
 
-  const fetchMyRejections = useCallback(async () => {
-    if (!currentUser || !isTutor) return;
-    const { data } = await supabase
-      .from("TutorRejections")
-      .select("bookingId")
-      .eq("tutorId", currentUser.id);
-
-    if (data) {
-      setMyRejections(data.map((r: any) => r.bookingId || r.bookingid));
-    }
-  }, [currentUser, isTutor]);
-
   // --- 3. CENTRAL REFRESH ---
   const refreshBookings = useCallback(async (silent = false) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
+    // Only show full screen loader if not silent
     if (!silent) setIsInitialLoading(true);
     
     try {
       const freshRatedIds = await fetchMyRatings();
       
-      // Promise.all will execute all fetch calls concurrently
+      // Execute all fetches. Because fetchDayBookings now defaults to a date,
+      // this Promise.all will wait for the day data too!
       await Promise.all([
         fetchMyRejections(),
         fetchMonthBookings(),
@@ -269,10 +289,9 @@ export const usePLCBookings = (
         fetchHistoryBookings(freshRatedIds)      
       ]);
     } catch (error) {
-      // Catch any unexpected error during the fetching process (e.g., severe network failure)
       console.error("Critical error during refreshBookings:", error);
     } finally {
-      // IMPORTANT: Always set loading to false, regardless of success or failure.
+      isFetchingRef.current = false;
       if (!silent) setIsInitialLoading(false);
     }
   }, [fetchMyRatings, fetchMyRejections, fetchMonthBookings, fetchDayBookings, fetchHistoryBookings]);
@@ -284,21 +303,22 @@ export const usePLCBookings = (
     const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0') + ':00';
 
     try {
-      await supabase.rpc('move_and_archive_bookings', {
-        check_date: dateStr,
-        check_time: timeStr
-      });
+      await Promise.all([
+        supabase.rpc('move_and_archive_bookings', {
+          check_date: dateStr,
+          check_time: timeStr
+        }),
+        supabase.rpc("delete_expired_pending_bookings", {
+          check_date: dateStr,
+          check_time: timeStr
+        }),
+        supabase.from("PLCBookings")
+          .delete()
+          .eq("status", "Pending")
+          .or(`bookingDate.lt.${dateStr},and(bookingDate.eq.${dateStr},startTime.lte.${timeStr})`)
+      ]);
 
-      await supabase.rpc("delete_expired_pending_bookings", {
-        check_date: dateStr,
-        check_time: timeStr
-      });
-
-      const { error: manualError } = await supabase.from("PLCBookings")
-        .delete()
-        .eq("status", "Pending")
-        .or(`bookingDate.lt.${dateStr},and(bookingDate.eq.${dateStr},startTime.lte.${timeStr})`);
-
+      // Silent refresh after cleanup
       setTimeout(() => refreshBookings(true), 500);
 
     } catch (err) {
@@ -369,13 +389,33 @@ export const usePLCBookings = (
 
   // --- EFFECTS ---
 
-  // 1. On Load
+  // 1. MAIN DATA FETCHING
+  // Runs when dependencies change (like switching months/days).
+  // USES isFirstLoad to determine if it should show the full-screen loader.
   useEffect(() => {
-    cleanupExpired().then(() => {});
-    fetchMyRatings(); // Fetch initial ratings
-  }, [cleanupExpired, fetchMyRatings]);
+    if (currentUser) {
+      const shouldShowLoader = isFirstLoad.current;
+      
+      // If it's the first load, pass FALSE to 'silent' (show loader).
+      // If it's NOT first load (switching dates), pass TRUE to 'silent' (hide loader).
+      refreshBookings(!shouldShowLoader); 
+      
+      if (shouldShowLoader) {
+        isFirstLoad.current = false;
+      }
+    }
+  }, [currentUser, year, monthIndex, selectedDate, isTutor]);
 
-  // 2. LIVE TIMER
+  // 2. CLEANUP ON MOUNT
+  // Runs only ONCE when the component mounts to clean db.
+  useEffect(() => {
+    if (currentUser) {
+        cleanupExpired();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser]); 
+
+  // 3. LIVE TIMER
   useEffect(() => {
     const interval = setInterval(() => {
       const now = new Date();
@@ -405,7 +445,7 @@ export const usePLCBookings = (
     return () => clearInterval(interval);
   }, [cleanupExpired]);
 
-  // 3. Realtime Subscription
+  // 4. Realtime Subscription
   useEffect(() => {
     if (!currentUser) return;
 

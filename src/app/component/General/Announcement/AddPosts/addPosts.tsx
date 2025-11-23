@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion"; // 1. Import AnimatePresence
 import {
   type PostUI,
   type NewPostPayload,
@@ -59,9 +60,12 @@ export default function AddPosts(props: AddPostsProps) {
             height={55}
             draggable={false}
           />
-          <button
+          {/* Button with Tap Animation */}
+          <motion.button
             type="button"
-            className="w-[490px] h-[45px] rounded-[18px] mx-[10px] bg-gray-200 placeholder:text-black/60 cursor-pointer hover:brightness-105"
+            whileTap={{ scale: 0.97 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+            className="w-[490px] h-[45px] rounded-[18px] mx-[10px] bg-gray-200 placeholder:text-black/60 cursor-pointer hover:brightness-105 flex items-center"
             onClick={handleOpen}
           >
             <p className="font-montserrat text-[18px] text-black/70 ml-4 text-left font-medium">
@@ -69,18 +73,20 @@ export default function AddPosts(props: AddPostsProps) {
                 ? "Create highlight..."
                 : "Create announcement..."}
             </p>
-          </button>
+          </motion.button>
         </div>
       </div>
 
-      {/* Modal */}
-      {mounted && isOpen && (
-        <AddPostModal
-          {...props}
-          initialPost={initialPost ?? null}
-          onClose={handleClose}
-        />
-      )}
+      {/* Modal with AnimatePresence */}
+      <AnimatePresence>
+        {mounted && isOpen && (
+          <AddPostModal
+            {...props}
+            initialPost={initialPost ?? null}
+            onClose={handleClose}
+          />
+        )}
+      </AnimatePresence>
     </>
   );
 }
