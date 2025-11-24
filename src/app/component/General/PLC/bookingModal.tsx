@@ -5,6 +5,8 @@ import { X, Loader2 } from "lucide-react";
 import { Montserrat, PT_Sans } from "next/font/google";
 import { supabase } from "../../../../../supabase/Lib/General/supabaseClient";
 import { getCurrentUserDetails } from "../../../../../supabase/Lib/General/getUser";
+// 1. Import Framer Motion
+import { motion, AnimatePresence, Variants } from "framer-motion";
 
 const montserrat = Montserrat({ subsets: ["latin"], weight: ["600", "700"] });
 const ptSans = PT_Sans({ subsets: ["latin"], weight: ["400", "700"] });
@@ -15,6 +17,42 @@ interface BookingModalProps {
   selectedDate: Date | null;
   onSuccess?: () => void;
 }
+
+// --- Animation Variants ---
+const backdropVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1 },
+};
+
+const modalVariants: Variants = {
+  hidden: { opacity: 0, scale: 0.9, y: 20 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 350,
+      damping: 25,
+      staggerChildren: 0.08,
+    },
+  },
+  exit: {
+    opacity: 0,
+    scale: 0.95,
+    y: 10,
+    transition: { duration: 0.2 },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 10 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 300, damping: 24 },
+  },
+};
 
 export default function BookingModal({
   isOpen,
@@ -27,7 +65,7 @@ export default function BookingModal({
     subject: "",
     description: "",
     startTime: "",
-    endTime: "", // Added endTime
+    endTime: "",
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -43,15 +81,13 @@ export default function BookingModal({
         subject: "",
         description: "",
         startTime: `${hours}:${minutes}`,
-        endTime: "", // Reset end time
+        endTime: "",
       }));
       setError(null);
     }
   }, [isOpen]);
 
-  if (!isOpen || !selectedDate) return null;
-
-  const formattedDate = selectedDate.toLocaleDateString("en-US", {
+  const formattedDate = selectedDate?.toLocaleDateString("en-US", {
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -105,6 +141,7 @@ export default function BookingModal({
   /* Handlers */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedDate) return;
     setIsLoading(true);
     setError(null);
 
@@ -122,12 +159,12 @@ export default function BookingModal({
         .toISOString()
         .split("T")[0];
 
-      // 4. Insert to Supabase (Include endTime)
+      // 4. Insert to Supabase
       const { error: insertError } = await supabase.from("PLCBookings").insert({
         studentId: user.id,
         bookingDate: dateForDB,
         startTime: formData.startTime,
-        endTime: formData.endTime, // Passing endTime
+        endTime: formData.endTime,
         subject: formData.subject,
         description: formData.description,
         status: "Pending",
@@ -155,150 +192,195 @@ export default function BookingModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-[20px] w-full max-w-[500px] shadow-2xl animate-in fade-in zoom-in duration-200">
-        {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b border-gray-200">
-          <h2
-            className={`${montserrat.className} text-[20px] font-bold text-[#8B0E0E]`}
+    <AnimatePresence>
+      {isOpen && selectedDate && (
+        <motion.div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+          variants={backdropVariants}
+          initial="hidden"
+          animate="visible"
+          exit="hidden"
+        >
+          <motion.div
+            className="bg-white rounded-[20px] w-full max-w-[500px] shadow-2xl overflow-hidden"
+            variants={modalVariants}
+            // Inherits initial/animate/exit from parent, but uses its own variants
           >
-            Book a Session
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* Form Content */}
-        <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-5">
-          {/* Date Display */}
-          <div className="flex flex-col gap-2">
-            <label
-              className={`${montserrat.className} text-[14px] font-bold text-black`}
-            >
-              Date
-            </label>
-            <div
-              className={`${ptSans.className} w-full p-3 bg-gray-100 rounded-lg text-gray-600 border border-gray-300`}
-            >
-              {formattedDate}
-            </div>
-          </div>
-
-          {/* Time Inputs Row */}
-          <div className="flex gap-4">
-            {/* Start Time */}
-            <div className="flex-1 flex flex-col gap-2">
-              <label
-                className={`${montserrat.className} text-[14px] font-bold text-black`}
+            {/* Header */}
+            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+              <motion.h2
+                variants={itemVariants}
+                className={`${montserrat.className} text-[20px] font-bold text-[#8B0E0E]`}
               >
-                Start Time <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="time"
-                required
-                value={formData.startTime}
-                onChange={(e) =>
-                  setFormData({ ...formData, startTime: e.target.value })
-                }
-                className={`${ptSans.className} w-full p-3 rounded-lg border border-black focus:outline-none focus:ring-2 focus:ring-[#8B0E0E]/20`}
-              />
-            </div>
-
-            {/* End Time */}
-            <div className="flex-1 flex flex-col gap-2">
-              <label
-                className={`${montserrat.className} text-[14px] font-bold text-black`}
+                Book a Session
+              </motion.h2>
+              <motion.button
+                whileHover={{ scale: 1.1, rotate: 90 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={onClose}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500"
               >
-                End Time <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="time"
-                required
-                value={formData.endTime}
-                onChange={(e) =>
-                  setFormData({ ...formData, endTime: e.target.value })
-                }
-                className={`${ptSans.className} w-full p-3 rounded-lg border border-black focus:outline-none focus:ring-2 focus:ring-[#8B0E0E]/20`}
-              />
+                <X size={20} />
+              </motion.button>
             </div>
-          </div>
-          <span className="text-xs text-gray-500 -mt-3">
-            Available from 7:30 AM to 9:00 PM
-          </span>
 
-          {/* Subject Input */}
-          <div className="flex flex-col gap-2">
-            <label
-              className={`${montserrat.className} text-[14px] font-bold text-black`}
-            >
-              Subject Title <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              required
-              placeholder="e.g., Math Review, Thesis Consultation"
-              value={formData.subject}
-              onChange={(e) =>
-                setFormData({ ...formData, subject: e.target.value })
-              }
-              className={`${ptSans.className} w-full p-3 rounded-lg border border-black focus:outline-none focus:ring-2 focus:ring-[#8B0E0E]/20`}
-            />
-          </div>
+            {/* Form Content */}
+            <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-5">
+              {/* Date Display */}
+              <motion.div
+                variants={itemVariants}
+                className="flex flex-col gap-2"
+              >
+                <label
+                  className={`${montserrat.className} text-[14px] font-bold text-black`}
+                >
+                  Date
+                </label>
+                <div
+                  className={`${ptSans.className} w-full p-3 bg-gray-100 rounded-lg text-gray-600 border border-gray-300`}
+                >
+                  {formattedDate}
+                </div>
+              </motion.div>
 
-          {/* Description Input */}
-          <div className="flex flex-col gap-2">
-            <label
-              className={`${montserrat.className} text-[14px] font-bold text-black`}
-            >
-              Description{" "}
-              <span className="text-gray-400 font-normal">(Optional)</span>
-            </label>
-            <textarea
-              rows={3}
-              placeholder="Add specific details about what you need help with..."
-              value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
-              className={`${ptSans.className} w-full p-3 rounded-lg border border-black focus:outline-none focus:ring-2 focus:ring-[#8B0E0E]/20 resize-none`}
-            />
-          </div>
+              {/* Time Inputs Row */}
+              <motion.div variants={itemVariants} className="flex gap-4">
+                {/* Start Time */}
+                <div className="flex-1 flex flex-col gap-2">
+                  <label
+                    className={`${montserrat.className} text-[14px] font-bold text-black`}
+                  >
+                    Start Time <span className="text-red-500">*</span>
+                  </label>
+                  <motion.input
+                    whileFocus={{ scale: 1.02, borderColor: "#8B0E0E" }}
+                    transition={{ duration: 0.2 }}
+                    type="time"
+                    required
+                    value={formData.startTime}
+                    onChange={(e) =>
+                      setFormData({ ...formData, startTime: e.target.value })
+                    }
+                    className={`${ptSans.className} w-full p-3 rounded-lg border border-black focus:outline-none focus:ring-2 focus:ring-[#8B0E0E]/20`}
+                  />
+                </div>
 
-          {/* Error Message */}
-          {error && (
-            <div className="text-red-600 text-sm bg-red-50 p-3 rounded-md border border-red-100">
-              {error}
-            </div>
-          )}
+                {/* End Time */}
+                <div className="flex-1 flex flex-col gap-2">
+                  <label
+                    className={`${montserrat.className} text-[14px] font-bold text-black`}
+                  >
+                    End Time <span className="text-red-500">*</span>
+                  </label>
+                  <motion.input
+                    whileFocus={{ scale: 1.02, borderColor: "#8B0E0E" }}
+                    transition={{ duration: 0.2 }}
+                    type="time"
+                    required
+                    value={formData.endTime}
+                    onChange={(e) =>
+                      setFormData({ ...formData, endTime: e.target.value })
+                    }
+                    className={`${ptSans.className} w-full p-3 rounded-lg border border-black focus:outline-none focus:ring-2 focus:ring-[#8B0E0E]/20`}
+                  />
+                </div>
+              </motion.div>
+              <motion.span
+                variants={itemVariants}
+                className="text-xs text-gray-500 -mt-3"
+              >
+                Available from 7:30 AM to 9:00 PM
+              </motion.span>
 
-          {/* Action Buttons */}
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isLoading}
-              className={`${montserrat.className} flex-1 py-3 rounded-lg border border-black text-black font-bold hover:bg-gray-50 transition-colors`}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className={`${montserrat.className} flex-1 py-3 rounded-lg bg-[#8B0E0E] text-white font-bold hover:bg-[#6d0b0b] transition-colors flex items-center justify-center gap-2`}
-            >
-              {isLoading ? (
-                <Loader2 className="animate-spin" size={18} />
-              ) : (
-                "Confirm Booking"
+              {/* Subject Input */}
+              <motion.div
+                variants={itemVariants}
+                className="flex flex-col gap-2"
+              >
+                <label
+                  className={`${montserrat.className} text-[14px] font-bold text-black`}
+                >
+                  Subject Title <span className="text-red-500">*</span>
+                </label>
+                <motion.input
+                  whileFocus={{ scale: 1.02, borderColor: "#8B0E0E" }}
+                  transition={{ duration: 0.2 }}
+                  type="text"
+                  required
+                  placeholder="e.g., Math Review, Thesis Consultation"
+                  value={formData.subject}
+                  onChange={(e) =>
+                    setFormData({ ...formData, subject: e.target.value })
+                  }
+                  className={`${ptSans.className} w-full p-3 rounded-lg border border-black focus:outline-none focus:ring-2 focus:ring-[#8B0E0E]/20`}
+                />
+              </motion.div>
+
+              {/* Description Input */}
+              <motion.div
+                variants={itemVariants}
+                className="flex flex-col gap-2"
+              >
+                <label
+                  className={`${montserrat.className} text-[14px] font-bold text-black`}
+                >
+                  Description{" "}
+                  <span className="text-gray-400 font-normal">(Optional)</span>
+                </label>
+                <motion.textarea
+                  whileFocus={{ scale: 1.02, borderColor: "#8B0E0E" }}
+                  transition={{ duration: 0.2 }}
+                  rows={3}
+                  placeholder="Add specific details about what you need help with..."
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  className={`${ptSans.className} w-full p-3 rounded-lg border border-black focus:outline-none focus:ring-2 focus:ring-[#8B0E0E]/20 resize-none`}
+                />
+              </motion.div>
+
+              {/* Error Message */}
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  className="text-red-600 text-sm bg-red-50 p-3 rounded-md border border-red-100"
+                >
+                  {error}
+                </motion.div>
               )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+
+              {/* Action Buttons */}
+              <motion.div variants={itemVariants} className="flex gap-3 pt-2">
+                <motion.button
+                  whileHover={{ scale: 1.03, backgroundColor: "#f3f4f6" }}
+                  whileTap={{ scale: 0.97 }}
+                  type="button"
+                  onClick={onClose}
+                  disabled={isLoading}
+                  className={`${montserrat.className} flex-1 py-3 rounded-lg border border-black text-black font-bold hover:bg-gray-50 transition-colors`}
+                >
+                  Cancel
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.03, backgroundColor: "#6d0b0b" }}
+                  whileTap={{ scale: 0.97 }}
+                  type="submit"
+                  disabled={isLoading}
+                  className={`${montserrat.className} flex-1 py-3 rounded-lg bg-[#8B0E0E] text-white font-bold hover:bg-[#6d0b0b] transition-colors flex items-center justify-center gap-2`}
+                >
+                  {isLoading ? (
+                    <Loader2 className="animate-spin" size={18} />
+                  ) : (
+                    "Confirm Booking"
+                  )}
+                </motion.button>
+              </motion.div>
+            </form>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

@@ -1,14 +1,30 @@
-// src/app/component/General/PLC/fullDetails.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Check, Ban, Trash2, MessageCircle, Star } from "lucide-react";
+import {
+  X,
+  Check,
+  Ban,
+  Trash2,
+  MessageCircle,
+  Star,
+  Calendar,
+  Clock,
+  User,
+  FileText,
+  Hash,
+} from "lucide-react";
 import { Montserrat, PT_Sans } from "next/font/google";
 import Avatar from "@/app/component/ReusableComponent/Avatar";
 import RateTutorModal from "./rateTutorModal";
+// 1. Import Motion
+import { motion, AnimatePresence } from "framer-motion";
 
 /* Fonts */
-const montserrat = Montserrat({ subsets: ["latin"], weight: ["600", "700"] });
+const montserrat = Montserrat({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+});
 const ptSans = PT_Sans({ subsets: ["latin"], weight: ["400", "700"] });
 
 /* Types */
@@ -110,10 +126,9 @@ export default function FullDetails({
     return () => clearInterval(interval);
   }, []);
 
-  if (!isOpen || !booking) return null;
-
   // Logic to determine the "Real" status based on time
   const getComputedStatus = () => {
+    if (!booking) return "Pending"; // Safety check
     if (booking.status !== "Approved") return booking.status;
 
     const [bYear, bMonth, bDay] = booking.bookingDate.split("-").map(Number);
@@ -146,17 +161,27 @@ export default function FullDetails({
 
   const computedStatus = getComputedStatus();
   let displayStatus = computedStatus;
-  let statusColor = "text-gray-600";
 
-  if (isTutor && booking.hasRejected && booking.status === "Pending") {
-    displayStatus = "Rejected";
-    statusColor = "text-red-600";
-  } else {
-    if (computedStatus === "Pending") statusColor = "text-[#D97706]";
-    else if (computedStatus === "Approved") statusColor = "text-green-600";
-    else if (computedStatus === "Rejected") statusColor = "text-red-600";
-    else if (computedStatus === "Completed") statusColor = "text-green-600";
-    else if (computedStatus === "Starting...") statusColor = "text-[#EFBF04]";
+  // Status Styling Logic
+  let statusBadgeClass = "bg-gray-100 text-gray-600 border-gray-200";
+
+  if (booking) {
+    if (isTutor && booking.hasRejected && booking.status === "Pending") {
+      displayStatus = "Rejected";
+      statusBadgeClass = "bg-red-50 text-red-600 border-red-200";
+    } else {
+      if (computedStatus === "Pending")
+        statusBadgeClass = "bg-orange-50 text-[#D97706] border-orange-200";
+      else if (computedStatus === "Approved")
+        statusBadgeClass = "bg-green-50 text-green-600 border-green-200";
+      else if (computedStatus === "Rejected")
+        statusBadgeClass = "bg-red-50 text-red-600 border-red-200";
+      else if (computedStatus === "Completed")
+        statusBadgeClass = "bg-green-50 text-green-600 border-green-200";
+      else if (computedStatus === "Starting...")
+        statusBadgeClass =
+          "bg-[#EFBF04]/10 text-[#EFBF04] border-[#EFBF04]/30 animate-pulse";
+    }
   }
 
   const handleChatClick = () => {
@@ -165,249 +190,338 @@ export default function FullDetails({
 
   // Check if user has already rated this session
   const ratingData =
-    booking.TutorRatings && booking.TutorRatings.length > 0
+    booking?.TutorRatings && booking.TutorRatings.length > 0
       ? booking.TutorRatings[0]
       : null;
   const hasRated = !!ratingData;
 
   return (
     <>
-      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-        <div className="bg-white rounded-[20px] w-full max-w-[1055px] shadow-2xl relative px-8 py-4 flex flex-col items-center animate-in fade-in zoom-in duration-200">
-          <button
-            onClick={onClose}
-            className="cursor-pointer absolute top-4 right-4 text-gray-500 hover:text-black"
+      <AnimatePresence>
+        {isOpen && booking && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
           >
-            <X size={20} />
-          </button>
-
-          <h2
-            className={`${montserrat.className} text-[36px] font-semibold text-black mb-4`}
-          >
-            Request Session
-          </h2>
-
-          <div className="flex w-full gap-8">
-            {/* Left Column: User Info */}
-            <div className="flex-1 flex flex-col gap-6 border-r border-gray-300 pr-6">
-              <div className="flex items-center gap-4">
-                <Avatar
-                  avatarURL={booking.avatarURL}
-                  altText={booking.studentName || "User"}
-                  className="w-20 h-20 shrink-0"
-                />
-                <div className="flex flex-col justify-center">
-                  <p
-                    className={`${montserrat.className} font-medium text-[22px] text-black`}
-                  >
-                    {booking.studentName || "Student Name"}
-                  </p>
-                  <p
-                    className={`${ptSans.className} font-medium text-[20px] text-black`}
-                  >
-                    {booking.studentCourse || "Course"} &{" "}
-                    {booking.studentYear || "Year"}
-                  </p>
-                  <p
-                    className={`${ptSans.className} font-medium text-[20px] text-black`}
-                  >
-                    {booking.studentIDNum || "Student ID"}
-                  </p>
-                </div>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span
-                  className={`${montserrat.className} text-[22px] text-black`}
+            <motion.div
+              initial={{ scale: 0.95, y: 20, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.95, y: 20, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 350, damping: 25 }}
+              // Added max-h to ensure it fits on screen and overflow-hidden to clip scrollbars correctly
+              className="bg-white rounded-[24px] w-full max-w-[900px] max-h-[90vh] shadow-2xl flex flex-col overflow-hidden border border-gray-100"
+            >
+              {/* Header */}
+              <div className="relative px-8 py-6 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between shrink-0">
+                <h2
+                  className={`${montserrat.className} text-[28px] font-bold text-[#8B0E0E]`}
                 >
-                  Subject Title:{" "}
-                  <span className="font-medium">{booking.subject}</span>
-                </span>
-                <span
-                  className={`${montserrat.className} text-[20px] text-black`}
-                >
-                  Description:{" "}
-                  <span className="font-medium">
-                    {booking.description || "No description"}
-                  </span>
-                </span>
-              </div>
-            </div>
-
-            {/* Right Column: Session Details */}
-            <div className="flex-1 flex flex-col justify-between py-2">
-              <div className="flex flex-col gap-2">
-                <p className={`${montserrat.className} text-[24px] text-black`}>
-                  Date:{" "}
-                  <span className="font-medium">
-                    {formatDate(booking.bookingDate)}
-                  </span>
-                </p>
-                <p className={`${montserrat.className} text-[24px] text-black`}>
-                  Time:{" "}
-                  <span className="font-medium">
-                    {formatTimeRange(booking.startTime, booking.endTime)}
-                  </span>
-                </p>
-
-                {/* Show Tutor Name if Approved/Starting/Completed */}
-                {(computedStatus === "Approved" ||
-                  computedStatus === "Starting..." ||
-                  computedStatus === "Completed") &&
-                  booking.tutorName && (
-                    <p
-                      className={`${montserrat.className} text-[24px] text-black`}
-                    >
-                      Tutor:{" "}
-                      <span className="font-medium text-[#800000]">
-                        {booking.tutorName}
-                      </span>
-                    </p>
-                  )}
-
-                {/* Hide "Declined Request" count if Approved/Starting/Completed */}
-                {computedStatus !== "Approved" &&
-                  computedStatus !== "Starting..." &&
-                  computedStatus !== "Completed" && (
-                    <p
-                      className={`${montserrat.className} text-[24px] text-black`}
-                    >
-                      Declined Request:{" "}
-                      <span className="font-medium">
-                        {rejectionCount}/{totalTutors}
-                      </span>
-                    </p>
-                  )}
-
-                <p
-                  className={`${
-                    montserrat.className
-                  } text-[24px] font-medium mt-1 ${statusColor} ${
-                    displayStatus === "Starting..." ? "animate-pulse" : ""
-                  }`}
-                >
-                  {displayStatus}
-                </p>
-
-                {/* --- Display Rating if exists --- */}
-                {hasRated && (
-                  <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-bold text-gray-700">
-                        You Rated:
-                      </span>
-                      <div className="flex">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            size={16}
-                            className={
-                              i < ratingData!.rating
-                                ? "fill-[#EFBF04] text-[#EFBF04]"
-                                : "text-gray-300"
-                            }
-                          />
-                        ))}
-                      </div>
-                    </div>
-                    {ratingData!.review && (
-                      <p className="text-sm text-gray-600 italic">
-                        &quot;{ratingData!.review}&quot;
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Buttons Section */}
-              <div className="flex justify-end mt-6 gap-3">
-                {/* TUTOR PENDING VIEW */}
-                {isTutor &&
-                  computedStatus === "Pending" &&
-                  (booking.hasRejected ? (
-                    <span className="text-red-600 font-bold text-sm self-center py-2 px-4">
-                      Waiting for other tutors...
-                    </span>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => onRejectRequest?.(booking.id)}
-                        className={`${montserrat.className} flex items-center gap-2 bg-red-100 text-red-700 cursor-pointer text-[12px] font-bold py-2 px-6 rounded-full hover:bg-red-200 transition-colors`}
-                      >
-                        <Ban size={18} /> Deny Request
-                      </button>
-                      <button
-                        onClick={() => onApproveRequest?.(booking.id)}
-                        className={`${montserrat.className} flex items-center gap-2 bg-[#8B0E0E] text-white cursor-pointer text-[12px] font-bold py-2 px-6 rounded-full hover:bg-[#6d0b0b] transition-colors`}
-                      >
-                        <Check size={18} /> Confirm Request
-                      </button>
-                    </>
-                  ))}
-
-                {/* STUDENT PENDING VIEW */}
-                {!isTutor && computedStatus === "Pending" && (
-                  <button
-                    onClick={() => onCancelRequest(booking.id)}
-                    className={`${montserrat.className} bg-[#8B0E0E] text-white cursor-pointer text-[12px] font-bold py-2 px-4 rounded-full hover:bg-[#6d0b0b] transition-colors`}
-                  >
-                    Cancel Request
-                  </button>
-                )}
-
-                {/* REJECTED VIEW (DELETE) */}
-                {!isTutor && computedStatus === "Rejected" && (
-                  <button
-                    onClick={() => onCancelRequest(booking.id)}
-                    className={`${montserrat.className} flex items-center gap-2 bg-red-600 text-white cursor-pointer text-[12px] font-bold py-2 px-4 rounded-full hover:bg-red-700 transition-colors`}
-                  >
-                    <Trash2 size={16} /> Delete Booking
-                  </button>
-                )}
-
-                {/* APPROVED VIEW (CHAT) - Hidden if Starting or Completed */}
-                {computedStatus === "Approved" && (
-                  <button
-                    onClick={handleChatClick}
-                    className={`${montserrat.className} flex items-center gap-2 bg-[#FFB74D] text-black cursor-pointer text-[12px] font-bold py-2 px-6 rounded-full hover:bg-[#ffa726] transition-colors`}
-                  >
-                    <MessageCircle size={18} />{" "}
-                    {isTutor ? "Chat with Student" : "Chat with Tutor"}
-                  </button>
-                )}
-
-                {/* RATE TUTOR BUTTON (Student Only, Completed, Not Rated) */}
-                {!isTutor && computedStatus === "Completed" && !hasRated && (
-                  <button
-                    onClick={() => setIsRateModalOpen(true)}
-                    className={`${montserrat.className} flex items-center gap-2 bg-[#d9af09] text-white cursor-pointer text-[12px] font-bold py-2 px-6 rounded-full hover:bg-[#deb304] transition-colors`}
-                  >
-                    <Star size={18} /> Rate Tutor
-                  </button>
-                )}
-
+                  Session Details
+                </h2>
                 <button
                   onClick={onClose}
-                  className={`${montserrat.className} bg-gray-200 text-black cursor-pointer text-[12px] font-bold py-2 px-4 rounded-full hover:bg-gray-300 transition-colors`}
+                  className="p-2 rounded-full hover:bg-gray-200 transition-colors text-gray-500 hover:text-black"
                 >
-                  Close
+                  <X size={24} />
                 </button>
               </div>
-            </div>
-          </div>
-        </div>
-      </div>
+
+              {/* Body Container */}
+              <div className="flex flex-col md:flex-row w-full h-full overflow-hidden">
+                {/* Left Column: User Info Card - Scrollable if needed */}
+                <div className="md:w-[320px] bg-white p-8 border-b md:border-b-0 md:border-r border-gray-100 flex flex-col items-center text-center shrink-0 overflow-y-auto custom-scrollbar">
+                  <div className="relative mb-4">
+                    <div className="absolute inset-0 bg-[#8B0E0E]/5 rounded-full blur-xl transform scale-110" />
+                    <Avatar
+                      avatarURL={booking.avatarURL}
+                      altText={booking.studentName || "User"}
+                      // Removed white border as requested
+                      className="w-28 h-28 shadow-lg relative z-10"
+                    />
+                  </div>
+
+                  <div className="space-y-1 mb-6">
+                    <h3
+                      className={`${montserrat.className} text-[22px] font-bold text-gray-900 leading-tight`}
+                    >
+                      {booking.studentName || "Student Name"}
+                    </h3>
+                    <p
+                      className={`${ptSans.className} text-[16px] text-gray-500 font-medium`}
+                    >
+                      {booking.studentCourse || "Course"} •{" "}
+                      {booking.studentYear || "Year"}
+                    </p>
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gray-100 text-gray-600 text-xs font-bold mt-2">
+                      <Hash size={12} />
+                      {booking.studentIDNum || "No ID"}
+                    </div>
+                  </div>
+
+                  {/* Status Badge */}
+                  <div
+                    className={`px-5 py-2 rounded-full border font-bold text-sm tracking-wide ${statusBadgeClass} ${montserrat.className}`}
+                  >
+                    {displayStatus.toUpperCase()}
+                  </div>
+                </div>
+
+                {/* Right Column: Session Data - Scrollable for long content */}
+                <div className="flex-1 p-8 flex flex-col bg-white overflow-y-auto custom-scrollbar">
+                  <div className="space-y-6 flex-grow">
+                    {/* Subject & Description */}
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-3">
+                        <div className="mt-1 p-2 bg-[#8B0E0E]/10 rounded-lg text-[#8B0E0E] shrink-0">
+                          <FileText size={20} />
+                        </div>
+                        {/* Added min-w-0 to allow text wrapping inside flex item */}
+                        <div className="min-w-0 flex-1">
+                          <span
+                            className={`block text-sm font-bold text-gray-400 uppercase tracking-wider ${montserrat.className}`}
+                          >
+                            Subject
+                          </span>
+                          {/* Added break-words to handle very long titles */}
+                          <p
+                            className={`text-[20px] font-bold text-gray-900 ${montserrat.className} break-words`}
+                          >
+                            {booking.subject}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="pl-[52px]">
+                        {/* Added break-words and whitespace-pre-wrap to handle long descriptions */}
+                        <p
+                          className={`text-[16px] text-gray-600 leading-relaxed ${ptSans.className} break-words whitespace-pre-wrap`}
+                        >
+                          &quot;
+                          {booking.description ||
+                            "No additional description provided."}
+                          &quot;
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="h-px bg-gray-100 w-full" />
+
+                    {/* Date & Time Grid */}
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-orange-50 rounded-lg text-orange-600 shrink-0">
+                          <Calendar size={20} />
+                        </div>
+                        <div>
+                          <span
+                            className={`block text-xs font-bold text-gray-400 uppercase tracking-wider ${montserrat.className}`}
+                          >
+                            Date
+                          </span>
+                          <p
+                            className={`text-[18px] font-medium text-gray-900 ${ptSans.className}`}
+                          >
+                            {formatDate(booking.bookingDate)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-50 rounded-lg text-blue-600 shrink-0">
+                          <Clock size={20} />
+                        </div>
+                        <div>
+                          <span
+                            className={`block text-xs font-bold text-gray-400 uppercase tracking-wider ${montserrat.className}`}
+                          >
+                            Time
+                          </span>
+                          <p
+                            className={`text-[18px] font-medium text-gray-900 ${ptSans.className}`}
+                          >
+                            {formatTimeRange(
+                              booking.startTime,
+                              booking.endTime
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Dynamic Footer Info */}
+                    <div className="mt-2 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                      {(computedStatus === "Approved" ||
+                        computedStatus === "Starting..." ||
+                        computedStatus === "Completed") &&
+                      booking.tutorName ? (
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-green-100 rounded-full text-green-700 shrink-0">
+                            <User size={18} />
+                          </div>
+                          <div>
+                            <span className="text-xs font-bold text-gray-500 uppercase">
+                              Assigned Tutor
+                            </span>
+                            <p
+                              className={`text-[16px] font-bold text-[#8B0E0E] ${montserrat.className}`}
+                            >
+                              {booking.tutorName}
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-3 text-gray-500">
+                          <div className="p-2 bg-gray-200 rounded-full shrink-0">
+                            <Ban size={18} />
+                          </div>
+                          <div>
+                            <span className="text-xs font-bold uppercase">
+                              Request Status
+                            </span>
+                            <p
+                              className={`text-[15px] font-medium ${ptSans.className}`}
+                            >
+                              {rejectionCount} of {totalTutors} tutors have
+                              declined
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Rating Display */}
+                    {hasRated && (
+                      <div className="p-4 bg-yellow-50 rounded-xl border border-yellow-100 flex flex-col gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-sm text-yellow-800 uppercase">
+                            Your Rating
+                          </span>
+                          <div className="flex">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                size={14}
+                                className={
+                                  i < ratingData!.rating
+                                    ? "fill-[#EFBF04] text-[#EFBF04]"
+                                    : "text-gray-300"
+                                }
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        {ratingData!.review && (
+                          <p className="text-sm text-gray-700 italic break-words">
+                            &quot;{ratingData!.review}&quot;
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Buttons Section */}
+                  <div className="flex flex-wrap justify-end gap-3 mt-8 pt-6 border-t border-gray-100 shrink-0">
+                    {/* TUTOR PENDING */}
+                    {isTutor &&
+                      computedStatus === "Pending" &&
+                      (booking.hasRejected ? (
+                        <span className="text-red-600 font-bold text-sm self-center px-4 bg-red-50 py-2 rounded-lg">
+                          Waiting for other tutors...
+                        </span>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => onRejectRequest?.(booking.id)}
+                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl border-2 border-red-100 text-red-600 font-bold hover:bg-red-50 transition-all"
+                          >
+                            <Ban size={18} /> Deny
+                          </button>
+                          <button
+                            onClick={() => onApproveRequest?.(booking.id)}
+                            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#8B0E0E] text-white font-bold hover:bg-[#6d0b0b] shadow-lg shadow-red-900/20 transition-all hover:scale-105"
+                          >
+                            <Check size={18} /> Accept
+                          </button>
+                        </>
+                      ))}
+
+                    {/* STUDENT PENDING */}
+                    {!isTutor && computedStatus === "Pending" && (
+                      <button
+                        onClick={() => onCancelRequest(booking.id)}
+                        className="px-6 py-2.5 rounded-xl bg-gray-200 text-gray-700 font-bold hover:bg-gray-300 transition-all"
+                      >
+                        Cancel Request
+                      </button>
+                    )}
+
+                    {/* DELETE (Rejected) */}
+                    {!isTutor && computedStatus === "Rejected" && (
+                      <button
+                        onClick={() => onCancelRequest(booking.id)}
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-50 text-red-600 font-bold hover:bg-red-100 transition-all"
+                      >
+                        <Trash2 size={18} /> Delete
+                      </button>
+                    )}
+
+                    {/* CHAT (Approved) */}
+                    {computedStatus === "Approved" && (
+                      <button
+                        onClick={handleChatClick}
+                        className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#FFB74D] text-white font-bold hover:bg-[#ffa726] shadow-lg shadow-orange-500/20 transition-all hover:scale-105"
+                      >
+                        <MessageCircle size={18} /> Chat
+                      </button>
+                    )}
+
+                    {/* RATE (Completed & Not Rated) */}
+                    {!isTutor &&
+                      computedStatus === "Completed" &&
+                      !hasRated && (
+                        <button
+                          onClick={() => setIsRateModalOpen(true)}
+                          className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#EFBF04] text-white font-bold hover:bg-[#d9af09] shadow-lg shadow-yellow-500/20 transition-all hover:scale-105"
+                        >
+                          <Star size={18} /> Rate Tutor
+                        </button>
+                      )}
+
+                    {/* Close (always visible if no primary action) */}
+                    {!isTutor &&
+                      computedStatus !== "Pending" &&
+                      computedStatus !== "Completed" &&
+                      computedStatus !== "Rejected" && (
+                        <button
+                          onClick={onClose}
+                          className="px-6 py-2.5 rounded-xl bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition-all"
+                        >
+                          Close
+                        </button>
+                      )}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Rating Modal Popup */}
-      <RateTutorModal
-        isOpen={isRateModalOpen}
-        onClose={() => setIsRateModalOpen(false)}
-        tutorName={booking.tutorName || "Tutor"}
-        onSubmit={async (rating, review) => {
-          if (onRateTutor && booking.Tutor?.id) {
-            await onRateTutor(booking.id, booking.Tutor.id, rating, review);
-          }
-        }}
-      />
+      {booking && (
+        <RateTutorModal
+          isOpen={isRateModalOpen}
+          onClose={() => setIsRateModalOpen(false)}
+          tutorName={booking.tutorName || "Tutor"}
+          onSubmit={async (rating, review) => {
+            if (onRateTutor && booking.Tutor?.id) {
+              await onRateTutor(booking.id, booking.Tutor.id, rating, review);
+            }
+          }}
+        />
+      )}
     </>
   );
 }

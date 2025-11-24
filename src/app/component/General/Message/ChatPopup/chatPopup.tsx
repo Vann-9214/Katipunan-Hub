@@ -86,7 +86,7 @@ export default function ChatPopup() {
         );
         const { data: accountsData } = await supabase
           .from("Accounts")
-          .select("id, fullName, avatarURL") // Make sure you're selecting avatarURL here!
+          .select("id, fullName, avatarURL")
           .in("id", otherUserIds);
         const accountsMap = new Map(
           (accountsData || []).map((acc) => [acc.id, acc])
@@ -108,13 +108,14 @@ export default function ChatPopup() {
             .eq("conversation_id", convo.id)
             .order("created_at", { ascending: false })
             .limit(1)
-            .maybeSingle(); // Use maybeSingle for safety
+            .maybeSingle();
 
+          // This query counts exactly how many messages are unread in THIS specific chat
           const { count: unreadCount } = await supabase
             .from("Messages")
-            .select("id", { count: "exact" })
-            .eq("sender_id", otherUserId)
-            .eq("conversation_id", convo.id)
+            .select("id", { count: "exact", head: true })
+            .eq("sender_id", otherUserId) // Messages from the OTHER person
+            .eq("conversation_id", convo.id) // In THIS conversation
             .is("read_at", null);
 
           const lastMessage = lastMsgData?.content || "Start a chat...";
@@ -129,9 +130,9 @@ export default function ChatPopup() {
             id: convo.id,
             otherUserName: otherUser.fullName,
             lastMessagePreview: lastMessage,
-            avatarURL: otherUser.avatarURL, // This now passes the URL to the item
+            avatarURL: otherUser.avatarURL,
             timestamp: timestamp,
-            unreadCount: unreadCount || 0,
+            unreadCount: unreadCount || 0, // This will be 4 if there are 4 messages
           } as ConversationItem;
         });
 
@@ -151,20 +152,13 @@ export default function ChatPopup() {
     convo.otherUserName.toLowerCase().includes(search.toLowerCase())
   );
 
-  // --- START OF FIX & DEBUGGING ---
   const handleSeeAllChats = () => {
+    // Using the logic from your preferred previous fix:
     const navPath = "/Message";
-    console.log(
-      `[DEBUG] ChatPopup: Clicked 'See All'. Queuing navigation to: ${navPath}`
-    );
-
-    // FIX: Wrap in setTimeout to prevent race condition
     setTimeout(() => {
-      console.log(`[DEBUG] ChatPopup: Firing router.push() inside timeout.`);
       router.push(navPath);
     }, 50);
   };
-  // --- END OF FIX & DEBUGGING ---
 
   return (
     <div className="w-80 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden transform transition-all duration-300 z-40">
@@ -173,7 +167,6 @@ export default function ChatPopup() {
         <h2 className="text-[32px] font-montserrat font-bold text-gray-800">
           Chats
         </h2>
-        {/* This click is now fixed */}
         <div
           onClick={handleSeeAllChats}
           title="See all chats"
@@ -228,7 +221,6 @@ export default function ChatPopup() {
           </motion.div>
         ) : (
           filteredConversations.map((item) => (
-            // Pass itemVariants to the child component
             <PopupConversationItem
               key={item.id}
               conversation={item}
@@ -238,7 +230,7 @@ export default function ChatPopup() {
         )}
       </motion.div>
 
-      {/* Footer Link - This click is also fixed */}
+      {/* Footer Link */}
       <button
         onClick={handleSeeAllChats}
         className="cursor-pointer block w-full text-center py-2 text-[16px] font-montserrat font-medium text-gray-600 hover:text-[#8B0E0E] bg-gray-100 hover:bg-gray-200 transition-colors border-t border-gray-200"

@@ -8,6 +8,8 @@ import PLCViewYear from "./viewYear";
 import HistoryModal from "./historyModal";
 import { usePLCBookings } from "../../../../../supabase/Lib/PLC/usePLCBooking";
 import LoadingScreen from "../../ReusableComponent/LoadingScreen";
+// 1. Import motion
+import { motion } from "framer-motion";
 
 const montserrat = Montserrat({ subsets: ["latin"], weight: ["600", "700"] });
 
@@ -75,32 +77,56 @@ export default function PLCContent() {
 
         <div className="flex items-center gap-4">
           {/* History Button */}
-          <button
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={handleHistoryClick}
             className={`${montserrat.className} cursor-pointer flex items-center gap-2 px-4 h-[40px] bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 hover:shadow text-[#8B0E0E] font-bold transition-all`}
           >
             <History size={20} />
             <span>History</span>
-          </button>
+          </motion.button>
 
-          {/* View Toggles */}
-          <div className="flex items-center gap-0 bg-white border border-black rounded-lg overflow-hidden h-[40px]">
+          {/* Animated View Toggles */}
+          <div className="relative flex items-center bg-white border border-black rounded-lg overflow-hidden h-[40px] w-[100px]">
+            {/* Active Indicator (Sliding Background) */}
+            <motion.div
+              className="absolute top-0 bottom-0 w-1/2 bg-gray-200 z-0"
+              initial={false}
+              animate={{
+                x: viewMode === "month" ? 0 : "100%",
+              }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            />
+
+            {/* Month Button */}
             <button
               onClick={() => setViewMode("month")}
-              className={`cursor-pointer px-3 h-full flex items-center justify-center transition-colors ${
-                viewMode === "month" ? "bg-gray-200" : "hover:bg-gray-100"
+              className={`relative z-10 w-1/2 h-full flex items-center justify-center cursor-pointer transition-colors ${
+                viewMode === "month"
+                  ? "text-black"
+                  : "text-gray-500 hover:text-black"
               }`}
             >
-              <CalendarIcon size={20} className="text-black" />
+              <CalendarIcon size={20} />
             </button>
-            <div className="w-[1px] h-full bg-black" />
+
+            {/* Separator Line (only visible if you want it static, 
+                but sliding bg usually looks cleaner without a static line. 
+                I'll hide it or keep it z-index low) 
+            */}
+            <div className="w-[1px] h-full bg-black/10 relative z-10" />
+
+            {/* Year Button */}
             <button
               onClick={() => setViewMode("year")}
-              className={`cursor-pointer px-3 h-full flex items-center justify-center transition-colors ${
-                viewMode === "year" ? "bg-gray-200" : "hover:bg-gray-100"
+              className={`relative z-10 w-1/2 h-full flex items-center justify-center cursor-pointer transition-colors ${
+                viewMode === "year"
+                  ? "text-black"
+                  : "text-gray-500 hover:text-black"
               }`}
             >
-              <LayoutGrid size={20} className="text-black" />
+              <LayoutGrid size={20} />
             </button>
           </div>
         </div>

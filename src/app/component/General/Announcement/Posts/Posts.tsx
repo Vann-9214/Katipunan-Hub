@@ -106,7 +106,7 @@ export default function Posts(props: PostsProps) {
 
   // Render
   return (
-    <div>
+    <div id={`post-${postId}`}>
       <div className="w-[590px] bg-gold rounded-[15px] p-[5px]">
         <div className="w-[580px] bg-darkmaroon rounded-t-[10px] flex flex-col overflow-hidden">
           {/* Post Header */}

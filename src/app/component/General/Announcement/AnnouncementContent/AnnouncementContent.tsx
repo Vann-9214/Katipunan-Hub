@@ -13,7 +13,7 @@ import HomepageTab from "@/app/component/ReusableComponent/HomepageTab/HomepageT
 import AnnouncementLeftBar from "./AnnouncementLeftBar";
 import AnnouncementFeed from "./AnnouncementFeed";
 import PLCAdCard from "./PLCAdCard";
-
+import { useSearchParams } from "next/navigation";
 // --- Types ---
 import {
   type DBPostRow,
@@ -21,6 +21,7 @@ import {
   type NewPostPayload,
   type UpdatePostPayload,
   type FilterState,
+  VisibilityOption,
 } from "../Utils/types";
 import type { User } from "../../../../../../supabase/Lib/General/user";
 
@@ -57,7 +58,7 @@ export default function AnnouncementPageContent() {
   // while the list updates a split second later (using deferredTab).
   const deferredTab = useDeferredValue(activeTab);
   const deferredTags = useDeferredValue(activeTags);
-
+  const searchParams = useSearchParams();
   // --- Data Fetching ---
   useEffect(() => {
     let isMounted = true;
@@ -74,6 +75,53 @@ export default function AnnouncementPageContent() {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    const targetFilter = searchParams.get("filter");
+    const targetId = searchParams.get("id");
+
+    if (targetId && targetFilter) {
+      // Ensure we are on "Announcement" tab
+      setActiveTab("announcement");
+
+      // Override the filter state to match the notification
+      // This triggers fetchPosts automatically because 'filters' is a dependency of the fetch useEffect
+      if (targetFilter === "Course" || targetFilter === "Global") {
+        setFilters((prev) => ({
+          ...prev,
+          visibility: targetFilter as VisibilityOption,
+        }));
+      }
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const targetId = searchParams.get("id");
+
+    // Only try to scroll if we have a target ID and posts have loaded
+    if (targetId && posts.length > 0) {
+      // We wait a tiny bit to ensure the DOM is fully painted
+      const timer = setTimeout(() => {
+        const element = document.getElementById(`post-${targetId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+
+          // Optional: Add a temporary highlight effect so they see which one it is
+          element.style.transition =
+            "transform 0.3s ease, box-shadow 0.3s ease";
+          element.style.transform = "scale(1.02)";
+          element.style.boxShadow = "0 0 20px rgba(239, 191, 4, 0.6)"; // Gold glow
+
+          setTimeout(() => {
+            element.style.transform = "scale(1)";
+            element.style.boxShadow = "none";
+          }, 2000);
+        }
+      }, 600); // 600ms delay to be safe
+
+      return () => clearTimeout(timer);
+    }
+  }, [posts, searchParams]);
 
   const { course } = currentUser || {};
 
