@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { User, Settings, LogOut } from "lucide-react";
+import { User, LogOut } from "lucide-react";
 import Avatar from "../../ReusableComponent/Avatar";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../../../../supabase/Lib/General/supabaseClient";

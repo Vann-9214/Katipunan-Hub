@@ -1,10 +1,12 @@
+// src/app/component/General/Message/Sidebar/conversationItem.tsx
 "use client";
 
 import { useState, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { MoreHorizontal, Star, Ban, Trash2 } from "lucide-react";
 import { Conversation } from "../Utils/types";
-import Avatar from "@/app/component/ReusableComponent/Avatar"; // Use user's path
+import Avatar from "@/app/component/ReusableComponent/Avatar";
+import { motion } from "framer-motion";
 
 export default function ConversationItem({
   conversation,
@@ -24,7 +26,6 @@ export default function ConversationItem({
       return;
     }
     const navPath = `/Message/${conversation.id}`;
-    console.log(`[DEBUG] ConversationItem: Clicked. Navigating to: ${navPath}`);
     router.push(navPath);
   };
 
@@ -64,18 +65,19 @@ export default function ConversationItem({
   }, [menuRef]);
 
   return (
-    <div
+    <motion.div
       onClick={handleClick}
+      layout
+      whileHover={{ scale: 1.02, backgroundColor: isActive ? "" : "#f3f4f6" }}
+      whileTap={{ scale: 0.98 }}
       className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors relative group ${
-        isActive
-          ? "bg-black/5 shadow-inner border border-black/60"
-          : "hover:bg-gray-100"
+        isActive ? "bg-black/5 shadow-inner border border-black/60" : "" // Removed default hover here to let framer handle it, or keep it for non-js fallback
       }`}
     >
       <Avatar
         avatarURL={conversation.otherUser.avatarURL}
         altText={conversation.otherUser.fullName}
-        className="w-12 h-12 "
+        className="w-12 h-12"
       />
 
       <div className="flex-1 overflow-hidden">
@@ -156,6 +158,6 @@ export default function ConversationItem({
           </ul>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }

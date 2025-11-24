@@ -19,7 +19,7 @@ export default function ConversationHeader({
         ease: "easeOut",
         duration: 0.4,
       }}
-      className="flex items-center gap-4 p-4 border-b border-gray-200 shadow-sm bg-gray-50 z-20 relative"
+      className="flex items-center gap-4 p-4 border-b border-gray-200 shadow-sm bg-gray-50 z-10 relative"
     >
       {/* Avatar Pop-in */}
       <motion.div

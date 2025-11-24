@@ -160,15 +160,10 @@ export default function ConversationWindow() {
     if (!conversationId || !currentUser?.id) return;
 
     const markAsRead = async () => {
-      // Update all messages in this conversation where:
-      // 1. Sender is NOT me
-      // 2. Read_at is NULL
-      const { error } = await supabase
-        .from("Messages")
-        .update({ read_at: new Date().toISOString() })
-        .eq("conversation_id", conversationId)
-        .neq("sender_id", currentUser.id)
-        .is("read_at", null);
+      // CALL THE NEW DATABASE FUNCTION
+      const { error } = await supabase.rpc("mark_messages_read", {
+        p_conversation_id: conversationId,
+      });
 
       if (error) {
         console.error("Error marking messages as read:", error);
@@ -178,8 +173,7 @@ export default function ConversationWindow() {
     // Run immediately
     markAsRead();
 
-    // We depend on [messages.length] so that if a NEW message arrives
-    // while you are looking at the window, it gets marked read immediately.
+    // Depend on messages.length so it runs when new messages arrive
   }, [conversationId, currentUser?.id, messages.length]);
 
   /* Send Handler */
