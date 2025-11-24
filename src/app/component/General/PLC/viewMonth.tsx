@@ -11,6 +11,8 @@ import {
   Booking,
   MonthBooking,
 } from "../../../../../supabase/Lib/PLC/usePLCBooking";
+// 1. Import Framer Motion
+import { motion, AnimatePresence } from "framer-motion";
 
 const montserrat = Montserrat({ subsets: ["latin"], weight: ["600", "700"] });
 const ptSans = PT_Sans({ subsets: ["latin"], weight: ["400", "700"] });
@@ -187,7 +189,13 @@ export default function PLCViewMonth({
 
   return (
     <>
-      <div className="w-full h-[580px] bg-white rounded-[20px] border border-gray-800 shadow-md flex overflow-hidden p-8">
+      {/* 2. Animated Container */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="w-full h-[580px] bg-white rounded-[20px] border border-gray-800 shadow-md flex overflow-hidden p-8"
+      >
         {/* Calendar Left */}
         <div className="flex-1 pr-8 flex flex-col border-r border-gray-300 overflow-y-auto custom-scrollbar">
           {/* ... (Header and Days Header unchanged) ... */}
@@ -285,8 +293,20 @@ export default function PLCViewMonth({
                       className={baseClasses}
                       style={cellStyle}
                     >
+                      {/* 3. Animated Selection Indicator */}
                       {isSelected && !isPastDate && (
-                        <div className="absolute inset-0 bg-[#8B0E0E]/20 z-20 pointer-events-none" />
+                        <motion.div
+                          layoutId="selected-day-overlay"
+                          className="absolute inset-0 bg-[#8B0E0E]/20 z-20 pointer-events-none"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 500,
+                            damping: 30,
+                          }}
+                        />
                       )}
                       <span className="relative z-30">{day}</span>
                     </button>
@@ -303,11 +323,15 @@ export default function PLCViewMonth({
         <div className="w-[40%] pl-8 flex flex-col h-full">
           {/* ... (Right Side Header unchanged) ... */}
           <div className="flex justify-between items-end mb-8 mt-2 shrink-0">
-            <h2
+            <motion.h2
+              key={selectedDate} // Animate date text change
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2 }}
               className={`${montserrat.className} text-[28px] font-semibold text-black leading-none pb-1`}
             >
               {dayName}, {selectedDate || 1}
-            </h2>
+            </motion.h2>
             {!isTutor && (
               <button
                 onClick={() => setIsBookingModalOpen(true)}
@@ -323,126 +347,153 @@ export default function PLCViewMonth({
               <div className="flex justify-center pt-10">
                 <Loader2 className="animate-spin text-gray-400" />
               </div>
-            ) : dayBookings.length > 0 ? (
-              dayBookings.map((booking) => {
-                const activeStatus = getStatusForBooking(booking);
-                let displayStatus = activeStatus;
-
-                // Set Colors
-                let statusColor = "text-gray-600";
-                let cardBg = "bg-[#F4E4E4]";
-
-                if (activeStatus === "Starting...") {
-                  statusColor = "text-[#EFBF04] animate-pulse";
-                  cardBg = "bg-[#EFBF04]/20";
-                } else if (activeStatus === "Completed") {
-                  statusColor = "text-green-600";
-                  cardBg = "bg-green-100";
-                } else if (activeStatus === "Approved") {
-                  statusColor = "text-green-600";
-                  cardBg = "bg-green-100";
-                } else if (activeStatus === "Pending") {
-                  statusColor = "text-[#D97706]";
-                  cardBg = "bg-orange-100";
-                } else if (
-                  activeStatus === "Rejected" ||
-                  activeStatus === "Cancelled"
-                ) {
-                  statusColor = "text-red-600";
-                  cardBg = "bg-red-100";
-                }
-
-                if (
-                  isTutor &&
-                  booking.hasRejected &&
-                  booking.status === "Pending"
-                ) {
-                  displayStatus = "Rejected";
-                  statusColor = "text-red-600";
-                  cardBg = "bg-red-100";
-                }
-
-                return (
-                  <div
-                    key={booking.id}
-                    onClick={() => handleBookingClick(booking)}
-                    className={`relative w-full ${cardBg} rounded-[10px] p-4 flex flex-col gap-2 hover:-translate-y-1 hover:shadow-lg cursor-pointer group transition-all ${
-                      activeStatus === "Starting..."
-                        ? "ring-2 ring-[#EFBF04] border-[#EFBF04]"
-                        : ""
-                    }`}
-                  >
-                    <span
-                      className={`absolute top-3 right-4 text-[12px] font-bold ${statusColor} ${montserrat.className}`}
-                    >
-                      {displayStatus}
-                    </span>
-
-                    <div className="flex gap-1 text-black text-[14px]">
-                      <span className={`${montserrat.className} font-bold`}>
-                        Subject :
-                      </span>
-                      <span className={`${montserrat.className} font-bold`}>
-                        {booking.subject}
-                      </span>
-                    </div>
-                    <div className="flex gap-1 text-black text-[14px]">
-                      <span className={`${montserrat.className} font-bold`}>
-                        {isTutor
-                          ? "Student :"
-                          : activeStatus === "Approved" ||
-                            activeStatus === "Starting..." ||
-                            activeStatus === "Completed"
-                          ? "Tutor :"
-                          : "Time :"}
-                      </span>
-                      <span className={`${montserrat.className} font-normal`}>
-                        {isTutor
-                          ? booking.Accounts?.fullName
-                          : activeStatus === "Approved" ||
-                            activeStatus === "Starting..." ||
-                            activeStatus === "Completed"
-                          ? booking.Tutor?.fullName
-                          : formatTimeDisplay(
-                              booking.startTime,
-                              booking.endTime
-                            )}
-                      </span>
-                    </div>
-                    {(isTutor ||
-                      activeStatus === "Approved" ||
-                      activeStatus === "Starting..." ||
-                      activeStatus === "Completed") && (
-                      <div className="flex gap-1 text-black text-[14px]">
-                        <span className={`${montserrat.className} font-bold`}>
-                          Time :
-                        </span>
-                        <span className={`${montserrat.className} font-normal`}>
-                          {formatTimeDisplay(
-                            booking.startTime,
-                            booking.endTime
-                          )}
-                        </span>
-                      </div>
-                    )}
-                    <div className="absolute bottom-3 right-3 group-hover:translate-x-1 transition-transform">
-                      <MoveRight size={18} />
-                    </div>
-                  </div>
-                );
-              })
             ) : (
-              <div className="flex-1 flex items-center justify-center">
-                <p
-                  className={`${montserrat.className} text-[16px] font-bold text-black`}
-                >
-                  Nothing scheduled.
-                </p>
-              </div>
+              <AnimatePresence mode="popLayout">
+                {dayBookings.length > 0 ? (
+                  dayBookings.map((booking, idx) => {
+                    const activeStatus = getStatusForBooking(booking);
+                    let displayStatus = activeStatus;
+
+                    // Set Colors
+                    let statusColor = "text-gray-600";
+                    let cardBg = "bg-[#F4E4E4]";
+
+                    if (activeStatus === "Starting...") {
+                      statusColor = "text-[#EFBF04] animate-pulse";
+                      cardBg = "bg-[#EFBF04]/20";
+                    } else if (activeStatus === "Completed") {
+                      statusColor = "text-green-600";
+                      cardBg = "bg-green-100";
+                    } else if (activeStatus === "Approved") {
+                      statusColor = "text-green-600";
+                      cardBg = "bg-green-100";
+                    } else if (activeStatus === "Pending") {
+                      statusColor = "text-[#D97706]";
+                      cardBg = "bg-orange-100";
+                    } else if (
+                      activeStatus === "Rejected" ||
+                      activeStatus === "Cancelled"
+                    ) {
+                      statusColor = "text-red-600";
+                      cardBg = "bg-red-100";
+                    }
+
+                    if (
+                      isTutor &&
+                      booking.hasRejected &&
+                      booking.status === "Pending"
+                    ) {
+                      displayStatus = "Rejected";
+                      statusColor = "text-red-600";
+                      cardBg = "bg-red-100";
+                    }
+
+                    return (
+                      // 4. Animated Booking Cards
+                      <motion.div
+                        key={booking.id}
+                        layout
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{
+                          delay: idx * 0.05, // Stagger effect
+                          type: "spring",
+                          stiffness: 300,
+                          damping: 25,
+                        }}
+                        whileHover={{ scale: 1.01, y: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => handleBookingClick(booking)}
+                        className={`relative w-full ${cardBg} rounded-[10px] p-4 flex flex-col gap-2 hover:shadow-lg cursor-pointer group transition-all ${
+                          activeStatus === "Starting..."
+                            ? "ring-2 ring-[#EFBF04] border-[#EFBF04]"
+                            : ""
+                        }`}
+                      >
+                        <span
+                          className={`absolute top-3 right-4 text-[12px] font-bold ${statusColor} ${montserrat.className}`}
+                        >
+                          {displayStatus}
+                        </span>
+
+                        <div className="flex gap-1 text-black text-[14px]">
+                          <span className={`${montserrat.className} font-bold`}>
+                            Subject :
+                          </span>
+                          <span className={`${montserrat.className} font-bold`}>
+                            {booking.subject}
+                          </span>
+                        </div>
+                        <div className="flex gap-1 text-black text-[14px]">
+                          <span className={`${montserrat.className} font-bold`}>
+                            {isTutor
+                              ? "Student :"
+                              : activeStatus === "Approved" ||
+                                activeStatus === "Starting..." ||
+                                activeStatus === "Completed"
+                              ? "Tutor :"
+                              : "Time :"}
+                          </span>
+                          <span
+                            className={`${montserrat.className} font-normal`}
+                          >
+                            {isTutor
+                              ? booking.Accounts?.fullName
+                              : activeStatus === "Approved" ||
+                                activeStatus === "Starting..." ||
+                                activeStatus === "Completed"
+                              ? booking.Tutor?.fullName
+                              : formatTimeDisplay(
+                                  booking.startTime,
+                                  booking.endTime
+                                )}
+                          </span>
+                        </div>
+                        {(isTutor ||
+                          activeStatus === "Approved" ||
+                          activeStatus === "Starting..." ||
+                          activeStatus === "Completed") && (
+                          <div className="flex gap-1 text-black text-[14px]">
+                            <span
+                              className={`${montserrat.className} font-bold`}
+                            >
+                              Time :
+                            </span>
+                            <span
+                              className={`${montserrat.className} font-normal`}
+                            >
+                              {formatTimeDisplay(
+                                booking.startTime,
+                                booking.endTime
+                              )}
+                            </span>
+                          </div>
+                        )}
+                        <div className="absolute bottom-3 right-3 group-hover:translate-x-1 transition-transform">
+                          <MoveRight size={18} />
+                        </div>
+                      </motion.div>
+                    );
+                  })
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="flex-1 flex items-center justify-center"
+                  >
+                    <p
+                      className={`${montserrat.className} text-[16px] font-bold text-black`}
+                    >
+                      Nothing scheduled.
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             )}
           </div>
         </div>
-      </div>
+      </motion.div>
 
       <BookingModal
         isOpen={isBookingModalOpen}

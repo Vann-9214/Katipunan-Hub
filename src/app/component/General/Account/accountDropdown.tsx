@@ -6,12 +6,35 @@ import Avatar from "../../ReusableComponent/Avatar";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../../../../supabase/Lib/General/supabaseClient";
 import type { User as AppUser } from "../../../../../supabase/Lib/General/user";
+// 1. Import motion and Variants
+import { motion, Variants } from "framer-motion";
 
 // Component Interface
 interface ProfileDropdownProps {
   user: AppUser | null;
   onClose: () => void;
 }
+
+// 2. Define Variants with explicit types to fix the error
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05,
+      delayChildren: 0.05,
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, x: -10 },
+  show: {
+    opacity: 1,
+    x: 0,
+    transition: { type: "spring", stiffness: 300, damping: 24 },
+  },
+};
 
 // Component
 export default function AccountDropdown({
@@ -39,12 +62,18 @@ export default function AccountDropdown({
 
   // Render
   return (
-    <div
+    <motion.div
+      initial="hidden"
+      animate="show"
+      variants={containerVariants}
       className="w-64 bg-white rounded-lg shadow-xl border border-gray-100"
       onClick={(e) => e.stopPropagation()}
     >
       {/* User Info Header */}
-      <div className="flex items-center  gap-3 p-4">
+      <motion.div
+        variants={itemVariants}
+        className="flex items-center gap-3 p-4"
+      >
         <Avatar
           avatarURL={avatarUrl}
           altText={fullName}
@@ -56,20 +85,22 @@ export default function AccountDropdown({
           </p>
           <p className="text-[14px] font-montserrat text-black/70">{email}</p>
         </div>
-      </div>
+      </motion.div>
 
       <hr className="border-black/50 mx-4" />
 
       {/* Menu Links */}
       <nav className="p-2">
-        <Link
-          href="/Account"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-[16px] hover:bg-maroon/5 hover:text-maroon transition-colors group"
-          onClick={onClose}
-        >
-          <User className="w-[24px] h-[24px] text-black group-hover:text-maroon" />
-          <span>Account</span>
-        </Link>
+        <motion.div variants={itemVariants}>
+          <Link
+            href="/Account"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-[16px] hover:bg-maroon/5 hover:text-maroon transition-colors group"
+            onClick={onClose}
+          >
+            <User className="w-[24px] h-[24px] text-black group-hover:text-maroon" />
+            <span>Account</span>
+          </Link>
+        </motion.div>
         {/* <Link
           href="/settings"
           className="flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-[16px] text-black hover:bg-maroon/5 hover:text-maroon transition-colors group"
@@ -83,7 +114,7 @@ export default function AccountDropdown({
       <hr className="border-black/50 mx-4" />
 
       {/* Log Out Button */}
-      <div className="p-2">
+      <motion.div variants={itemVariants} className="p-2">
         <button
           onClick={handleLogout}
           className="cursor-pointer flex items-center w-full gap-3 px-3 py-2.5 rounded-[10px] text-[16px] text-black hover:bg-maroon/5 hover:text-maroon transition-colors group"
@@ -91,7 +122,7 @@ export default function AccountDropdown({
           <LogOut className="w-[24px] h-[24px] text-black group-hover:text-maroon" />
           <span>Log Out</span>
         </button>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

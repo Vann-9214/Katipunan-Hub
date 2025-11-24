@@ -8,6 +8,8 @@ import {
   usePLCYearBookings,
   MonthBooking,
 } from "../../../../../supabase/Lib/PLC/usePLCBooking";
+// 1. Import Motion
+import { motion } from "framer-motion";
 
 const montserrat = Montserrat({ subsets: ["latin"], weight: ["600", "700"] });
 const ptSans = PT_Sans({ subsets: ["latin"], weight: ["400"] });
@@ -35,6 +37,22 @@ const getStatusColor = (status: string) => {
     default:
       return "#FFFFFF";
   }
+};
+
+// --- Animation Variants ---
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20, scale: 0.9 },
+  show: { opacity: 1, y: 0, scale: 1 },
 };
 
 export default function PLCViewYear({
@@ -86,7 +104,12 @@ export default function PLCViewYear({
   };
 
   return (
-    <div className="bg-white rounded-[30px] border border-black/20 shadow-sm p-8 w-full">
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.4 }}
+      className="bg-white rounded-[30px] border border-black/20 shadow-sm p-8 w-full"
+    >
       {/* Header */}
       <div className="flex items-center justify-center gap-12 mb-8 text-black relative">
         <button
@@ -95,9 +118,14 @@ export default function PLCViewYear({
         >
           <ChevronLeft size={24} />
         </button>
-        <span className={`${montserrat.className} text-[32px] font-bold`}>
+        <motion.span
+          key={year} // Animate when year changes
+          initial={{ y: -10, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className={`${montserrat.className} text-[32px] font-bold`}
+        >
           {year}
-        </span>
+        </motion.span>
         <button
           onClick={onNextYear}
           className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -107,7 +135,12 @@ export default function PLCViewYear({
       </div>
 
       {/* Grid */}
-      <div className="grid grid-cols-4 gap-x-6 gap-y-8">
+      <motion.div
+        className="grid grid-cols-4 gap-x-6 gap-y-8"
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+      >
         {MONTHS.map((monthName, monthIndex) => {
           const daysInMonth = getDaysInMonth(year, monthIndex);
           const startOffset = getFirstDayOfMonth(year, monthIndex);
@@ -120,10 +153,17 @@ export default function PLCViewYear({
           ].slice(0, 42);
 
           return (
-            <div
+            <motion.div
               key={monthName}
+              variants={itemVariants}
+              whileHover={{
+                scale: 1.05,
+                borderColor: "#8B0E0E",
+                boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+              }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => onMonthClick(monthIndex)}
-              className="border border-black rounded-[20px] p-4 bg-white cursor-pointer hover:shadow-lg hover:border-[#8B0E0E] transition-all flex flex-col"
+              className="border border-black rounded-[20px] p-4 bg-white cursor-pointer transition-all flex flex-col"
             >
               <h3
                 className={`${montserrat.className} text-center font-bold text-black text-[18px] mb-2`}
@@ -189,10 +229,10 @@ export default function PLCViewYear({
                   );
                 })}
               </div>
-            </div>
+            </motion.div>
           );
         })}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
