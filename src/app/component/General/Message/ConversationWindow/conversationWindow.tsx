@@ -176,6 +176,38 @@ export default function ConversationWindow() {
     // Depend on messages.length so it runs when new messages arrive
   }, [conversationId, currentUser?.id, messages.length]);
 
+  /* --- NEW: Realtime Subscription for Messages --- */
+  useEffect(() => {
+    if (!conversationId) return;
+
+    const channel = supabase
+      .channel(`chat_room:${conversationId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "Messages",
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const newMsg = payload.new as Message;
+          setMessages((current) => {
+            // Prevent duplicates (e.g., if we just sent this message ourselves)
+            if (current.some((msg) => msg.id === newMsg.id)) {
+              return current;
+            }
+            return [...current, newMsg];
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [conversationId]);
+
   /* Send Handler */
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();

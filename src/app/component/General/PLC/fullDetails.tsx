@@ -13,12 +13,19 @@ import {
   User,
   FileText,
   Hash,
+  Loader2,
 } from "lucide-react";
 import { Montserrat, PT_Sans } from "next/font/google";
 import Avatar from "@/app/component/ReusableComponent/Avatar";
 import RateTutorModal from "./rateTutorModal";
 // 1. Import Motion
 import { motion, AnimatePresence } from "framer-motion";
+
+// --- CHAT IMPORTS ---
+import { useRouter } from "next/navigation";
+import { supabase } from "../../../../../supabase/Lib/General/supabaseClient";
+import { getCurrentUserDetails } from "../../../../../supabase/Lib/General/getUser";
+import { getSortedUserPair } from "../../../../../supabase/Lib/Message/auth";
 
 /* Fonts */
 const montserrat = Montserrat({
@@ -42,6 +49,7 @@ interface BookingDetails {
   description?: string;
   bookingDate: string;
   studentId: string;
+  approvedBy?: string;
   hasRejected?: boolean;
   studentName?: string;
   studentCourse?: string;
@@ -119,6 +127,8 @@ export default function FullDetails({
 }: RequestSessionModalProps) {
   const [now, setNow] = useState(new Date());
   const [isRateModalOpen, setIsRateModalOpen] = useState(false);
+  const [isChatLoading, setIsChatLoading] = useState(false); // Loading state for chat
+  const router = useRouter();
 
   // Real-time clock to update status
   useEffect(() => {
@@ -184,8 +194,113 @@ export default function FullDetails({
     }
   }
 
-  const handleChatClick = () => {
-    alert("Chat feature coming soon!");
+  // --- Handle Chat Click Logic ---
+  const handleChatClick = async () => {
+    if (isChatLoading) return;
+    setIsChatLoading(true);
+
+    try {
+      // 1. Get Current User
+      const user = await getCurrentUserDetails();
+      if (!user) {
+        alert("You must be logged in to chat.");
+        setIsChatLoading(false);
+        return;
+      }
+
+      // 2. Identify Target User
+      let targetUserId = "";
+      if (isTutor) {
+        // I am tutor, chatting student
+        targetUserId = booking?.studentId || "";
+      } else {
+        // I am student, chatting tutor
+        targetUserId = booking?.Tutor?.id || "";
+      }
+
+      if (!targetUserId) {
+        alert("Cannot find user to chat with.");
+        setIsChatLoading(false);
+        return;
+      }
+
+      // 3. Prepare Message Content (Dynamic based on role)
+      const dateStr = formatDate(booking?.bookingDate || "");
+      const timeStr = formatTimeRange(
+        booking?.startTime || "",
+        booking?.endTime
+      );
+      const subject = booking?.subject || "our session";
+
+      let messageContent = "";
+
+      if (isTutor) {
+        // Message FROM Tutor TO Student
+        messageContent = `Hi! I'll be your tutor for ${subject} on ${dateStr} at ${timeStr}. Do you have any specific topics you want to cover?`;
+      } else {
+        // Message FROM Student TO Tutor
+        messageContent = `Hi! I'm looking forward to our ${subject} session on ${dateStr} at ${timeStr}. Let me know if there's anything I should prepare!`;
+      }
+
+      // 4. Find or Create Conversation
+      const { user_a_id, user_b_id } = getSortedUserPair(user.id, targetUserId);
+
+      // Check if exists
+      let conversationId = null;
+      const { data: existingConvo } = await supabase
+        .from("Conversations")
+        .select("id")
+        .eq("user_a_id", user_a_id)
+        .eq("user_b_id", user_b_id)
+        .single();
+
+      if (existingConvo) {
+        conversationId = existingConvo.id;
+      } else {
+        // Create new
+        const { data: newConvo, error: createError } = await supabase
+          .from("Conversations")
+          .insert({
+            user_a_id,
+            user_b_id,
+            last_message_at: new Date().toISOString(),
+          })
+          .select("id")
+          .single();
+
+        if (createError || !newConvo) throw createError;
+        conversationId = newConvo.id;
+      }
+
+      // 5. Check if this message ALREADY exists in the conversation
+      // This prevents duplicates if the user clicks "Chat" multiple times for the same booking
+      const { data: existingMessages } = await supabase
+        .from("Messages")
+        .select("id")
+        .eq("conversation_id", conversationId)
+        .eq("content", messageContent)
+        .limit(1);
+
+      const isDuplicate = existingMessages && existingMessages.length > 0;
+
+      // 6. Only insert if it's NOT a duplicate
+      if (!isDuplicate) {
+        const { error: msgError } = await supabase.from("Messages").insert({
+          conversation_id: conversationId,
+          sender_id: user.id,
+          content: messageContent,
+        });
+
+        if (msgError) throw msgError;
+      }
+
+      // 7. Redirect
+      router.push(`/Message/${conversationId}`);
+    } catch (error) {
+      console.error("Error starting chat:", error);
+      alert("Failed to start chat.");
+      setIsChatLoading(false);
+    }
   };
 
   // Check if user has already rated this session
@@ -471,9 +586,15 @@ export default function FullDetails({
                     {computedStatus === "Approved" && (
                       <button
                         onClick={handleChatClick}
-                        className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#FFB74D] text-white font-bold hover:bg-[#ffa726] shadow-lg shadow-orange-500/20 transition-all hover:scale-105"
+                        disabled={isChatLoading}
+                        className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#FFB74D] text-white font-bold hover:bg-[#ffa726] shadow-lg shadow-orange-500/20 transition-all hover:scale-105 disabled:opacity-70 disabled:hover:scale-100 disabled:cursor-wait"
                       >
-                        <MessageCircle size={18} /> Chat
+                        {isChatLoading ? (
+                          <Loader2 size={18} className="animate-spin" />
+                        ) : (
+                          <MessageCircle size={18} />
+                        )}
+                        {isChatLoading ? "Starting..." : "Chat"}
                       </button>
                     )}
 

@@ -363,7 +363,7 @@ export default function PLCViewMonth({
                       cardBg = "bg-[#EFBF04]/20";
                     } else if (activeStatus === "Completed") {
                       statusColor = "text-green-600";
-                      cardBg = "bg-green-100";
+                      cardBg = "bg-green-100 border border-green-700";
                     } else if (activeStatus === "Approved") {
                       statusColor = "text-green-600";
                       cardBg = "bg-green-100";
