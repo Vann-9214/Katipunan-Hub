@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import {
   type PostUI,
   type NewPostPayload,
@@ -18,7 +18,7 @@ export interface AddPostsProps {
   externalOpen?: boolean;
   onExternalClose?: () => void;
   initialPost?: PostUI | null;
-  currentType?: "announcement" | "highlight" | "feed"; // Added feed
+  currentType?: "announcement" | "highlight" | "feed";
   authorId?: string | null;
 
   // --- Feed Support ---
@@ -65,53 +65,53 @@ export default function AddPosts(props: AddPostsProps) {
   // Render
   return (
     <>
-      {/* Trigger Bar */}
-      <div
-        className={`relative w-[590px] h-[80px] rounded-[15px] p-[5px] bg-gold
-        `}
-      >
-        <div
-          className={`bg-darkmaroon
-           w-[580px] h-[70px] rounded-[10px] flex px-[15px] justify-center items-center`}
-        >
-          {isFeed && author ? (
-            <Avatar
-              avatarURL={author.avatarURL}
-              altText={author.fullName}
-              className="w-[55px] h-[55px]"
-            />
-          ) : (
-            <Image
-              src="/Cit Logo.svg"
-              alt="Cit Logo"
-              width={55}
-              height={55}
-              draggable={false}
-            />
-          )}
+      {/* Trigger Bar Container - Gold Gradient Border */}
+      <div className="w-[590px] p-[3px] rounded-[20px] bg-gradient-to-br from-[#EFBF04] via-[#FFD700] to-[#D4AF37] shadow-xl mb-8">
+        {/* Inner Content Wrapper */}
+        <div className="w-full rounded-[18px] overflow-hidden bg-transparent">
+          {/* Maroon Background Section */}
+          <div className="bg-gradient-to-b from-[#4e0505] to-[#3a0000] h-[80px] flex items-center px-5 gap-4">
+            {/* Avatar / Logo */}
+            <div className="shrink-0">
+              {isFeed && author ? (
+                <Avatar
+                  avatarURL={author.avatarURL}
+                  altText={author.fullName}
+                  className="w-[50px] h-[50px]"
+                />
+              ) : (
+                <Image
+                  src="/Cit Logo.svg"
+                  alt="Cit Logo"
+                  width={50}
+                  height={50}
+                  draggable={false}
+                  className="drop-shadow-md"
+                />
+              )}
+            </div>
 
-          {/* Button with Tap Animation */}
-          <motion.button
-            type="button"
-            whileTap={{ scale: 0.97 }}
-            transition={{ type: "spring", stiffness: 400, damping: 17 }}
-            className="w-[490px] h-[45px] rounded-[18px] mx-[10px] bg-gray-100 placeholder:text-black/60 cursor-pointer hover:brightness-95 flex items-center border border-gray-200"
-            onClick={handleOpen}
-          >
-            <p className="font-montserrat text-[18px] text-black/60 ml-4 text-left font-medium">
-              {isFeed
-                ? `What's on your mind, ${
-                    author?.fullName.split(" ")[0] || "Teknoy"
-                  }?`
-                : currentType === "highlight"
-                ? "Create highlight..."
-                : "Create announcement..."}
-            </p>
-          </motion.button>
+            {/* Mock Input Button */}
+            <button
+              type="button"
+              onClick={handleOpen}
+              className="flex-1 h-[45px] bg-white rounded-[12px] px-4 flex items-center text-left cursor-pointer transition-colors duration-200 hover:bg-gray-100 focus:outline-none group"
+            >
+              <span className="font-montserrat text-[16px] text-gray-500 font-medium group-hover:text-gray-600 truncate">
+                {isFeed
+                  ? `What's on your mind, ${
+                      author?.fullName.split(" ")[0] || "Teknoy"
+                    }?`
+                  : currentType === "highlight"
+                  ? "Create highlight..."
+                  : "Create announcement..."}
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Modal with AnimatePresence */}
+      {/* Modal */}
       <AnimatePresence>
         {mounted && isOpen && (
           <AddPostModal

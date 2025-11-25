@@ -16,7 +16,7 @@ export default function SearchFilter({
     <motion.div
       // Animate container properties based on focus state
       animate={{
-        width: isFocused ? 340 : 320,
+        width: isFocused ? 330 : 320,
         borderColor: isFocused ? "maroon" : "#e5e7eb",
         boxShadow: isFocused ? "0px 4px 20px rgba(0, 0, 0, 0.05)" : "none",
       }}

@@ -127,7 +127,7 @@ export default function PostComment() {
                 </div>
                 <div>
                   {!isCommentsLoading && commentCount > 0 && (
-                    <span className="font-montserrat font-medium text-[20px] text-black">
+                    <span className="font-montserrat font-medium text-[15px] text-black">
                       {formatCommentCount(commentCount)}
                     </span>
                   )}

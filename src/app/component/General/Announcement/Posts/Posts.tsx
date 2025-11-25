@@ -9,7 +9,6 @@ import Image from "next/image";
 import ImageAttachments from "../ImageAttachment/ImageAttachments";
 import EditPostsButton from "../LeftSide/EditPostsButton";
 import { usePostReactions } from "../../../../../../supabase/Lib/Announcement/Posts/usePostReaction";
-// --- IMPORT FEED REACTION HOOK ---
 import { useFeedReaction } from "../../../../../../supabase/Lib/Feeds/useFeedReaction";
 import ReactionSummary from "./reactionSummary";
 import { collegeitems } from "../Utils/constants";
@@ -29,7 +28,6 @@ export interface PostsProps {
   type: "announcement" | "highlight" | "feed";
   mode?: "card" | "modal";
   visibility?: string | null;
-  // --- NEW PROPS FOR FEED ---
   isFeed?: boolean;
   author?: {
     fullName: string;
@@ -66,12 +64,9 @@ export default function Posts(props: PostsProps) {
 
   // Hooks
   const { openPostModal } = usePostComment();
-
-  // UPDATED: Fetch comment count for both Feeds and Announcements using the new table logic
   const { count: commentCount, refreshCount } = useCommentCount(postId, isFeed);
 
   // --- REACTION LOGIC SPLIT ---
-  // We call both hooks but with conditional IDs so only the relevant one is active
   const postReactions = usePostReactions({
     postId: isFeed ? "" : postId,
     userId: userId || "",
@@ -82,7 +77,6 @@ export default function Posts(props: PostsProps) {
     userId: userId || "",
   });
 
-  // Select the active data based on mode
   const {
     selectedReactionId,
     reactionCount,
@@ -125,152 +119,158 @@ export default function Posts(props: PostsProps) {
 
   // Render
   return (
-    <div id={`post-${postId}`}>
-      <div className="w-[590px] bg-gold rounded-[15px] p-[5px]">
-        {/* HEADER COLOR: Dark Maroon for Official, White for Feed */}
-        <div
-          className={`w-[580px] bg-darkmaroon
-           rounded-t-[10px] flex flex-col`}
-        >
-          {/* Post Header */}
-          <div className="flex items-start justify-between mt-[15px] mx-[15px]">
-            <div className="flex items-center">
-              <div className="select-none">
-                {isFeed && author ? (
-                  <Avatar
-                    avatarURL={author.avatarURL}
-                    altText={author.fullName}
-                    className="w-[55px] h-[55px]"
-                  />
-                ) : (
-                  <Image
-                    src="/Cit Logo.svg"
-                    alt="Cit Logo"
-                    width={55}
-                    height={55}
-                    draggable={false}
-                  />
-                )}
-              </div>
-              <div className="flex flex-col ml-3 select-text justify-center">
-                <h1
-                  className={`font-montserrat font-medium text-[20px] leading-[30px] ${
-                    isFeed ? "text-white font-bold" : "text-white"
-                  }`}
-                >
-                  {isFeed && author
-                    ? author.fullName
-                    : "Cebu Institute of Technology - University"}
-                </h1>
-                <div className="flex items-center gap-1">
-                  <p
-                    className={`text-white
-                     font-ptsans text-[15px]`}
+    <div id={`post-${postId}`} className="mb-8 relative">
+      {/* Shadow Element - Static (Always visible) */}
+      <div className="absolute inset-0 bg-black/10 rounded-[24px] blur-md -z-10 translate-y-4" />
+
+      {/* Main Card Container - GOLD GRADIENT BORDER/BACKGROUND */}
+      <div className="w-[590px] p-[3px] rounded-[20px] bg-gradient-to-br from-[#EFBF04] via-[#FFD700] to-[#D4AF37] shadow-xl">
+        {/* Inner Content Wrapper */}
+        <div className="w-full rounded-[18px] overflow-hidden flex flex-col bg-transparent">
+          {/* === HEADER & CONTENT SECTION (Maroon Background) === */}
+          <div className="bg-gradient-to-b from-[#4e0505] to-[#3a0000] text-white p-5 pb-6">
+            {/* Post Header */}
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center">
+                <div className="select-none shrink-0">
+                  {isFeed && author ? (
+                    <Avatar
+                      avatarURL={author.avatarURL}
+                      altText={author.fullName}
+                      className="w-[55px] h-[55px]"
+                    />
+                  ) : (
+                    <Image
+                      src="/Cit Logo.svg"
+                      alt="Cit Logo"
+                      width={55}
+                      height={55}
+                      draggable={false}
+                      className="drop-shadow-md"
+                    />
+                  )}
+                </div>
+                <div className="flex flex-col ml-3 select-text justify-center">
+                  <h1
+                    className={`font-montserrat font-medium text-[18px] leading-tight ${
+                      isFeed ? "font-bold" : ""
+                    }`}
                   >
-                    {date} {isFeed ? "" : "·"}
-                  </p>
-                  {/* Dynamic Icon Logic (Only for Announcements) */}
-                  {!isFeed &&
-                    (IconComponent ? (
-                      <IconComponent className="w-4 h-4 text-white" />
-                    ) : (
-                      <Image
-                        src="/Global.svg"
-                        alt="Global"
-                        width={16}
-                        height={16}
-                        draggable={false}
-                        className="invert brightness-0"
-                      />
-                    ))}
+                    {isFeed && author
+                      ? author.fullName
+                      : "Cebu Institute of Technology - University"}
+                  </h1>
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="font-ptsans text-[14px] text-white/80">
+                      {date} {isFeed ? "" : "·"}
+                    </p>
+                    {!isFeed &&
+                      (IconComponent ? (
+                        <IconComponent className="w-4 h-4 text-white/80" />
+                      ) : (
+                        <Image
+                          src="/Global.svg"
+                          alt="Global"
+                          width={16}
+                          height={16}
+                          draggable={false}
+                          className="invert brightness-0 opacity-80"
+                        />
+                      ))}
+                  </div>
                 </div>
               </div>
+              {canEdit && (
+                <div className="select-none">
+                  <EditPostsButton
+                    onEdit={() => onEdit?.()}
+                    onRemove={() => onDelete?.()}
+                  />
+                </div>
+              )}
             </div>
-            {canEdit && (
-              <div className="select-none">
-                <EditPostsButton
-                  onEdit={() => onEdit?.()}
-                  onRemove={() => onDelete?.()}
-                />
+
+            {/* Divider */}
+            <hr className="border-white/10 mb-4" />
+
+            {/* Post Title */}
+            {!isFeed && (
+              <div className="font-montserrat font-bold text-[22px] mb-3 select-text tracking-tight">
+                {title}
+              </div>
+            )}
+
+            {/* Post Description */}
+            <div
+              ref={descriptionRef}
+              className={`font-montserrat text-[16px] leading-relaxed text-white/90 select-text break-words whitespace-pre-wrap
+             ${mode === "card" && !isExpanded ? "line-clamp-3" : ""}`}
+            >
+              {description}
+            </div>
+
+            {/* See More Button */}
+            {mode === "card" && isSeeMoreVisible && (
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="font-montserrat text-[14px] font-semibold mt-1 text-[#EFBF04] hover:text-yellow-300 hover:underline transition-colors cursor-pointer"
+              >
+                {isExpanded ? "See less" : "See more"}
+              </button>
+            )}
+
+            {/* Post Attachments */}
+            {images.length > 0 && (
+              <div className="select-none mt-4 rounded-xl overflow-hidden border border-white/10 shadow-inner">
+                <ImageAttachments images={images} />
               </div>
             )}
           </div>
 
-          <hr className={`mx-4 mt-2 border-white/20`} />
+          {/* === FOOTER SECTION (GOLD Background to match Outer) === */}
+          {mode === "card" && (
+            <div className="bg-gradient-to-br from-[#EFBF04] via-[#FFD700] to-[#D4AF37] px-5 py-2">
+              {/* Reaction Counts & Comment Link */}
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center">
+                  <ReactionSummary
+                    topReactions={topReactions}
+                    totalCount={reactionCount}
+                    isLoading={isInitialLoading}
+                  />
+                </div>
 
-          {/* Post Title (Only show for Announcements) */}
-          {!isFeed && (
-            <div className="font-montserrat font-semibold text-[20px] my-[10px] mx-[20px] text-white select-text">
-              {title}
+                <div
+                  className="cursor-pointer font-montserrat font-medium text-[15px] text-black hover:text-maroon hover:underline transition-colors"
+                  onClick={handleCommentClick}
+                >
+                  {formatCommentCount(commentCount || 0)}
+                </div>
+              </div>
+
+              <div className="h-px bg-black/10 w-full mb-2" />
+
+              {/* Action Buttons */}
+              <div className="flex justify-between items-center gap-2">
+                {/* 1. Reaction Button */}
+                <div className="flex-1">
+                  <ReactButton
+                    width="full"
+                    selectedReactionId={selectedReactionId}
+                    isLoading={isLoading}
+                    onReactionSelect={handleReactionSelect}
+                    onMainButtonClick={handleMainButtonClick}
+                  />
+                </div>
+
+                {/* 2. Comment Button */}
+                <div className="flex-1" onClick={handleCommentClick}>
+                  <CommentButton />
+                </div>
+              </div>
             </div>
           )}
-
-          {/* Post Description */}
-          <div
-            ref={descriptionRef}
-            className={`font-montserrat text-[16px] mt-[10px] mx-[20px] select-text break-words mb-[5px] text-white
-             ${mode === "card" && !isExpanded ? "line-clamp-3" : ""}`}
-          >
-            {description}
-          </div>
-
-          {/* See More Button */}
-          {mode === "card" && isSeeMoreVisible && (
-            <button
-              onClick={() => setIsExpanded(!isExpanded)}
-              className={`font-montserrat text-[16px] font-medium ml-[20px] mb-[5px] cursor-pointer self-start ${
-                isFeed
-                  ? "text-gray-500 hover:text-black"
-                  : "text-white/70 hover:text-white"
-              }`}
-            >
-              {isExpanded ? "See less" : "See more"}
-            </button>
-          )}
-
-          {/* Post Attachments */}
-          <div className="select-none mt-2">
-            <ImageAttachments images={images || []} />
-          </div>
         </div>
-
-        {/* Post Footer (Card Mode Only) */}
-        {mode === "card" && (
-          <>
-            <div className="px-5 py-1 flex items-center">
-              <div className="mr-auto">
-                <ReactionSummary
-                  topReactions={topReactions}
-                  totalCount={reactionCount}
-                  isLoading={isInitialLoading}
-                />
-              </div>
-              {/* Comments Count */}
-              <div
-                className="cursor-pointer font-montserrat font-medium text-[20px] text-black hover:underline"
-                onClick={handleCommentClick}
-              >
-                {formatCommentCount(commentCount || 0)}
-              </div>
-            </div>
-            <hr className="border-black/20 mb-2" />
-            <div className="flex justify-between items-center">
-              {/* 1. Reaction Button - Always enabled */}
-              <ReactButton
-                width={"full"}
-                selectedReactionId={selectedReactionId}
-                isLoading={isLoading}
-                onReactionSelect={handleReactionSelect}
-                onMainButtonClick={handleMainButtonClick}
-              />
-
-              {/* 2. Comment Button - Always enabled */}
-              <div className="w-full" onClick={handleCommentClick}>
-                <CommentButton />
-              </div>
-            </div>
-          </>
-        )}
       </div>
     </div>
   );

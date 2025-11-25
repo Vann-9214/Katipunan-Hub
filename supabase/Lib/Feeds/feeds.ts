@@ -45,6 +45,20 @@ export async function createFeedPost(content: string, images: string[], authorId
   if (error) throw error;
 }
 
+// --- NEW: Update Feed Post ---
+export async function updateFeedPost(id: string, content: string, images: string[]) {
+  const { error } = await supabase
+    .from("Feeds")
+    .update({
+      content,
+      images,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  if (error) throw error;
+}
+
 // --- 3. Fetch PLC "Hall of Fame" (From TutorRatings) ---
 export async function getPLCHighlights(): Promise<PLCHighlight[]> {
   // Fetch ALL ratings, ordered by highest rating first, then newest
