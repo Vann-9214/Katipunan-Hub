@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import { X, Loader2 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import UploadButton, {
   UploadButtonHandle,
 } from "../Announcement/UploadButton/UploadButton";

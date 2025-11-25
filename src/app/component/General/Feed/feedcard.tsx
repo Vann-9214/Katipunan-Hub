@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { FeedPost } from "../../../../../supabase/Lib/Feeds/types";
 import ImageAttachments from "../Announcement/ImageAttachment/ImageAttachments";
 import Avatar from "@/app/component/ReusableComponent/Avatar";

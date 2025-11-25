@@ -83,7 +83,7 @@ export default function FeedsContent() {
                 )}
               </div>
               <div className="flex-1 h-10 rounded-full bg-gray-100 flex items-center px-4 text-gray-500 font-medium">
-                What's on your mind, {user.fullName.split(" ")[0]}?
+                What&apos;s on your mind, {user.fullName.split(" ")[0]}?
               </div>
             </div>
 

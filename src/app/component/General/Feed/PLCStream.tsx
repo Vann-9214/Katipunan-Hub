@@ -65,7 +65,7 @@ export default function PLCStream() {
                 <Avatar
                   avatarURL={item.tutorAvatar}
                   altText={item.tutorName}
-                  className={`w-16 h-16 border-2 rounded-full ${
+                  className={`w-16 h-16 border-2 ${
                     isPerfect ? "border-gold" : "border-gray-100"
                   }`}
                 />
@@ -84,7 +84,7 @@ export default function PLCStream() {
                       {item.tutorName}
                     </h3>
                     <p className="text-sm text-gray-600 font-medium">
-                      Tutored Subject :{" "}
+                      Tutor for{" "}
                       <span className="text-maroon font-bold">
                         {item.subject}
                       </span>
@@ -119,7 +119,7 @@ export default function PLCStream() {
                       className="absolute top-2 left-2 text-gray-300 fill-current opacity-50"
                     />
                     <p className="pl-6 font-montserrat text-sm text-gray-700 italic leading-relaxed">
-                      "{item.review}"
+                      &quot;{item.review}&quot;
                     </p>
                     <div className="mt-3 flex justify-between items-center border-t border-gray-200 pt-2">
                       <span className="text-xs text-gray-400">
