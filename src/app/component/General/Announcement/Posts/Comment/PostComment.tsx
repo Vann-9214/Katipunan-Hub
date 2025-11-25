@@ -7,9 +7,9 @@ import ReactionButton from "../reactButton";
 import CommentButton from "./commentButton";
 import ReactionSummary from "../reactionSummary";
 import { usePostReactions } from "../../../../../../../supabase/Lib/Announcement/Posts/usePostReaction";
+import { useFeedReaction } from "../../../../../../../supabase/Lib/Feeds/useFeedReaction";
 import { useComments } from "../../../../../../../supabase/Lib/Announcement/Posts/useComment";
-import { useRef, useEffect } from "react"; // ADDED useRef and useEffect
-
+import { useRef, useEffect } from "react";
 import Posts from "../Posts";
 
 const formatCommentCount = (count: number) => {
@@ -25,6 +25,10 @@ const formatCommentCount = (count: number) => {
 export default function PostComment() {
   const { spotlightPost, closePostModal } = usePostComment();
 
+  // Determine if it is a feed post
+  const isFeedPost = spotlightPost?.isFeed || false;
+
+  // --- USE COMMENTS HOOK (Updated with isFeed flag) ---
   const {
     comments,
     isLoading: isCommentsLoading,
@@ -33,7 +37,19 @@ export default function PostComment() {
     handleCommentReaction,
     reactingCommentId,
     commentCount,
-  } = useComments(spotlightPost?.postId || "");
+  } = useComments(spotlightPost?.postId || "", isFeedPost);
+  // ----------------------------------------------------
+
+  // --- REACTION LOGIC SPLIT ---
+  const postReactions = usePostReactions({
+    postId: spotlightPost && !isFeedPost ? spotlightPost.postId : "",
+    userId: spotlightPost?.userId || "",
+  });
+
+  const feedReactions = useFeedReaction({
+    feedId: spotlightPost && isFeedPost ? spotlightPost.postId : "",
+    userId: spotlightPost?.userId || "",
+  });
 
   const {
     selectedReactionId,
@@ -43,35 +59,34 @@ export default function PostComment() {
     isInitialLoading: isReactionsInitialLoading,
     handleReactionSelect,
     handleMainButtonClick,
-  } = usePostReactions({
-    postId: spotlightPost?.postId || "",
-    userId: spotlightPost?.userId || "",
-  });
+  } = spotlightPost && isFeedPost ? feedReactions : postReactions;
 
-  // 1. Create a ref for the scrollable container
+  // ---------------------------------------------------
+
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // 2. Scroll to the bottom whenever a new comment is added (with animation)
   useEffect(() => {
     if (scrollRef.current) {
-      // Use scrollTo with smooth behavior
       scrollRef.current.scrollTo({
         top: scrollRef.current.scrollHeight,
         behavior: "smooth",
       });
     }
-  }, [comments.length]); // Trigger when the number of comments changes
+  }, [comments.length]);
 
   if (!spotlightPost) {
     return null;
   }
 
   const { type } = spotlightPost;
-  const modalTitle = type === "highlight" ? "Highlight" : "Announcement";
+  const modalTitle = isFeedPost
+    ? "User Feed"
+    : type === "highlight"
+    ? "Highlight"
+    : "Announcement";
 
   return (
     <>
-      {/* --- Backdrop --- */}
       <div
         onClick={closePostModal}
         className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
@@ -98,7 +113,6 @@ export default function PostComment() {
             </button>
           </div>
 
-          {/* 3. Attach the ref to the scrollable content area */}
           <div ref={scrollRef} className="flex-1 overflow-y-auto">
             <Posts {...spotlightPost} mode="modal" />
 

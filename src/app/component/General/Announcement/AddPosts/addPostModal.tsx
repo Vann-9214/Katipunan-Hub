@@ -10,15 +10,19 @@ import TagEditor from "./tagEditor";
 import { useAddPostForm } from "../../../../../../supabase/Lib/Announcement/AddPosts/useAddPostForm";
 import { type AddPostsProps } from "./addPosts";
 import { collegeitems } from "../Utils/constants";
-import { motion, AnimatePresence } from "framer-motion"; // 1. Import AnimatePresence
+import { motion, AnimatePresence } from "framer-motion";
+import Avatar from "@/app/component/ReusableComponent/Avatar";
 
-// Props Interface
 export interface AddPostModalProps
   extends Omit<AddPostsProps, "externalOpen" | "onExternalClose"> {
   onClose: () => void;
+  isFeed?: boolean;
+  author?: {
+    fullName: string;
+    avatarURL: string | null;
+  } | null;
 }
 
-// Component
 export function AddPostModal(props: AddPostModalProps) {
   const { state, refs, handlers } = useAddPostForm(props);
   const {
@@ -34,8 +38,12 @@ export function AddPostModal(props: AddPostModalProps) {
     modalTitle,
   } = state;
 
+  const displayName =
+    props.isFeed && props.author
+      ? props.author.fullName
+      : "Cebu Institute of Technology - University";
+
   const modalContent = (
-    // Backdrop
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -43,9 +51,8 @@ export function AddPostModal(props: AddPostModalProps) {
       transition={{ duration: 0.2 }}
       className="fixed inset-0 z-50 flex justify-center items-center bg-black/50 backdrop-blur-sm p-4 modal-root"
     >
-      {/* Modal Container with Layout Animation */}
       <motion.div
-        layout // 2. Smoothly animate height/width changes
+        layout
         initial={{ scale: 0.95, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: 20 }}
@@ -53,10 +60,8 @@ export function AddPostModal(props: AddPostModalProps) {
         className="bg-white rounded-2xl w-[700px] shadow-xl max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* 3. AnimatePresence for switching views */}
         <AnimatePresence mode="wait" initial={false}>
           {isAudienceSelectorOpen ? (
-            // --- VIEW 1: Audience Selector (Slides in from right) ---
             <motion.div
               key="selector"
               initial={{ x: 50, opacity: 0 }}
@@ -73,7 +78,6 @@ export function AddPostModal(props: AddPostModalProps) {
               />
             </motion.div>
           ) : (
-            // --- VIEW 2: Post Form (Slides in from left) ---
             <motion.div
               key="form"
               initial={{ x: -50, opacity: 0 }}
@@ -82,44 +86,48 @@ export function AddPostModal(props: AddPostModalProps) {
               transition={{ duration: 0.2 }}
               className="flex flex-col h-full overflow-hidden"
             >
-              {/* Header */}
-              <div className="flex justify-between items-center p-[10px] border-b border-gray-200 shrink-0">
-                <h1 className="flex-1 font-montserrat text-[40px] text-center font-semibold text-black">
-                  {modalTitle}
+              <div className="flex justify-between items-center p-[10px] border-b border-gray-200 shrink-0 bg-maroon">
+                <h1 className="flex-1 font-montserrat text-[24px] text-center font-bold text-white">
+                  {props.isFeed ? "Create Post" : modalTitle}
                 </h1>
-                {/* Animated Close Button */}
                 <motion.button
                   type="button"
                   onClick={props.onClose}
                   whileHover={{ rotate: 90, scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  className="text-black cursor-pointer p-1"
+                  className="text-white cursor-pointer p-1"
                 >
-                  <X size={40} />
+                  <X size={32} />
                 </motion.button>
               </div>
 
-              {/* Scrollable Form Area */}
               <form
                 id="add-post-form"
                 onSubmit={handlers.handleSubmit}
                 className="flex flex-col gap-5 p-6 overflow-y-auto custom-scrollbar"
               >
-                {/* User Info & Visibility */}
                 <div className="flex items-center gap-3">
-                  <Image
-                    src="/Cit Logo.svg"
-                    alt="Author"
-                    width={50}
-                    height={50}
-                    className="rounded-full"
-                  />
+                  {props.isFeed && props.author ? (
+                    <Avatar
+                      avatarURL={props.author.avatarURL}
+                      altText={props.author.fullName}
+                      className="w-[50px] h-[50px]"
+                    />
+                  ) : (
+                    <Image
+                      src="/Cit Logo.svg"
+                      alt="Author"
+                      width={50}
+                      height={50}
+                      className="rounded-full"
+                    />
+                  )}
+
                   <div>
                     <span className="font-medium text-[20px] text-gray-900 block">
-                      Cebu Institute of Technology - University
+                      {displayName}
                     </span>
-                    {postType === "announcement" && (
-                      // Animated Audience Toggle
+                    {!props.isFeed && postType === "announcement" && (
                       <motion.button
                         type="button"
                         whileHover={{
@@ -154,49 +162,37 @@ export function AddPostModal(props: AddPostModalProps) {
                         <ChevronDown size={16} />
                       </motion.button>
                     )}
-                    {postType === "highlight" && (
-                      <button
-                        type="button"
-                        disabled
-                        className="flex items-center gap-1.5 text-sm text-gray-500 cursor-not-allowed mt-1"
-                      >
-                        <Image
-                          src="/Global.svg"
-                          alt="Global"
-                          width={16}
-                          height={16}
-                        />
-                        <span>Global</span>
-                      </button>
+                    {props.isFeed && (
+                      <span className="text-xs text-gray-500">Public</span>
                     )}
                   </div>
                 </div>
 
-                {/* Title */}
-                <div>
-                  <label
-                    htmlFor="title"
-                    className="block mb-2 text-[20px] font-medium text-black font-montserrat"
-                  >
-                    Title (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    id="title"
-                    value={title}
-                    onChange={(e) => handlers.setTitle(e.target.value)}
-                    placeholder="Enter posts title..."
-                    className="bg-[#E0E0E0] border font-montserrat h-[55px] border-transparent text-black text-[16px] font-medium rounded-[10px] focus:border-black focus:outline-none block w-full p-5 transition-all"
-                  />
-                </div>
+                {!props.isFeed && (
+                  <div>
+                    <label
+                      htmlFor="title"
+                      className="block mb-2 text-[20px] font-medium text-black font-montserrat"
+                    >
+                      Title (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      id="title"
+                      value={title}
+                      onChange={(e) => handlers.setTitle(e.target.value)}
+                      placeholder="Enter posts title..."
+                      className="bg-[#E0E0E0] border font-montserrat h-[55px] border-transparent text-black text-[16px] font-medium rounded-[10px] focus:border-black focus:outline-none block w-full p-5 transition-all"
+                    />
+                  </div>
+                )}
 
-                {/* Description */}
                 <div>
                   <label
                     htmlFor="description"
                     className="block mb-2 text-[20px] font-medium text-black font-montserrat"
                   >
-                    Description
+                    {props.isFeed ? "" : "Description"}
                   </label>
                   <textarea
                     id="description"
@@ -206,26 +202,32 @@ export function AddPostModal(props: AddPostModalProps) {
                       handlers.setDescription(e.target.value);
                       handlers.handleInput();
                     }}
-                    placeholder="Enter detailed information to be shared with the community..."
-                    className="bg-[#E0E0E0] border text-black font-medium font-montserrat text-[16px] rounded-[10px] focus:border-black focus:outline-none block w-full p-3 min-h-[120px] max-h-[210px] resize-none overflow-hidden border-transparent transition-all"
+                    placeholder={
+                      props.isFeed
+                        ? "What's on your mind, Teknoy?"
+                        : "Enter detailed information..."
+                    }
+                    className="bg-[#E0E0E0] border text-black font-medium font-montserrat text-[16px] rounded-[10px] focus:border-black focus:outline-none block w-full p-3 min-h-[120px] max-h-[210px] resize-none overflow-hidden border-transparent transition-all placeholder:text-gray-500"
                     required
                   />
                 </div>
 
-                {/* Tag Editor */}
-                <div>
-                  <TagEditor
-                    width="w-full"
-                    tags={tags}
-                    onTagAdd={handlers.addTag}
-                    onTagRemove={handlers.removeTag}
-                  />
-                </div>
+                {!props.isFeed && (
+                  <div>
+                    <TagEditor
+                      width="w-full"
+                      tags={tags}
+                      onTagAdd={handlers.addTag}
+                      onTagRemove={handlers.removeTag}
+                    />
+                  </div>
+                )}
 
-                {/* Attachment */}
                 <div>
                   <label className="block mb-2 text-[20px] font-medium text-black font-montserrat">
-                    Attachment (Optional)
+                    {props.isFeed
+                      ? "Add to your post"
+                      : "Attachment (Optional)"}
                   </label>
                   <UploadButton
                     key={props.initialPost?.id ?? "new"}
@@ -235,7 +237,6 @@ export function AddPostModal(props: AddPostModalProps) {
                 </div>
               </form>
 
-              {/* Footer */}
               <div className="p-6 border-t border-gray-200 shrink-0">
                 <motion.button
                   type="submit"
@@ -258,6 +259,5 @@ export function AddPostModal(props: AddPostModalProps) {
       </motion.div>
     </motion.div>
   );
-
   return createPortal(modalContent, document.body);
 }

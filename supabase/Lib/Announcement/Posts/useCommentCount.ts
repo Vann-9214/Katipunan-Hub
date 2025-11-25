@@ -1,47 +1,46 @@
-// supabase/Lib/Announcement/Posts/useCommentCount.ts
-"use client";
-
+import { useState, useEffect } from "react";
 import { supabase } from "../../General/supabaseClient";
-import { useEffect, useState, useCallback } from "react";
 
-export function useCommentCount(postId: string) {
-  const [count, setCount] = useState(0);
+export const useCommentCount = (postId: string, isFeed: boolean = false) => {
+  const [count, setCount] = useState<number>(0);
+  const [loading, setLoading] = useState(true);
 
-
-  // 1. This is the re-usable fetch function
-  const fetchCount = useCallback(async () => {
+  const fetchCount = async () => {
     if (!postId) return;
+    try {
+      const table = isFeed ? "FeedComments" : "PostComments";
+      const column = isFeed ? "feed_id" : "post_id";
 
-    const { count, error } = await supabase
-      .from("PostComments")
-      .select("*", { count: "exact", head: true })
-      .eq("post_id", postId);
+      const { count: fetchedCount, error } = await supabase
+        .from(table)
+        .select("*", { count: "exact", head: true })
+        .eq(column, postId);
 
-    if (error) {
-      console.error("Error fetching comment count:", error);
-      setCount(0);
-    } else {
-      setCount(count ?? 0);
+      if (error) throw error;
+      setCount(fetchedCount || 0);
+    } catch (err) {
+      console.error("Error fetching comment count:", err);
+    } finally {
+      setLoading(false);
     }
-  }, [supabase, postId]);
+  };
 
-  // 2. Fetch count on initial load
   useEffect(() => {
     fetchCount();
-  }, [fetchCount]);
+    
+    // Subscribe to changes
+    const table = isFeed ? "FeedComments" : "PostComments";
+    const filter = isFeed ? `feed_id=eq.${postId}` : `post_id=eq.${postId}`;
 
-  // 3. Subscribe to real-time changes
-  // (This will only catch *other* users' changes now)
-  useEffect(() => {
     const channel = supabase
       .channel(`comment-count-${postId}`)
       .on(
         "postgres_changes",
         {
-          event: "*", // Listen to INSERT and DELETE
+          event: "*",
           schema: "public",
-          table: "PostComments",
-          filter: `post_id=eq.${postId}`,
+          table: table,
+          filter: filter,
         },
         () => {
           fetchCount();
@@ -52,11 +51,7 @@ export function useCommentCount(postId: string) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [supabase, postId, fetchCount]);
+  }, [postId, isFeed]);
 
-  // 4. Export the count AND the refresh function
-  return {
-    count,
-    refreshCount: fetchCount, // This is what 'Posts.tsx' will use
-  };
-}
+  return { count, loading, refreshCount: fetchCount };
+};

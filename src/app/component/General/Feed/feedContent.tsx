@@ -1,27 +1,40 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "../../../../../supabase/Lib/General/supabaseClient";
 import { getCurrentUserDetails } from "../../../../../supabase/Lib/General/getUser";
 import { getFeeds } from "../../../../../supabase/Lib/Feeds/feeds";
 import type { User } from "../../../../../supabase/Lib/General/user";
 import type { FeedPost } from "../../../../../supabase/Lib/Feeds/types";
+import { FilterState } from "../Announcement/Utils/types";
+import { getDateRange } from "../../../../../supabase/Lib/Announcement/Filter/supabase-helper";
 
 // UI
 import HomepageTab from "@/app/component/ReusableComponent/HomepageTab/HomepageTab";
 import FeedsLeftBar from "./feedleftbar";
-import FeedCard from "./feedcard";
 import PLCStream from "./PLCStream";
-import AddFeedModal from "./addfeedmodal";
 import LoadingScreen from "@/app/component/ReusableComponent/LoadingScreen";
-import Image from "next/image";
+import AddPosts from "../Announcement/AddPosts/addPosts";
+import Posts from "../Announcement/Posts/Posts";
+// --- IMPORT FORMAT DATE ---
+import formatPostDate from "../Announcement/Utils/formatDate";
+
+// Default Filters
+const DEFAULT_FILTERS: FilterState = {
+  sort: "Newest First",
+  date: "All Time",
+  visibility: "Global",
+};
 
 export default function FeedsContent() {
   const [user, setUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<"feed" | "plc">("feed");
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  // Filter States
+  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // 1. Load User
   useEffect(() => {
@@ -39,7 +52,6 @@ export default function FeedsContent() {
   useEffect(() => {
     fetchPosts();
 
-    // Realtime
     const channel = supabase
       .channel("realtime-feeds")
       .on(
@@ -54,47 +66,117 @@ export default function FeedsContent() {
     };
   }, []);
 
+  // 3. Client-Side Filtering Logic
+  const filteredPosts = useMemo(() => {
+    let result = [...posts];
+
+    // Search Filter
+    if (searchTerm.trim()) {
+      const lower = searchTerm.toLowerCase();
+      result = result.filter(
+        (p) =>
+          p.content.toLowerCase().includes(lower) ||
+          p.author.fullName.toLowerCase().includes(lower)
+      );
+    }
+
+    // Date Filter
+    const dateRange = getDateRange(filters.date);
+    if (dateRange) {
+      result = result.filter((p) => {
+        const pDate = new Date(p.created_at).getTime();
+        const start = new Date(dateRange.startDate).getTime();
+        const end = new Date(dateRange.endDate).getTime();
+        return pDate >= start && pDate <= end;
+      });
+    }
+
+    // Sort
+    if (filters.sort === "Oldest First") {
+      result.sort(
+        (a, b) =>
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+    } else {
+      result.sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+    }
+
+    return result;
+  }, [posts, searchTerm, filters]);
+
   if (!user) return <LoadingScreen />;
 
   return (
     <div className="min-h-screen bg-gray-50">
       <HomepageTab user={user} />
 
-      {/* Left Sidebar */}
-      <FeedsLeftBar activeTab={activeTab} onTabToggle={setActiveTab} />
+      {/* Left Sidebar with Filters */}
+      <FeedsLeftBar
+        activeTab={activeTab}
+        onTabToggle={setActiveTab}
+        onSearchChange={setSearchTerm}
+        onFilterChange={setFilters}
+        filters={filters}
+      />
 
       {/* Main Content Area */}
       <div className="ml-[350px] pt-[100px] pb-20 flex flex-col items-center min-h-screen">
         {activeTab === "feed" ? (
-          <div className="flex flex-col items-center animate-fadeIn">
-            {/* Create Post Trigger (Visible Button) */}
-            <div
-              onClick={() => setIsAddModalOpen(true)}
-              className="w-[590px] bg-white p-4 rounded-[15px] shadow-sm border border-gray-200 mb-8 cursor-pointer flex items-center gap-3 hover:bg-gray-50 transition-colors"
-            >
-              <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden shrink-0 relative">
-                {user.avatarURL && (
-                  <Image
-                    src={user.avatarURL}
-                    alt="Me"
-                    fill
-                    className="object-cover"
-                  />
-                )}
-              </div>
-              <div className="flex-1 h-10 rounded-full bg-gray-100 flex items-center px-4 text-gray-500 font-medium">
-                What&apos;s on your mind, {user.fullName.split(" ")[0]}?
-              </div>
-            </div>
+          <div className="flex flex-col items-center animate-fadeIn space-y-8">
+            {/* Reuse AddPosts Component */}
+            <AddPosts
+              currentType="feed"
+              isFeed={true}
+              author={{ fullName: user.fullName, avatarURL: user.avatarURL }}
+              authorId={user.id}
+            />
 
             {/* Posts Feed */}
             {isLoading ? (
-              <div className="mt-10 text-gray-400">Loading feeds...</div>
-            ) : posts.length > 0 ? (
-              posts.map((post) => <FeedCard key={post.id} post={post} />)
+              <div className="mt-10 text-gray-400 font-montserrat">
+                Loading feeds...
+              </div>
+            ) : filteredPosts.length > 0 ? (
+              filteredPosts.map((post) => (
+                <Posts
+                  key={post.id}
+                  postId={post.id}
+                  userId={user.id}
+                  type="feed"
+                  isFeed={true}
+                  title=""
+                  description={post.content}
+                  images={post.images}
+                  // --- USE FORMAT HELPER ---
+                  date={formatPostDate(post.created_at)}
+                  author={{
+                    fullName: post.author.fullName,
+                    avatarURL: post.author.avatarURL,
+                    role: post.author.role,
+                  }}
+                  onDelete={
+                    post.author.id === user.id
+                      ? async () => {
+                          if (confirm("Delete this post?")) {
+                            await supabase
+                              .from("Feeds")
+                              .delete()
+                              .eq("id", post.id);
+                          }
+                        }
+                      : undefined
+                  }
+                  canEdit={post.author.id === user.id}
+                />
+              ))
             ) : (
-              <div className="text-gray-500 mt-10 text-lg">
-                No posts yet. Be the first!
+              <div className="text-gray-500 mt-10 text-lg font-montserrat">
+                {searchTerm
+                  ? `No results for "${searchTerm}"`
+                  : "No posts yet. Be the first!"}
               </div>
             )}
           </div>
@@ -105,14 +187,6 @@ export default function FeedsContent() {
           </div>
         )}
       </div>
-
-      {/* Add Feed Modal */}
-      <AddFeedModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        authorId={user.id}
-        onSuccess={fetchPosts}
-      />
     </div>
   );
 }
