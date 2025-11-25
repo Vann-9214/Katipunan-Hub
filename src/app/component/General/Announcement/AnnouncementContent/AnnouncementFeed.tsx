@@ -18,6 +18,8 @@ interface AnnouncementFeedProps {
   onDeletePost: (id: string) => void;
   onEditPost: (id: string) => void;
   onCloseEditor: () => void;
+  // --- ADDED: Type definition for the new prop ---
+  searchTerm: string;
 }
 
 // Component
@@ -33,6 +35,8 @@ export default function AnnouncementFeed({
   onDeletePost,
   onEditPost,
   onCloseEditor,
+  // --- ADDED: Destructure the prop here ---
+  searchTerm,
 }: AnnouncementFeedProps) {
   // Render
   return (
@@ -50,8 +54,11 @@ export default function AnnouncementFeed({
           />
         )}
         {filteredPosts.length === 0 ? (
+          // --- EDITED: Logic to switch text based on search ---
           <p className="text-gray-500 text-[18px] w-[800px] text-center font-montserrat">
-            No posts available at the moment.
+            {searchTerm
+              ? `No results found "${searchTerm}"`
+              : "No posts available at the moment."}
           </p>
         ) : (
           filteredPosts.map((post) => (
