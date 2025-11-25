@@ -65,7 +65,7 @@ export default function PLCStream() {
                 <Avatar
                   avatarURL={item.tutorAvatar}
                   altText={item.tutorName}
-                  className={`w-16 h-16 border-2 ${
+                  className={`w-16 h-16 border-1 rounded-full ${
                     isPerfect ? "border-gold" : "border-gray-100"
                   }`}
                 />

@@ -138,11 +138,26 @@ export const useAddPostForm = ({
         : "";
       const combinedDescription = description.trim() + tagString;
 
-      if (!authorId) throw new Error("Author ID not found");
+      if (!authorId && !initialPost) throw new Error("Author ID not found");
 
       // --- FEED LOGIC ---
       if (postType === "feed") {
-         await createFeedPost(combinedDescription, uniqueImages, authorId);
+         // FIX: Handle Update for Feeds
+         if (initialPost && onUpdatePost) {
+            if (!initialPost.id) throw new Error("Post id missing. Cannot update.");
+            await onUpdatePost({
+                id: initialPost.id,
+                description: combinedDescription,
+                images: uniqueImages,
+                tags: [], // Feeds don't use tags, but payload expects it
+                type: "feed",
+                visibility: "global",
+                title: "",
+            });
+         } else if (authorId) {
+            // Handle Create
+            await createFeedPost(combinedDescription, uniqueImages, authorId);
+         }
          await deleteUrlsFromBucket(removedUrls);
       } 
       // --- ANNOUNCEMENT LOGIC ---
@@ -171,7 +186,7 @@ export const useAddPostForm = ({
           };
           await onUpdatePost(updatePayload);
           await deleteUrlsFromBucket(removedUrls);
-        } else if (onAddPost) {
+        } else if (onAddPost && authorId) {
           const createPayload: NewPostPayload = {
             ...payload,
             author_id: authorId,
@@ -196,8 +211,8 @@ export const useAddPostForm = ({
   };
 
   const modalTitle = initialPost
-    ? `Edit ${postType === "announcement" ? "Announcement" : "Highlight"}`
-    : `Add ${postType === "announcement" ? "Announcement" : "Highlight"}`;
+    ? `Edit ${postType === "announcement" ? "Announcement" : postType === "feed" ? "Post" : "Highlight"}`
+    : `Add ${postType === "announcement" ? "Announcement" : postType === "feed" ? "Post" : "Highlight"}`;
 
   return {
     state: {

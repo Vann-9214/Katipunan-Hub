@@ -22,7 +22,7 @@ export default function ReactionButton({
   onMainButtonClick,
   width = "full",
   height = 35,
-  textSize = 22,
+  textSize = 18,
 }: ReactionButtonProps) {
   const [showPicker, setShowPicker] = useState(false);
   const showTimeoutRef = useRef<NodeJS.Timeout | null>(null);

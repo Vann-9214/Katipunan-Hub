@@ -8,7 +8,6 @@ import {
   usePLCYearBookings,
   MonthBooking,
 } from "../../../../../supabase/Lib/PLC/usePLCBooking";
-// 1. Import Motion
 import { motion } from "framer-motion";
 
 const montserrat = Montserrat({ subsets: ["latin"], weight: ["600", "700"] });
@@ -61,17 +60,14 @@ export default function PLCViewYear({
   onPrevYear,
   onNextYear,
 }: PLCViewYearProps) {
-  // Data Fetching
   const { yearBookings, getDateString } = usePLCYearBookings(year);
-
-  // --- 1. Add Realtime Clock ---
   const [now, setNow] = useState<Date>(new Date());
+
   useEffect(() => {
     const interval = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
 
-  // --- 2. Add Status Logic ---
   const getStatusForBooking = (booking: MonthBooking) => {
     if (booking.status !== "Approved") return booking.status;
 
@@ -108,131 +104,136 @@ export default function PLCViewYear({
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.4 }}
-      className="bg-white rounded-[30px] border border-black/20 shadow-sm p-8 w-full"
+      // Outer Gold Container
+      className="w-full p-[3px] rounded-[30px] bg-gradient-to-br from-[#EFBF04] via-[#FFD700] to-[#D4AF37] shadow-xl"
     >
-      {/* Header */}
-      <div className="flex items-center justify-center gap-12 mb-8 text-black relative">
-        <button
-          onClick={onPrevYear}
-          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-        >
-          <ChevronLeft size={24} />
-        </button>
-        <motion.span
-          key={year} // Animate when year changes
-          initial={{ y: -10, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className={`${montserrat.className} text-[32px] font-bold`}
-        >
-          {year}
-        </motion.span>
-        <button
-          onClick={onNextYear}
-          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-        >
-          <ChevronRight size={24} />
-        </button>
-      </div>
+      <div className="bg-white rounded-[27px] p-8 w-full">
+        {/* Header */}
+        <div className="flex items-center justify-center gap-12 mb-8 relative">
+          <button
+            onClick={onPrevYear}
+            className="p-3 hover:bg-maroon hover:text-white text-maroon rounded-full transition-colors bg-red-50"
+          >
+            <ChevronLeft size={24} />
+          </button>
+          <motion.span
+            key={year}
+            initial={{ y: -10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className={`${montserrat.className} text-[36px] font-bold text-[#8B0E0E]`}
+          >
+            {year}
+          </motion.span>
+          <button
+            onClick={onNextYear}
+            className="p-3 hover:bg-maroon hover:text-white text-maroon rounded-full transition-colors bg-red-50"
+          >
+            <ChevronRight size={24} />
+          </button>
+        </div>
 
-      {/* Grid */}
-      <motion.div
-        className="grid grid-cols-4 gap-x-6 gap-y-8"
-        variants={containerVariants}
-        initial="hidden"
-        animate="show"
-      >
-        {MONTHS.map((monthName, monthIndex) => {
-          const daysInMonth = getDaysInMonth(year, monthIndex);
-          const startOffset = getFirstDayOfMonth(year, monthIndex);
-          const totalSlots = 42;
-          const dayList = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-          const gridCells = [
-            ...Array(startOffset).fill(null),
-            ...dayList,
-            ...Array(totalSlots - (startOffset + daysInMonth)).fill(null),
-          ].slice(0, 42);
+        {/* Grid */}
+        <motion.div
+          className="grid grid-cols-4 gap-x-6 gap-y-8"
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+        >
+          {MONTHS.map((monthName, monthIndex) => {
+            const daysInMonth = getDaysInMonth(year, monthIndex);
+            const startOffset = getFirstDayOfMonth(year, monthIndex);
+            const totalSlots = 42;
+            const dayList = Array.from(
+              { length: daysInMonth },
+              (_, i) => i + 1
+            );
+            const gridCells = [
+              ...Array(startOffset).fill(null),
+              ...dayList,
+              ...Array(totalSlots - (startOffset + daysInMonth)).fill(null),
+            ].slice(0, 42);
 
-          return (
-            <motion.div
-              key={monthName}
-              variants={itemVariants}
-              whileHover={{
-                scale: 1.05,
-                borderColor: "#8B0E0E",
-                boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
-              }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => onMonthClick(monthIndex)}
-              className="border border-black rounded-[20px] p-4 bg-white cursor-pointer transition-all flex flex-col"
-            >
-              <h3
-                className={`${montserrat.className} text-center font-bold text-black text-[18px] mb-2`}
+            return (
+              <motion.div
+                key={monthName}
+                variants={itemVariants}
+                whileHover={{
+                  scale: 1.05,
+                  borderColor: "#8B0E0E",
+                  boxShadow: "0 15px 30px rgba(139, 14, 14, 0.15)",
+                }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => onMonthClick(monthIndex)}
+                className="border border-gray-200 rounded-[20px] p-4 bg-white cursor-pointer transition-all flex flex-col hover:border-maroon/30"
               >
-                {monthName}
-              </h3>
-              <div className="grid grid-cols-7 mb-1">
-                {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
-                  <div
-                    key={i}
-                    className={`${montserrat.className} text-center text-[12px] font-semibold text-gray-600`}
-                  >
-                    {d}
-                  </div>
-                ))}
-              </div>
-
-              <div className="grid grid-cols-7 border-t border-l border-gray-300">
-                {gridCells.map((day, i) => {
-                  let cellStyle: React.CSSProperties = {};
-                  let className = `h-[26px] flex items-center justify-center border-b border-r border-gray-300 text-[11px] ${ptSans.className}`;
-
-                  if (day !== null) {
-                    className += " text-black";
-                    const dateStr = getDateString(year, monthIndex, day);
-                    const bookingsOnDay = yearBookings.filter(
-                      (b) => b.bookingDate === dateStr
-                    );
-
-                    // --- 3. USE DYNAMIC STATUS ---
-                    const uniqueColors = Array.from(
-                      new Set(
-                        bookingsOnDay.map((b) =>
-                          getStatusColor(getStatusForBooking(b))
-                        )
-                      )
-                    );
-
-                    if (uniqueColors.length === 0) {
-                      className += " bg-transparent";
-                    } else if (uniqueColors.length === 1) {
-                      cellStyle = { backgroundColor: uniqueColors[0] };
-                    } else {
-                      const step = 100 / uniqueColors.length;
-                      const gradientStops = uniqueColors
-                        .map(
-                          (color, idx) =>
-                            `${color} ${idx * step}% ${(idx + 1) * step}%`
-                        )
-                        .join(", ");
-                      cellStyle = {
-                        background: `linear-gradient(135deg, ${gradientStops})`,
-                      };
-                    }
-                  } else {
-                    className += " bg-transparent";
-                  }
-
-                  return (
-                    <div key={i} className={className} style={cellStyle}>
-                      {day}
+                <h3
+                  className={`${montserrat.className} text-center font-bold text-[#8B0E0E] text-[18px] mb-2`}
+                >
+                  {monthName}
+                </h3>
+                <div className="grid grid-cols-7 mb-1">
+                  {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
+                    <div
+                      key={i}
+                      className={`${montserrat.className} text-center text-[10px] font-bold text-gray-400`}
+                    >
+                      {d}
                     </div>
-                  );
-                })}
-              </div>
-            </motion.div>
-          );
-        })}
-      </motion.div>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-7 gap-[1px]">
+                  {gridCells.map((day, i) => {
+                    let cellStyle: React.CSSProperties = {};
+                    let className = `h-[24px] flex items-center justify-center text-[10px] rounded-sm ${ptSans.className}`;
+
+                    if (day !== null) {
+                      className += " text-gray-700";
+                      const dateStr = getDateString(year, monthIndex, day);
+                      const bookingsOnDay = yearBookings.filter(
+                        (b) => b.bookingDate === dateStr
+                      );
+
+                      const uniqueColors = Array.from(
+                        new Set(
+                          bookingsOnDay.map((b) =>
+                            getStatusColor(getStatusForBooking(b))
+                          )
+                        )
+                      );
+
+                      if (uniqueColors.length === 0) {
+                        className += " bg-gray-50";
+                      } else if (uniqueColors.length === 1) {
+                        cellStyle = { backgroundColor: uniqueColors[0] };
+                      } else {
+                        const step = 100 / uniqueColors.length;
+                        const gradientStops = uniqueColors
+                          .map(
+                            (color, idx) =>
+                              `${color} ${idx * step}% ${(idx + 1) * step}%`
+                          )
+                          .join(", ");
+                        cellStyle = {
+                          background: `linear-gradient(135deg, ${gradientStops})`,
+                        };
+                      }
+                    } else {
+                      className += " bg-transparent";
+                    }
+
+                    return (
+                      <div key={i} className={className} style={cellStyle}>
+                        {day}
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            );
+          })}
+        </motion.div>
+      </div>
     </motion.div>
   );
 }

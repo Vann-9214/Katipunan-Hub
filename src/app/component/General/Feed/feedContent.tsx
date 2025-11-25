@@ -3,10 +3,17 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "../../../../../supabase/Lib/General/supabaseClient";
 import { getCurrentUserDetails } from "../../../../../supabase/Lib/General/getUser";
-import { getFeeds } from "../../../../../supabase/Lib/Feeds/feeds";
+import {
+  getFeeds,
+  updateFeedPost,
+} from "../../../../../supabase/Lib/Feeds/feeds"; // Import update function
 import type { User } from "../../../../../supabase/Lib/General/user";
 import type { FeedPost } from "../../../../../supabase/Lib/Feeds/types";
-import { FilterState } from "../Announcement/Utils/types";
+import {
+  FilterState,
+  PostUI,
+  UpdatePostPayload,
+} from "../Announcement/Utils/types"; // Import Types
 import { getDateRange } from "../../../../../supabase/Lib/Announcement/Filter/supabase-helper";
 
 // UI
@@ -31,6 +38,10 @@ export default function FeedsContent() {
   const [activeTab, setActiveTab] = useState<"feed" | "plc">("feed");
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // --- EDITING STATE ---
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editingPost, setEditingPost] = useState<PostUI | null>(null);
 
   // Filter States
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
@@ -66,7 +77,54 @@ export default function FeedsContent() {
     };
   }, []);
 
-  // 3. Client-Side Filtering Logic
+  // 3. Edit Handlers
+  const handleEdit = (feedId: string) => {
+    const postToEdit = posts.find((p) => p.id === feedId);
+    if (!postToEdit) return;
+
+    // Transform FeedPost to PostUI expected by AddPosts
+    const uiPost: PostUI = {
+      id: postToEdit.id,
+      title: "", // Feeds don't have titles
+      description: postToEdit.content,
+      images: postToEdit.images,
+      tags: [],
+      type: "feed",
+      visibility: "global",
+      author_id: postToEdit.author.id,
+      created_at: postToEdit.created_at,
+      date: formatPostDate(postToEdit.created_at),
+    };
+
+    setEditingPost(uiPost);
+    setEditorOpen(true);
+  };
+
+  const handleUpdatePost = async (updatedPost: UpdatePostPayload) => {
+    if (!updatedPost.description) return;
+
+    try {
+      await updateFeedPost(
+        updatedPost.id,
+        updatedPost.description,
+        updatedPost.images || []
+      );
+
+      setEditorOpen(false);
+      setEditingPost(null);
+      // Realtime subscription will auto-refresh the list
+    } catch (error) {
+      console.error("Error updating feed:", error);
+      alert("Failed to update post.");
+    }
+  };
+
+  const handleCloseEditor = () => {
+    setEditorOpen(false);
+    setEditingPost(null);
+  };
+
+  // 4. Client-Side Filtering Logic
   const filteredPosts = useMemo(() => {
     let result = [...posts];
 
@@ -126,12 +184,17 @@ export default function FeedsContent() {
       <div className="ml-[350px] pt-[100px] pb-20 flex flex-col items-center min-h-screen">
         {activeTab === "feed" ? (
           <div className="flex flex-col items-center animate-fadeIn space-y-8">
-            {/* Reuse AddPosts Component */}
+            {/* Reuse AddPosts Component for both Create and Edit */}
             <AddPosts
               currentType="feed"
               isFeed={true}
               author={{ fullName: user.fullName, avatarURL: user.avatarURL }}
               authorId={user.id}
+              // Edit Props
+              externalOpen={editorOpen}
+              initialPost={editingPost}
+              onExternalClose={handleCloseEditor}
+              onUpdatePost={handleUpdatePost}
             />
 
             {/* Posts Feed */}
@@ -157,6 +220,8 @@ export default function FeedsContent() {
                     avatarURL: post.author.avatarURL,
                     role: post.author.role,
                   }}
+                  // Pass edit handler
+                  onEdit={() => handleEdit(post.id)}
                   onDelete={
                     post.author.id === user.id
                       ? async () => {

@@ -2,31 +2,30 @@
 
 import { supabase } from "../../General/supabaseClient";
 import { useEffect, useState, useCallback, useRef } from "react";
-// Make sure this path is correct for your project
 import { CommentWithAuthor } from "@/app/component/General/Announcement/Posts/Comment/commentItem";
 import { usePostComment } from "@/app/component/General/Announcement/Posts/Comment/postCommentContext";
+import { ReactionCount } from "./usePostReaction";
 
-// --- 1. REMOVED `findComment` HELPER ---
-
-// --- 2. REPLACED `optimisticUpdateComment` HELPER ---
-// This is a simplified version that only works on a flat array
+// --- HELPER: Simple Optimistic Update ---
 const simpleOptimisticUpdate = (
   comments: CommentWithAuthor[],
   commentId: string,
   newReactionId: string | null,
   oldReactionId: string | null
 ): CommentWithAuthor[] => {
-  return comments.map(comment => {
+  return comments.map((comment) => {
     if (comment.id === commentId) {
       const newComment = { ...comment };
       newComment.userReactionId = newReactionId;
       const newSummary = { ...newComment.reactionSummary };
       let newTotalCount = newSummary.totalCount || 0;
+
       if (oldReactionId && !newReactionId) {
         newTotalCount--;
       } else if (!oldReactionId && newReactionId) {
         newTotalCount++;
       }
+
       newSummary.totalCount = newTotalCount < 0 ? 0 : newTotalCount;
       newComment.reactionSummary = newSummary;
       return newComment;
@@ -34,7 +33,6 @@ const simpleOptimisticUpdate = (
     return comment;
   });
 };
-// --- END HELPER ---
 
 export function useComments(postId: string, isFeed: boolean = false) {
   const [comments, setComments] = useState<CommentWithAuthor[]>([]);
@@ -51,13 +49,13 @@ export function useComments(postId: string, isFeed: boolean = false) {
   );
   const { closePostModal } = usePostComment();
 
-  // --- 3. SIMPLIFIED `fetchCommentsWithReactions` ---
+  // --- FETCH COMMENTS LOGIC ---
   const fetchCommentsWithReactions = useCallback(async () => {
     if (!postId) return;
     setIsLoading(true);
 
     if (isFeed) {
-      // --- FEED LOGIC (New Table) ---
+      // --- FEED LOGIC (Updated to fetch reactions) ---
       const { data, error } = await supabase
         .from("FeedComments")
         .select(`
@@ -69,6 +67,10 @@ export function useComments(postId: string, isFeed: boolean = false) {
             id,
             fullName,
             avatarURL
+          ),
+          FeedCommentReactions (
+            user_id,
+            reaction
           )
         `)
         .eq("feed_id", postId)
@@ -80,28 +82,49 @@ export function useComments(postId: string, isFeed: boolean = false) {
         return;
       }
 
-      // Map Feed comments to match CommentWithAuthor interface
-      const feedComments: CommentWithAuthor[] = (data || []).map((c: any) => ({
-        id: c.id,
-        comment: c.content, // Map 'content' column to 'comment' prop
-        created_at: c.created_at,
-        // user_id removed to fix type error, ID is available in author.id
-        parent_comment_id: null,
-        author: {
-          id: c.Accounts?.id || c.user_id,
-          fullName: c.Accounts?.fullName || "Unknown",
-          avatarURL: c.Accounts?.avatarURL || "/DefaultAvatar.svg",
-        },
-        reactionSummary: { totalCount: 0, topReactions: [] }, // Feeds don't support reactions yet
-        userReactionId: null,
-      }));
+      // Map Feed comments and calculate reactions manually
+      // (Since we don't have an RPC for feed comment aggregation yet)
+      const feedComments: CommentWithAuthor[] = (data || []).map((c: any) => {
+        const reactions = c.FeedCommentReactions || [];
+
+        // 1. Check if current user reacted
+        const userReaction =
+          reactions.find((r: any) => r.user_id === currentUser?.id)?.reaction ||
+          null;
+
+        // 2. Aggregate counts locally
+        const counts: Record<string, number> = {};
+        reactions.forEach((r: any) => {
+          counts[r.reaction] = (counts[r.reaction] || 0) + 1;
+        });
+
+        const topReactions: ReactionCount[] = Object.entries(counts)
+          .map(([reaction, count]) => ({ reaction, count }))
+          .sort((a, b) => b.count - a.count);
+
+        return {
+          id: c.id,
+          comment: c.content,
+          created_at: c.created_at,
+          parent_comment_id: null,
+          author: {
+            id: c.Accounts?.id || c.user_id,
+            fullName: c.Accounts?.fullName || "Unknown",
+            avatarURL: c.Accounts?.avatarURL || "/DefaultAvatar.svg",
+          },
+          reactionSummary: {
+            totalCount: reactions.length,
+            topReactions,
+          },
+          userReactionId: userReaction,
+        };
+      });
 
       setComments(feedComments);
       setCommentCount(feedComments.length);
       setIsLoading(false);
-
     } else {
-      // --- ANNOUNCEMENT LOGIC (Original RPC) ---
+      // --- ANNOUNCEMENT LOGIC (Unchanged) ---
       const { data: rpcData, error } = await supabase.rpc(
         "get_comments_for_post",
         {
@@ -119,19 +142,13 @@ export function useComments(postId: string, isFeed: boolean = false) {
       }
 
       const commentsData: CommentWithAuthor[] = (rpcData as any) || [];
-
       setCommentCount(commentsData.length);
-
-      // --- REMOVED ALL NESTING LOGIC ---
-      // The RPC returns a flat list, and we no longer nest replies.
       setComments(commentsData);
-      // --- END REMOVAL ---
-
       setIsLoading(false);
     }
-  }, [postId, supabase, isFeed]);
+  }, [postId, supabase, isFeed, currentUser?.id]);
 
-  // Fetch user (unchanged)
+  // Fetch User (Unchanged)
   useEffect(() => {
     const fetchUser = async () => {
       const {
@@ -158,19 +175,18 @@ export function useComments(postId: string, isFeed: boolean = false) {
     fetchUser();
   }, [supabase]);
 
-  // Fetch comments (unchanged)
+  // Initial Fetch (Unchanged)
   useEffect(() => {
     if (postId) {
       fetchCommentsWithReactions();
     }
   }, [postId, fetchCommentsWithReactions]);
 
-  // Realtime subscription (Conditional)
+  // Realtime Subscriptions (Unchanged logic, added reaction listener for feeds)
   useEffect(() => {
     if (!postId) return;
 
     if (isFeed) {
-      // --- FEED SUBSCRIPTION ---
       const channel = supabase
         .channel(`feed-comments-${postId}`)
         .on(
@@ -181,9 +197,17 @@ export function useComments(postId: string, isFeed: boolean = false) {
             table: "FeedComments",
             filter: `feed_id=eq.${postId}`,
           },
-          () => {
-            fetchCommentsWithReactions();
-          }
+          () => fetchCommentsWithReactions()
+        )
+        // Listen for reaction changes on feeds too
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "FeedCommentReactions",
+          },
+          () => fetchCommentsWithReactions()
         )
         .subscribe();
 
@@ -191,11 +215,8 @@ export function useComments(postId: string, isFeed: boolean = false) {
         supabase.removeChannel(channel);
       };
     } else {
-      // --- ANNOUNCEMENT SUBSCRIPTION (Original) ---
       const handleNewComment = (payload: any) => {
-        if (payload.new.user_id === currentUser?.id) {
-          return;
-        }
+        if (payload.new.user_id === currentUser?.id) return;
         fetchCommentsWithReactions();
       };
 
@@ -229,9 +250,7 @@ export function useComments(postId: string, isFeed: boolean = false) {
             table: "PostCommentReactions",
             filter: `post_id=eq.${postId}`,
           },
-          () => {
-            fetchCommentsWithReactions();
-          }
+          () => fetchCommentsWithReactions()
         )
         .subscribe();
 
@@ -242,19 +261,15 @@ export function useComments(postId: string, isFeed: boolean = false) {
   }, [supabase, fetchCommentsWithReactions, postId, currentUser?.id, isFeed]);
 
   // --- 4. UPDATED `handleCommentReaction` ---
-  // Uses the new simple helper function
   const handleCommentReaction = useCallback(
     async (commentId: string, newReactionId: string | null) => {
-      if (isFeed) return; // Feeds do not support comment reactions yet
       if (!currentUser) return;
       setReactingCommentId(commentId);
 
       let oldReactionId: string | null = null;
-      setComments(prevComments => {
-        // Find the old reaction ID from the flat list
-        const comment = prevComments.find(c => c.id === commentId);
+      setComments((prevComments) => {
+        const comment = prevComments.find((c) => c.id === commentId);
         oldReactionId = comment ? comment.userReactionId : null;
-        // Use the new simple helper
         return simpleOptimisticUpdate(
           prevComments,
           commentId,
@@ -264,34 +279,38 @@ export function useComments(postId: string, isFeed: boolean = false) {
       });
 
       try {
+        // Dynamic Table & ID Selection
+        const table = isFeed ? "FeedCommentReactions" : "PostCommentReactions";
+        const idField = isFeed ? "feed_comment_id" : "comment_id";
+
         if (newReactionId) {
           const { error } = await supabase
-            .from("PostCommentReactions")
+            .from(table)
             .upsert(
               {
-                comment_id: commentId,
+                [idField]: commentId,
                 user_id: currentUser.id,
                 reaction: newReactionId,
               },
-              { onConflict: "comment_id, user_id" }
+              { onConflict: `${idField}, user_id` }
             );
           if (error) throw error;
         } else {
           const { error } = await supabase
-            .from("PostCommentReactions")
+            .from(table)
             .delete()
-            .match({ comment_id: commentId, user_id: currentUser.id });
+            .match({ [idField]: commentId, user_id: currentUser.id });
           if (error) throw error;
         }
       } catch (error: any) {
         console.error("Error handling reaction:", error.message || error);
         // Revert on failure
-        setComments(prevComments =>
-          simpleOptimisticUpdate( // Use new simple helper
+        setComments((prevComments) =>
+          simpleOptimisticUpdate(
             prevComments,
             commentId,
-            oldReactionId, // Swapped
-            newReactionId  // Swapped
+            oldReactionId, // Swapped to revert
+            newReactionId // Swapped to revert
           )
         );
       } finally {
@@ -302,17 +321,16 @@ export function useComments(postId: string, isFeed: boolean = false) {
     [currentUser, supabase, fetchCommentsWithReactions, isFeed]
   );
 
-  // --- 5. SIMPLIFIED `postComment` ---
+  // --- 5. POST COMMENT (Unchanged) ---
   const postComment = useCallback(
-    async (commentText: string /* REMOVED parentCommentId */) => {
+    async (commentText: string) => {
       if (!currentUser || !postId || !commentText.trim()) return;
 
       if (isFeed) {
-        // --- FEED INSERT ---
         const newFeedComment = {
           feed_id: postId,
           user_id: currentUser.id,
-          content: commentText, // Use 'content' for FeedComments table
+          content: commentText,
         };
 
         const { data: insertedComment, error } = await supabase
@@ -330,7 +348,6 @@ export function useComments(postId: string, isFeed: boolean = false) {
           id: insertedComment.id,
           comment: insertedComment.content,
           created_at: insertedComment.created_at,
-          // user_id removed
           parent_comment_id: null,
           author: {
             id: currentUser.id,
@@ -341,16 +358,14 @@ export function useComments(postId: string, isFeed: boolean = false) {
           userReactionId: null,
         };
 
-        setComments(prevComments => [...prevComments, newCommentForUI]);
-        setCommentCount(prevCount => prevCount + 1);
-
+        setComments((prevComments) => [...prevComments, newCommentForUI]);
+        setCommentCount((prevCount) => prevCount + 1);
       } else {
-        // --- ANNOUNCEMENT INSERT (Original) ---
         const newComment = {
           post_id: postId,
           user_id: currentUser.id,
           comment: commentText,
-          parent_comment_id: null, // Replies are no longer supported
+          parent_comment_id: null,
         };
 
         const { data: insertedComment, error } = await supabase
@@ -360,10 +375,7 @@ export function useComments(postId: string, isFeed: boolean = false) {
           .single();
 
         if (error || !insertedComment) {
-          console.error(
-            "Error posting comment:",
-            error?.message || "No data returned"
-          );
+          console.error("Error posting comment:", error?.message);
           return;
         }
 
@@ -375,17 +387,12 @@ export function useComments(postId: string, isFeed: boolean = false) {
             fullName: currentUser.fullName || "User",
             avatarURL: currentUser.avatarURL,
           },
-          // `replies: []` is no longer part of the type, so it's removed
           reactionSummary: { totalCount: 0, topReactions: [] },
           userReactionId: null,
         };
 
-        // --- REMOVED REPLY LOGIC ---
-        // Just add the new comment to the end of the flat list
-        setComments(prevComments => [...prevComments, newCommentForUI]);
-        // --- END REMOVAL ---
-
-        setCommentCount(prevCount => prevCount + 1);
+        setComments((prevComments) => [...prevComments, newCommentForUI]);
+        setCommentCount((prevCount) => prevCount + 1);
       }
     },
     [currentUser, postId, supabase, isFeed]
