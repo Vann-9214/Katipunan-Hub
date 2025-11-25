@@ -48,7 +48,7 @@ export default function FeedCard({ post }: { post: FeedPost }) {
   });
 
   return (
-    <div className="w-[590px] bg-white rounded-[15px] border border-gray-200 shadow-md overflow-hidden mb-6">
+    <div className="w-[590px] bg-maroon rounded-[15px] border border-gray-200 shadow-md overflow-hidden mb-6">
       {/* Header */}
       <div className="flex items-center p-4 pb-2">
         <Avatar
