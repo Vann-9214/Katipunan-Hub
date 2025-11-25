@@ -414,6 +414,7 @@ export default function AnnouncementPageContent() {
           onDeletePost={handleDelete}
           onEditPost={handleEdit}
           onCloseEditor={handleCloseEditor}
+          searchTerm={searchTerm}
         />
       )}
     </div>

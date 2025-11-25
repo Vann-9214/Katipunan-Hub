@@ -37,7 +37,7 @@ export default function PLCContent() {
   };
 
   const handleHistoryClick = () => {
-    refreshBookings();
+    refreshBookings(true);
     setIsHistoryOpen(true);
   };
 

@@ -114,7 +114,7 @@ export default function BookingModal({
 
     // 2. Constraint: 7:30 AM to 9:00 PM
     const minLimit = 7 * 60 + 30; // 7:30 AM
-    const maxLimit = 23 * 60; // 9:00 PM
+    const maxLimit = 21 * 60; // 9:00 PM
 
     if (startTotal < minLimit || startTotal > maxLimit) {
       throw new Error("Bookings must start between 7:30 AM and 9:00 PM.");
