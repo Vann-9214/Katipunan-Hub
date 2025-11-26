@@ -352,8 +352,7 @@ export default function FullDetails({
                     <Avatar
                       avatarURL={booking.avatarURL}
                       altText={booking.studentName || "User"}
-                      // Removed white border as requested
-                      className="w-28 h-28 shadow-lg relative z-10"
+                      className="w-28 h-28 relative z-10"
                     />
                   </div>
 

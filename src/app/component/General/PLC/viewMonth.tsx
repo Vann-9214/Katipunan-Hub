@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, MoveRight, Loader2 } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  MoveRight,
+  Loader2,
+  Plus,
+} from "lucide-react";
 import { Montserrat, PT_Sans } from "next/font/google";
 import { WEEKDAYS, MONTHS, getDaysInMonth, getFirstDayOfMonth } from "./Utils";
 import BookingModal from "./bookingModal";
@@ -56,6 +62,24 @@ const getStatusColor = (status: string) => {
       return "#FFD239";
     default:
       return "#FFFFFF";
+  }
+};
+
+// Helper for the small dots in the calendar grid
+const getStatusDotColor = (status: string) => {
+  switch (status) {
+    case "Pending":
+      return "#F59E0B"; // Amber
+    case "Approved":
+      return "#10B981"; // Emerald
+    case "Completed":
+      return "#10B981";
+    case "Rejected":
+      return "#EF4444"; // Red
+    case "Starting...":
+      return "#EFBF04"; // Gold
+    default:
+      return "#E5E7EB";
   }
 };
 
@@ -189,308 +213,357 @@ export default function PLCViewMonth({
 
   return (
     <>
-      {/* 2. Animated Container */}
+      {/* 2. Animated Container - GOLD GRADIENT BORDER */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
-        className="w-full h-[580px] bg-white rounded-[20px] border border-gray-800 shadow-md flex overflow-hidden p-8"
+        className="w-full h-[650px] p-[3px] rounded-[25px] bg-gradient-to-br from-[#EFBF04] via-[#FFD700] to-[#D4AF37] shadow-xl"
       >
-        {/* Calendar Left */}
-        <div className="flex-1 pr-8 flex flex-col border-r border-gray-300 overflow-y-auto custom-scrollbar">
-          {/* ... (Header and Days Header unchanged) ... */}
-          <div className="flex justify-between items-center mb-6 px-2">
-            <h2
-              className={`${montserrat.className} text-[24px] font-bold text-black`}
-            >
-              {currentMonthName} {year}
-            </h2>
-            <div className="flex gap-4 text-black">
-              <button
-                onClick={onPrevMonth}
-                className="hover:bg-gray-100 p-1 rounded-full"
+        <div className="w-full h-full bg-white rounded-[22px] flex overflow-hidden">
+          {/* --- LEFT SIDE: CALENDAR (Clean White with Maroon Accents) --- */}
+          <div className="w-[60%] flex flex-col border-r border-gray-200">
+            {/* Left Header */}
+            <div className="flex justify-between items-center px-8 py-6 bg-white border-b border-gray-100">
+              <h2
+                className={`${montserrat.className} text-[28px] font-extrabold text-[#8B0E0E]`}
               >
-                <ChevronLeft size={24} />
-              </button>
-              <button
-                onClick={onNextMonth}
-                className="hover:bg-gray-100 p-1 rounded-full"
-              >
-                <ChevronRight size={24} />
-              </button>
+                {currentMonthName} {year}
+              </h2>
+              <div className="flex gap-2">
+                <button
+                  onClick={onPrevMonth}
+                  className="hover:bg-[#8B0E0E]/10 p-2 rounded-full text-[#8B0E0E] transition-colors"
+                >
+                  <ChevronLeft size={24} />
+                </button>
+                <button
+                  onClick={onNextMonth}
+                  className="hover:bg-[#8B0E0E]/10 p-2 rounded-full text-[#8B0E0E] transition-colors"
+                >
+                  <ChevronRight size={24} />
+                </button>
+              </div>
+            </div>
+
+            {/* Days Header */}
+            <div className="grid grid-cols-7 px-8 pt-4 pb-2">
+              {WEEKDAYS.map((day) => (
+                <div
+                  key={day}
+                  className={`${montserrat.className} text-center font-bold text-[14px] text-gray-400 uppercase tracking-wider`}
+                >
+                  {day}
+                </div>
+              ))}
+            </div>
+
+            {/* Calendar Grid - LINES + ROUNDED SELECTION */}
+            <div className="grid grid-cols-7 auto-rows-fr flex-1 px-8 pb-8 gap-0 border-l border-t border-gray-200 rounded-tl-[12px] ml-8 mb-8 overflow-hidden">
+              {totalSlots.map((day, index) => {
+                const isSelected = day === selectedDate;
+                let isPastDate = false;
+                // Base class keeps the grid lines (Square cells)
+                let baseClasses = `relative w-full h-full flex items-center justify-center text-[16px] transition-all duration-150 ${ptSans.className} border-b border-r border-gray-200 `;
+
+                if (day !== null) {
+                  const checkDate = new Date(year, monthIndex, day);
+                  const checkToday = new Date();
+                  checkToday.setHours(0, 0, 0, 0);
+                  if (checkDate < checkToday) isPastDate = true;
+
+                  if (isPastDate)
+                    baseClasses += " bg-gray-50 text-gray-300 cursor-default";
+                  else {
+                    baseClasses +=
+                      " cursor-pointer text-black hover:bg-gray-50";
+                  }
+                } else {
+                  baseClasses += " bg-gray-50/50";
+                }
+
+                return (
+                  <div key={index} className="relative h-full min-h-[80px]">
+                    {day !== null ? (
+                      <button
+                        onClick={() => !isPastDate && setSelectedDate(day)}
+                        disabled={isPastDate}
+                        className={baseClasses}
+                      >
+                        {/* --- ROUNDED SELECTION INDICATOR (Centered) --- */}
+                        <div className="relative flex items-center justify-center w-10 h-10">
+                          {isSelected && !isPastDate && (
+                            <motion.div
+                              layoutId="selection-bubble"
+                              className="absolute inset-0 bg-[#8B0E0E] rounded-full shadow-md"
+                              initial={false}
+                              transition={{
+                                type: "spring",
+                                stiffness: 500,
+                                damping: 30,
+                              }}
+                            />
+                          )}
+                          <span
+                            className={`relative z-10 font-bold ${
+                              isSelected && !isPastDate ? "text-white" : ""
+                            }`}
+                          >
+                            {day}
+                          </span>
+                        </div>
+
+                        {/* Event Dots (Below the number) */}
+                        {!isPastDate &&
+                          !isSelected &&
+                          (() => {
+                            const bookingsOnDay = monthBookings.filter(
+                              (b) =>
+                                b.bookingDate ===
+                                getDateString(year, monthIndex, day)
+                            );
+                            if (bookingsOnDay.length > 0) {
+                              const uniqueColors = Array.from(
+                                new Set(
+                                  bookingsOnDay.map((b) =>
+                                    getStatusDotColor(getStatusForBooking(b))
+                                  )
+                                )
+                              );
+                              return (
+                                <div className="absolute bottom-2 flex gap-1 justify-center w-full">
+                                  {uniqueColors.slice(0, 3).map((color, i) => (
+                                    <div
+                                      key={i}
+                                      className="w-1.5 h-1.5 rounded-full"
+                                      style={{ backgroundColor: color }}
+                                    />
+                                  ))}
+                                </div>
+                              );
+                            }
+                          })()}
+                      </button>
+                    ) : (
+                      <div className="w-full h-full border-b border-r border-gray-200 bg-gray-50/30" />
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          <div className="grid grid-cols-7 mb-2">
-            {WEEKDAYS.map((day) => (
-              <div
-                key={day}
-                className={`${montserrat.className} text-center font-semibold text-[16px] text-black pb-4`}
-              >
-                {day}
-              </div>
-            ))}
-          </div>
+          {/* --- RIGHT SIDE: DETAILS (Maroon Gradient Background) --- */}
+          <div className="w-[40%] flex flex-col h-full bg-gradient-to-b from-[#4e0505] to-[#3a0000] text-white relative">
+            {/* Decoration */}
+            <div className="absolute -top-20 -right-20 w-64 h-64 bg-[#EFBF04]/10 rounded-full blur-3xl pointer-events-none" />
 
-          <div className="grid grid-cols-7 gap-0 h-fit border-t border-l border-black">
-            {totalSlots.map((day, index) => {
-              const isSelected = day === selectedDate;
-              let isPastDate = false;
-              let cellStyle: React.CSSProperties = {};
-              let baseClasses = `relative w-full h-full flex items-center justify-center text-[18px] transition-all duration-150 ${ptSans.className} border-b border-r border-black `;
-
-              if (day !== null) {
-                const checkDate = new Date(year, monthIndex, day);
-                const checkToday = new Date();
-                checkToday.setHours(0, 0, 0, 0);
-                if (checkDate < checkToday) isPastDate = true;
-
-                if (isPastDate)
-                  baseClasses +=
-                    " bg-gray-200 text-gray-400 cursor-not-allowed";
-                else {
-                  baseClasses += " cursor-pointer text-black hover:opacity-90";
-                  const bookingsOnDay = monthBookings.filter(
-                    (b) =>
-                      b.bookingDate === getDateString(year, monthIndex, day)
-                  );
-
-                  const uniqueColors = Array.from(
-                    new Set(
-                      bookingsOnDay.map((b) =>
-                        getStatusColor(getStatusForBooking(b))
-                      )
-                    )
-                  );
-
-                  if (uniqueColors.length === 0)
-                    baseClasses += " bg-white hover:bg-gray-50";
-                  else if (uniqueColors.length === 1)
-                    cellStyle = { backgroundColor: uniqueColors[0] };
-                  else {
-                    const step = 100 / uniqueColors.length;
-                    const gradientStops = uniqueColors
-                      .map(
-                        (color, idx) =>
-                          `${color} ${idx * step}% ${(idx + 1) * step}%`
-                      )
-                      .join(", ");
-                    cellStyle = {
-                      background: `linear-gradient(135deg, ${gradientStops})`,
-                    };
-                  }
-                }
-              } else baseClasses += " bg-gray-50/30";
-
-              if (isSelected && !isPastDate) baseClasses += " font-bold z-10";
-
-              return (
-                <div key={index} className="relative h-[80px]">
-                  {day !== null ? (
-                    <button
-                      onClick={() => !isPastDate && setSelectedDate(day)}
-                      disabled={isPastDate}
-                      className={baseClasses}
-                      style={cellStyle}
+            {/* Right Header */}
+            <div className="flex flex-col px-8 pt-8 pb-4 shrink-0 z-10">
+              <div className="flex justify-between items-start">
+                <div className="overflow-hidden">
+                  {/* ANIMATED DATE HEADER */}
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={selectedDate} // Triggers animation on date switch
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.2 }}
                     >
-                      {/* 3. Animated Selection Indicator */}
-                      {isSelected && !isPastDate && (
-                        <motion.div
-                          layoutId="selected-day-overlay"
-                          className="absolute inset-0 bg-[#8B0E0E]/20 z-20 pointer-events-none"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          transition={{
-                            type: "spring",
-                            stiffness: 500,
-                            damping: 30,
-                          }}
-                        />
-                      )}
-                      <span className="relative z-30">{day}</span>
-                    </button>
-                  ) : (
-                    <div className="w-full h-full border-b border-r border-black bg-gray-50/30" />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Details Right */}
-        <div className="w-[40%] pl-8 flex flex-col h-full">
-          {/* ... (Right Side Header unchanged) ... */}
-          <div className="flex justify-between items-end mb-8 mt-2 shrink-0">
-            <motion.h2
-              key={selectedDate} // Animate date text change
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2 }}
-              className={`${montserrat.className} text-[28px] font-semibold text-black leading-none pb-1`}
-            >
-              {dayName}, {selectedDate || 1}
-            </motion.h2>
-            {!isTutor && (
-              <button
-                onClick={() => setIsBookingModalOpen(true)}
-                className={`${montserrat.className} text-[20px] cursor-pointer font-semibold text-black hover:underline`}
-              >
-                + Book a Session
-              </button>
-            )}
-          </div>
-
-          <div className="flex-1 flex flex-col gap-4 overflow-y-auto py-2 px-1">
-            {isLoadingDayBookings ? (
-              <div className="flex justify-center pt-10">
-                <Loader2 className="animate-spin text-gray-400" />
-              </div>
-            ) : (
-              <AnimatePresence mode="popLayout">
-                {dayBookings.length > 0 ? (
-                  dayBookings.map((booking, idx) => {
-                    const activeStatus = getStatusForBooking(booking);
-                    let displayStatus = activeStatus;
-
-                    // Set Colors
-                    let statusColor = "text-gray-600";
-                    let cardBg = "bg-[#F4E4E4]";
-
-                    if (activeStatus === "Starting...") {
-                      statusColor = "text-[#EFBF04] animate-pulse";
-                      cardBg = "bg-[#EFBF04]/20";
-                    } else if (activeStatus === "Completed") {
-                      statusColor = "text-green-600";
-                      cardBg = "bg-green-100 border border-green-700";
-                    } else if (activeStatus === "Approved") {
-                      statusColor = "text-green-600";
-                      cardBg = "bg-green-100";
-                    } else if (activeStatus === "Pending") {
-                      statusColor = "text-[#D97706]";
-                      cardBg = "bg-orange-100";
-                    } else if (
-                      activeStatus === "Rejected" ||
-                      activeStatus === "Cancelled"
-                    ) {
-                      statusColor = "text-red-600";
-                      cardBg = "bg-red-100";
-                    }
-
-                    if (
-                      isTutor &&
-                      booking.hasRejected &&
-                      booking.status === "Pending"
-                    ) {
-                      displayStatus = "Rejected";
-                      statusColor = "text-red-600";
-                      cardBg = "bg-red-100";
-                    }
-
-                    return (
-                      // 4. Animated Booking Cards
-                      <motion.div
-                        key={booking.id}
-                        layout
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        transition={{
-                          delay: idx * 0.05, // Stagger effect
-                          type: "spring",
-                          stiffness: 300,
-                          damping: 25,
-                        }}
-                        whileHover={{ scale: 1.01, y: -2 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => handleBookingClick(booking)}
-                        className={`relative w-full ${cardBg} rounded-[10px] p-4 flex flex-col gap-2 hover:shadow-lg cursor-pointer group transition-all ${
-                          activeStatus === "Starting..."
-                            ? "ring-2 ring-[#EFBF04] border-[#EFBF04]"
-                            : ""
-                        }`}
+                      <h2
+                        className={`${montserrat.className} text-[36px] font-bold leading-none text-white`}
                       >
-                        <span
-                          className={`absolute top-3 right-4 text-[12px] font-bold ${statusColor} ${montserrat.className}`}
-                        >
-                          {displayStatus}
-                        </span>
+                        {selectedDate || 1}
+                      </h2>
+                      <p
+                        className={`${montserrat.className} text-[18px] font-medium text-white/80 mt-1`}
+                      >
+                        {dayName}
+                      </p>
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
 
-                        <div className="flex gap-1 text-black text-[14px]">
-                          <span className={`${montserrat.className} font-bold`}>
-                            Subject :
-                          </span>
-                          <span className={`${montserrat.className} font-bold`}>
-                            {booking.subject}
-                          </span>
-                        </div>
-                        <div className="flex gap-1 text-black text-[14px]">
-                          <span className={`${montserrat.className} font-bold`}>
-                            {isTutor
-                              ? "Student :"
-                              : activeStatus === "Approved" ||
-                                activeStatus === "Starting..." ||
-                                activeStatus === "Completed"
-                              ? "Tutor :"
-                              : "Time :"}
-                          </span>
+                {!isTutor && (
+                  <button
+                    onClick={() => setIsBookingModalOpen(true)}
+                    className="group flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-full backdrop-blur-sm transition-all cursor-pointer border border-white/20"
+                  >
+                    <Plus size={18} className="text-[#EFBF04]" />
+                    <span
+                      className={`${montserrat.className} text-sm font-bold text-[#EFBF04] group-hover:text-[#FFD700]`}
+                    >
+                      Book
+                    </span>
+                  </button>
+                )}
+              </div>
+              <div className="h-px w-full bg-white/20 mt-6" />
+            </div>
+
+            {/* Booking List */}
+            <div className="flex-1 overflow-y-auto px-8 pb-8 space-y-4 custom-scrollbar z-10">
+              {isLoadingDayBookings ? (
+                <div className="flex justify-center pt-10">
+                  <Loader2 className="animate-spin text-[#EFBF04]" size={32} />
+                </div>
+              ) : (
+                <AnimatePresence mode="popLayout">
+                  {dayBookings.length > 0 ? (
+                    dayBookings.map((booking, idx) => {
+                      const activeStatus = getStatusForBooking(booking);
+                      let displayStatus = activeStatus;
+
+                      // --- DYNAMIC BACKGROUND LOGIC ---
+                      // Matching your original code's color logic
+                      let statusColor = "text-gray-600";
+                      let cardBg = "bg-[#F4E4E4]"; // Default Gray/White mix
+
+                      if (activeStatus === "Starting...") {
+                        statusColor = "text-[#EFBF04] animate-pulse"; // Gold Text
+                        cardBg = "bg-[#EFBF04]/20"; // Gold Tint BG
+                      } else if (activeStatus === "Completed") {
+                        statusColor = "text-green-600";
+                        cardBg = "bg-green-100 border border-green-700";
+                      } else if (activeStatus === "Approved") {
+                        statusColor = "text-green-600";
+                        cardBg = "bg-green-100";
+                      } else if (activeStatus === "Pending") {
+                        statusColor = "text-[#D97706]"; // Orange
+                        cardBg = "bg-orange-100";
+                      } else if (
+                        activeStatus === "Rejected" ||
+                        activeStatus === "Cancelled"
+                      ) {
+                        statusColor = "text-red-600";
+                        cardBg = "bg-red-100";
+                      }
+
+                      if (
+                        isTutor &&
+                        booking.hasRejected &&
+                        booking.status === "Pending"
+                      ) {
+                        displayStatus = "Rejected";
+                        statusColor = "text-red-600";
+                        cardBg = "bg-red-100";
+                      }
+
+                      return (
+                        // 4. Animated Booking Cards
+                        <motion.div
+                          key={booking.id}
+                          layout
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -20 }}
+                          transition={{
+                            delay: idx * 0.05, // Stagger effect
+                            type: "spring",
+                            stiffness: 300,
+                            damping: 25,
+                          }}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => handleBookingClick(booking)}
+                          // Applied the dynamic cardBg here
+                          className={`relative w-full ${cardBg} rounded-[15px] p-4 flex flex-col gap-2 hover:shadow-lg cursor-pointer group transition-all ${
+                            activeStatus === "Starting..."
+                              ? "ring-2 ring-[#EFBF04] border-[#EFBF04]"
+                              : ""
+                          }`}
+                        >
                           <span
-                            className={`${montserrat.className} font-normal`}
+                            className={`absolute top-3 right-4 text-[12px] font-bold ${statusColor} ${montserrat.className}`}
                           >
-                            {isTutor
-                              ? booking.Accounts?.fullName
-                              : activeStatus === "Approved" ||
-                                activeStatus === "Starting..." ||
-                                activeStatus === "Completed"
-                              ? booking.Tutor?.fullName
-                              : formatTimeDisplay(
-                                  booking.startTime,
-                                  booking.endTime
-                                )}
+                            {displayStatus}
                           </span>
-                        </div>
-                        {(isTutor ||
-                          activeStatus === "Approved" ||
-                          activeStatus === "Starting..." ||
-                          activeStatus === "Completed") && (
+
                           <div className="flex gap-1 text-black text-[14px]">
                             <span
                               className={`${montserrat.className} font-bold`}
                             >
-                              Time :
+                              Subject :
+                            </span>
+                            <span
+                              className={`${montserrat.className} font-bold`}
+                            >
+                              {booking.subject}
+                            </span>
+                          </div>
+                          <div className="flex gap-1 text-black text-[14px]">
+                            <span
+                              className={`${montserrat.className} font-bold`}
+                            >
+                              {isTutor
+                                ? "Student :"
+                                : activeStatus === "Approved" ||
+                                  activeStatus === "Starting..." ||
+                                  activeStatus === "Completed"
+                                ? "Tutor :"
+                                : "Time :"}
                             </span>
                             <span
                               className={`${montserrat.className} font-normal`}
                             >
-                              {formatTimeDisplay(
-                                booking.startTime,
-                                booking.endTime
-                              )}
+                              {isTutor
+                                ? booking.Accounts?.fullName
+                                : activeStatus === "Approved" ||
+                                  activeStatus === "Starting..." ||
+                                  activeStatus === "Completed"
+                                ? booking.Tutor?.fullName
+                                : formatTimeDisplay(
+                                    booking.startTime,
+                                    booking.endTime
+                                  )}
                             </span>
                           </div>
-                        )}
-                        <div className="absolute bottom-3 right-3 group-hover:translate-x-1 transition-transform">
-                          <MoveRight size={18} />
-                        </div>
-                      </motion.div>
-                    );
-                  })
-                ) : (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="flex-1 flex items-center justify-center"
-                  >
-                    <p
-                      className={`${montserrat.className} text-[16px] font-bold text-black`}
+                          {(isTutor ||
+                            activeStatus === "Approved" ||
+                            activeStatus === "Starting..." ||
+                            activeStatus === "Completed") && (
+                            <div className="flex gap-1 text-black text-[14px]">
+                              <span
+                                className={`${montserrat.className} font-bold`}
+                              >
+                                Time :
+                              </span>
+                              <span
+                                className={`${montserrat.className} font-normal`}
+                              >
+                                {formatTimeDisplay(
+                                  booking.startTime,
+                                  booking.endTime
+                                )}
+                              </span>
+                            </div>
+                          )}
+                          <div className="absolute bottom-3 text-black right-3 group-hover:translate-x-1 transition-transform">
+                            <MoveRight size={18} />
+                          </div>
+                        </motion.div>
+                      );
+                    })
+                  ) : (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="flex flex-col items-center justify-center h-[200px] text-white/50"
                     >
-                      Nothing scheduled.
-                    </p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            )}
+                      <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mb-3">
+                        <Plus size={32} className="opacity-50" />
+                      </div>
+                      <p
+                        className={`${montserrat.className} text-[14px] font-medium`}
+                      >
+                        No sessions scheduled
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              )}
+            </div>
           </div>
         </div>
       </motion.div>
