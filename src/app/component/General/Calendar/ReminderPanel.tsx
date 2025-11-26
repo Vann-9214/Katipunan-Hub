@@ -3,6 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import { PT_Sans } from "next/font/google";
+import { PostedEvent, PersonalEvent, Holiday } from "@/app/component/General/Calendar/types";
 
 const ptSans = PT_Sans({
   subsets: ["latin"],
@@ -17,6 +18,11 @@ interface ReminderPanelProps {
   selectedDay: number | null;
   monthName: string;
   todayDate: number;
+  year: number;
+  currentMonth: number;
+  postedEvents: PostedEvent[];
+  personalEvents: PersonalEvent[];
+  holidays: Holiday[];
 }
 
 export default function ReminderPanel({
@@ -27,6 +33,11 @@ export default function ReminderPanel({
   selectedDay,
   monthName,
   todayDate,
+  year,
+  currentMonth,
+  postedEvents,
+  personalEvents,
+  holidays,
 }: ReminderPanelProps) {
   const handleAddReminder = () => {
     if (newReminder.trim() !== "") {
@@ -39,9 +50,47 @@ export default function ReminderPanel({
     setReminders((prev) => prev.filter((_, idx) => idx !== index));
   };
 
-  const formattedDate = selectedDay
-    ? `${selectedDay} ${monthName.slice(0, 3)}`
-    : `${todayDate} ${monthName.slice(0, 3)}`;
+  const displayDay = selectedDay || todayDate;
+  const formattedDate = `${displayDay} ${monthName.slice(0, 3)}`;
+
+  // Get all events for the selected/current day
+  const eventsForDay = [
+    // Posted events (Global/Course)
+    ...postedEvents.filter(
+      (e) =>
+        e.year === year &&
+        e.month === currentMonth + 1 &&
+        e.day === displayDay
+    ),
+    // Personal events
+    ...personalEvents.filter(
+      (e) =>
+        e.year === year &&
+        e.month === currentMonth + 1 &&
+        e.day === displayDay
+    ),
+    // Holidays
+    ...holidays.filter(
+      (h) => h.month === currentMonth + 1 && h.day === displayDay
+    ),
+  ];
+
+  const getEventLabel = (event: any): string => {
+    if (typeof event === "string") return event;
+    if ("title" in event) return event.title;
+    if ("name" in event) return event.name;
+    return "";
+  };
+
+  const getEventType = (event: any): string => {
+    if ("audience" in event) {
+      return event.audience === "Global" ? "Global Event" : `Course: ${event.course}`;
+    }
+    if ("name" in event && "month" in event && "day" in event && !("title" in event)) {
+      return "Holiday";
+    }
+    return "Personal Event";
+  };
 
   return (
     <div
@@ -72,7 +121,7 @@ export default function ReminderPanel({
         </div>
       </div>
 
-      {/* Date + All reminders label */}
+      {/* Date + Event count label */}
       <div className="flex justify-between items-center mb-3 flex-shrink-0">
         <span className="text-[15px] text-gray-700 font-semibold">
           {formattedDate}
@@ -85,32 +134,60 @@ export default function ReminderPanel({
             height: "26px",
           }}
         >
-          All reminders
+          {eventsForDay.length} event{eventsForDay.length !== 1 ? "s" : ""}
         </div>
       </div>
 
-      {/* Scrollable reminders list */}
+      {/* Scrollable events/reminders list */}
       <div className="flex-1 overflow-y-auto space-y-2 pr-2">
-        {reminders.length === 0 ? (
-          <div className="text-[14px] text-gray-500 italic">
-            No reminders scheduled
-          </div>
-        ) : (
-          reminders.map((r, i) => (
-            <div
-              key={i}
-              className="flex items-center justify-between bg-[#D9D9D9] px-3 py-2 rounded-full text-[14px] font-medium text-[#800000]"
-            >
-              <span className="truncate">{r}</span>
-              <button
-                onClick={() => handleDeleteReminder(i)}
-                className="text-[#800000] hover:text-red-600 font-bold text-[16px] ml-2"
+        {/* Events for the day */}
+        {eventsForDay.length > 0 && (
+          <div className="mb-4">
+            <h3 className="text-[13px] font-bold text-[#800000] mb-2">
+              Events on this day:
+            </h3>
+            {eventsForDay.map((event, i) => (
+              <div
+                key={`event-${i}`}
+                className="bg-[#FFE5B4] px-3 py-2 rounded-lg text-[13px] mb-2"
               >
-                ×
-              </button>
-            </div>
-          ))
+                <div className="font-semibold text-[#800000]">
+                  {getEventLabel(event)}
+                </div>
+                <div className="text-[11px] text-gray-600 mt-1">
+                  {getEventType(event)}
+                </div>
+              </div>
+            ))}
+          </div>
         )}
+
+        {/* Custom reminders */}
+        <div>
+          <h3 className="text-[13px] font-bold text-[#800000] mb-2">
+            Custom Reminders:
+          </h3>
+          {reminders.length === 0 ? (
+            <div className="text-[14px] text-gray-500 italic">
+              No custom reminders
+            </div>
+          ) : (
+            reminders.map((r, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between bg-[#D9D9D9] px-3 py-2 rounded-full text-[14px] font-medium text-[#800000] mb-2"
+              >
+                <span className="truncate">{r}</span>
+                <button
+                  onClick={() => handleDeleteReminder(i)}
+                  className="text-[#800000] hover:text-red-600 font-bold text-[16px] ml-2"
+                >
+                  ×
+                </button>
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
       {/* Add input pinned bottom */}

@@ -158,15 +158,14 @@ export default function CalendarContent() {
     if ("name" in ev && ev.name) return String(ev.name);
     return String(ev.title ?? ev.name ?? "");
   };
-const getEventColor = (label: string) => {
-  const colors = ["#C4E1A4", "#FAD6A5", "#A0D8EF", "#F6B6B6", "#D9B3FF"];
-  let hash = 0;
-  for (let i = 0; i < label.length; i++) {
-    hash = label.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const index = Math.abs(hash) % colors.length;
-  return colors[index];
-};
+
+  // Deterministic color based on event content to avoid hydration mismatch
+  const getEventColor = (event: any, index: number) => {
+    const colors = ["#C4E1A4", "#FAD6A5", "#A0D8EF", "#F6B6B6", "#D9B3FF"];
+    const label = getEventLabel(event);
+    const hash = label.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return colors[(hash + index) % colors.length];
+  };
 
   // ---------------------
   // JSX
@@ -342,8 +341,7 @@ const getEventColor = (label: string) => {
                         <div
                           key={i}
                           className="text-[10px] text-center rounded-md px-[2px] py-[1px] text-black truncate"
-                          style={{ backgroundColor: getEventColor(getEventLabel(event)) }}
-
+                          style={{ backgroundColor: getEventColor(event, i) }}
                         >
                           {getEventLabel(event)}
                         </div>
@@ -357,14 +355,125 @@ const getEventColor = (label: string) => {
 
           {/* Year view */}
           {viewMode === "year" && (
-            <div className="grid grid-cols-3 gap-4 p-4">
-              {Array.from({ length: 12 }, (_, i) => (
-                <div key={i} className="text-center text-gray-500">
-                  {new Date(year, i).toLocaleString("default", {
-                    month: "long",
-                  })}
-                </div>
-              ))}
+            <div className="grid grid-cols-3 gap-6 p-6">
+              {Array.from({ length: 12 }, (_, monthIndex) => {
+                const monthDate = new Date(year, monthIndex, 1);
+                const monthName = monthDate.toLocaleString("default", {
+                  month: "long",
+                });
+                const firstDayOfMonth = monthDate.getDay();
+                const daysInThisMonth = new Date(
+                  year,
+                  monthIndex + 1,
+                  0
+                ).getDate();
+                const monthDays = Array.from({ length: 35 }, (_, i) => {
+                  const day = i - firstDayOfMonth + 1;
+                  return day > 0 && day <= daysInThisMonth ? day : null;
+                });
+
+                // Get events for this month
+                const monthHolidays = holidaysForYear.filter(
+                  (h) => h.month === monthIndex + 1
+                );
+                const monthEvents = [
+                  ...personalEvents.filter(
+                    (e) => e.year === year && e.month === monthIndex + 1
+                  ),
+                  ...postedEvents.filter(
+                    (e) =>
+                      e.year === year &&
+                      e.month === monthIndex + 1 &&
+                      (e.audience === "Global" || e.audience === "Course")
+                  ),
+                ];
+
+                const hasEvents =
+                  monthHolidays.length > 0 || monthEvents.length > 0;
+
+                return (
+                  <div
+                    key={monthIndex}
+                    className={`${
+                      ptSans.className
+                    } bg-white rounded-lg shadow-md p-3 cursor-pointer hover:shadow-lg transition-shadow ${
+                      hasEvents ? "border-2 border-[#FFD700]" : ""
+                    }`}
+                    onClick={() => {
+                      setCurrentDate(new Date(year, monthIndex, 1));
+                      setViewMode("month");
+                    }}
+                  >
+                    {/* Month name */}
+                    <h3 className="text-center font-bold text-[#800000] mb-2 text-[14px]">
+                      {monthName}
+                    </h3>
+
+                    {/* Weekday headers */}
+                    <div className="grid grid-cols-7 gap-[2px] mb-1">
+                      {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+                        <div
+                          key={i}
+                          className="text-[9px] text-center text-gray-500 font-semibold"
+                        >
+                          {d}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Days grid */}
+                    <div className="grid grid-cols-7 gap-[2px]">
+                      {monthDays.map((day, i) => {
+                        if (!day) {
+                          return (
+                            <div
+                              key={i}
+                              className="text-[10px] text-center py-1"
+                            />
+                          );
+                        }
+
+                        // Check if this day has events
+                        const dayHasHoliday = monthHolidays.some(
+                          (h) => h.day === day
+                        );
+                        const dayHasEvent = monthEvents.some(
+                          (e) => e.day === day
+                        );
+                        const isToday =
+                          today.getFullYear() === year &&
+                          today.getMonth() === monthIndex &&
+                          today.getDate() === day;
+
+                        return (
+                          <div
+                            key={i}
+                            className={`text-[10px] text-center py-1 rounded ${
+                              isToday
+                                ? "bg-[#FFD700] font-bold text-black"
+                                : dayHasHoliday || dayHasEvent
+                                ? "bg-[#800000] text-white font-semibold"
+                                : "text-gray-700"
+                            }`}
+                          >
+                            {day}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Event indicator */}
+                    {hasEvents && (
+                      <div className="text-center mt-2 text-[9px] text-[#800000] font-semibold">
+                        {monthHolidays.length + monthEvents.length} event
+                        {monthHolidays.length + monthEvents.length !== 1
+                          ? "s"
+                          : ""}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
