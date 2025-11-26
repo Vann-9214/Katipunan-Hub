@@ -3,6 +3,7 @@ import Image from "next/image";
 import ReactionButton from "../reactButton";
 import ReactionSummary from "../../Posts/reactionSummary";
 import { ReactionCount } from "../../../../../../../supabase/Lib/Announcement/Posts/usePostReaction";
+import { motion } from "framer-motion"; // 1. Import motion
 
 type Author = {
   id: string;
@@ -41,7 +42,6 @@ export default function CommentItem({
     onReact(comment.id, reactionId);
   };
 
-  // --- formatTimeAgo function  ---
   const formatTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -59,26 +59,34 @@ export default function CommentItem({
   };
 
   return (
-    <div className="flex w-full gap-3">
-      {/* Avatar  */}
+    // 2. Convert to motion.div for animation
+    <motion.div
+      layout // Smoothly animate layout changes (e.g., when list grows)
+      initial={{ opacity: 0, y: 20, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
+      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+      className="flex w-full gap-3"
+    >
+      {/* Avatar */}
       <Image
         src={comment.author.avatarURL || "/DefaultAvatar.svg"}
         alt={comment.author.fullName || "User"}
         width={40}
         height={40}
-        className="mt-1 h-10 w-10 rounded-full"
+        className="mt-1 h-10 w-10 rounded-full object-cover shrink-0"
       />
-      {/* Comment Body  */}
-      <div className="flex-1">
+      {/* Comment Body */}
+      <div className="flex-1 min-w-0">
         <div className="relative rounded-2xl bg-gray-200/50 px-4 py-2">
           <p className="font-montserrat text-sm font-semibold text-black">
             {comment.author.fullName || "Anonymous User"}
           </p>
-          <p className="font-montserrat text-sm text-black">
+          <p className="font-montserrat text-sm text-black break-words whitespace-pre-wrap">
             {comment.comment}
           </p>
         </div>
-        {/* --- 5. MODIFIED JSX  --- */}
+
         <div className="flex items-center justify-between px-3 pt-1">
           {/* Left-aligned group */}
           <div className="flex items-center gap-3">
@@ -106,6 +114,6 @@ export default function CommentItem({
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

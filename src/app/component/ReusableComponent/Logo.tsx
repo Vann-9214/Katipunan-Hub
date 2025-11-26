@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 
 interface LogoProps {
@@ -5,13 +7,15 @@ interface LogoProps {
   unclickable?: boolean;
   width?: number;
   height?: number;
+  showText?: boolean; // New prop to control text visibility
 }
 
 export default function Logo({
   href = "/",
   unclickable = false,
-  width = 58,
-  height = 73,
+  width = 55,
+  height = 70,
+  showText = true, // Default to true to maintain original behavior
 }: LogoProps) {
   const content = (
     <>
@@ -22,14 +26,16 @@ export default function Logo({
         height={height}
         draggable="false"
       />
-      <h1
-        style={{ fontFamily: "Montserrat, sans-serif" }}
-        className="font-bold text-[23px] bg-maroon bg-clip-text text-transparent leading-none select-none"
-      >
-        KATIPUNAN
-        <br />
-        HUB
-      </h1>
+      {showText && (
+        <h1
+          style={{ fontFamily: "Montserrat, sans-serif" }}
+          className="font-bold text-[23px] bg-maroon bg-clip-text text-transparent leading-none select-none"
+        >
+          KATIPUNAN
+          <br />
+          HUB
+        </h1>
+      )}
     </>
   );
 

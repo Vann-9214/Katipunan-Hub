@@ -1,13 +1,19 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import {
+  useState,
+  useMemo,
+  useEffect,
+  useCallback,
+  useDeferredValue,
+} from "react";
 import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
-
-// --- Child Components ---
+import LoadingScreen from "@/app/component/ReusableComponent/LoadingScreen";
 import HomepageTab from "@/app/component/ReusableComponent/HomepageTab/HomepageTab";
 import AnnouncementLeftBar from "./AnnouncementLeftBar";
 import AnnouncementFeed from "./AnnouncementFeed";
-
+import PLCAdCard from "./PLCAdCard";
+import { useSearchParams } from "next/navigation";
 // --- Types ---
 import {
   type DBPostRow,
@@ -15,6 +21,7 @@ import {
   type NewPostPayload,
   type UpdatePostPayload,
   type FilterState,
+  VisibilityOption,
 } from "../Utils/types";
 import type { User } from "../../../../../../supabase/Lib/General/user";
 
@@ -45,6 +52,13 @@ export default function AnnouncementPageContent() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTags, setActiveTags] = useState<string[]>([]);
 
+  // --- Performance Optimization ---
+  // We defer the values used for the heavy list rendering.
+  // This allows the UI (Toggle button) to update immediately (using activeTab),
+  // while the list updates a split second later (using deferredTab).
+  const deferredTab = useDeferredValue(activeTab);
+  const deferredTags = useDeferredValue(activeTags);
+  const searchParams = useSearchParams();
   // --- Data Fetching ---
   useEffect(() => {
     let isMounted = true;
@@ -61,6 +75,53 @@ export default function AnnouncementPageContent() {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    const targetFilter = searchParams.get("filter");
+    const targetId = searchParams.get("id");
+
+    if (targetId && targetFilter) {
+      // Ensure we are on "Announcement" tab
+      setActiveTab("announcement");
+
+      // Override the filter state to match the notification
+      // This triggers fetchPosts automatically because 'filters' is a dependency of the fetch useEffect
+      if (targetFilter === "Course" || targetFilter === "Global") {
+        setFilters((prev) => ({
+          ...prev,
+          visibility: targetFilter as VisibilityOption,
+        }));
+      }
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const targetId = searchParams.get("id");
+
+    // Only try to scroll if we have a target ID and posts have loaded
+    if (targetId && posts.length > 0) {
+      // We wait a tiny bit to ensure the DOM is fully painted
+      const timer = setTimeout(() => {
+        const element = document.getElementById(`post-${targetId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+
+          // Optional: Add a temporary highlight effect so they see which one it is
+          element.style.transition =
+            "transform 0.3s ease, box-shadow 0.3s ease";
+          element.style.transform = "scale(1.02)";
+          element.style.boxShadow = "0 0 20px rgba(239, 191, 4, 0.6)"; // Gold glow
+
+          setTimeout(() => {
+            element.style.transform = "scale(1)";
+            element.style.boxShadow = "none";
+          }, 2000);
+        }
+      }, 600); // 600ms delay to be safe
+
+      return () => clearTimeout(timer);
+    }
+  }, [posts, searchParams]);
 
   const { course } = currentUser || {};
 
@@ -145,12 +206,14 @@ export default function AnnouncementPageContent() {
   const handleTabToggle = (tab: "announcement" | "highlight") => {
     setActiveTab(tab);
     setActiveTags([]);
+
     if (tab === "highlight") {
-      setFilters((prev) => ({
-        ...prev,
-        visibility: "Global",
-        date: "All Time",
-      }));
+      // Optimization: Only update filters if needed to prevent double-fetching
+      setFilters((prev) => {
+        if (prev.visibility === "Global" && prev.date === "All Time")
+          return prev;
+        return { ...prev, visibility: "Global", date: "All Time" };
+      });
     }
   };
 
@@ -261,9 +324,10 @@ export default function AnnouncementPageContent() {
     setEditingPost(null);
   };
 
-  // --- Client-Side Filtering ---
+  // --- Client-Side Filtering (Optimized) ---
   const derivedTags = useMemo(() => {
-    const candidate = posts.filter((p) => p.type === activeTab);
+    // Using deferredTab moves this calculation off the main thread
+    const candidate = posts.filter((p) => p.type === deferredTab);
     return Array.from(
       new Set(
         candidate
@@ -271,12 +335,13 @@ export default function AnnouncementPageContent() {
           .filter(Boolean)
       )
     );
-  }, [posts, activeTab]);
+  }, [posts, deferredTab]);
 
   const filteredPosts = useMemo(() => {
     let list = [...posts];
 
-    list = list.filter((p) => p.type === activeTab);
+    // Using deferredTab for list filtering
+    list = list.filter((p) => p.type === deferredTab);
 
     if (searchTerm.trim() !== "") {
       const lower = searchTerm.toLowerCase();
@@ -287,18 +352,17 @@ export default function AnnouncementPageContent() {
       );
     }
 
-    if (activeTags.length > 0) {
+    // Using deferredTags for tag filtering
+    if (deferredTags.length > 0) {
       list = list.filter((p) =>
-        p.tags?.some((tag) => activeTags.includes(tag))
+        p.tags?.some((tag) => deferredTags.includes(tag))
       );
     }
 
     return list;
-  }, [posts, activeTab, searchTerm, activeTags]);
+  }, [posts, deferredTab, searchTerm, deferredTags]);
 
   // --- Main Render ---
-
-  // This is the fix. We get these values *after* currentUser is checked.
   const { id, role } = currentUser || {};
   const isAdmin =
     (role?.includes("Platform Administrator") ||
@@ -311,9 +375,7 @@ export default function AnnouncementPageContent() {
     return (
       <div className="p-[25px]">
         <HomepageTab user={null} />
-        <p className="mt-20 text-gray-500 text-lg font-montserrat">
-          Loading user data...
-        </p>
+        <LoadingScreen />
       </div>
     );
   }
@@ -323,26 +385,27 @@ export default function AnnouncementPageContent() {
       <HomepageTab user={currentUser} />
 
       <AnnouncementLeftBar
-        activeTab={activeTab}
+        activeTab={activeTab} // Pass activeTab (immediate) to Toggle button
         onTabToggle={handleTabToggle}
         onSearchChange={setSearchTerm}
         onFilterChange={handleFilterChange}
         filters={filters}
-        isHighlights={activeTab === "highlight"}
+        isHighlights={activeTab === "highlight"} // Pass activeTab (immediate) to filters
         derivedTags={derivedTags}
         onTagClick={setActiveTags}
       />
 
-      {/* Right Side (Placeholder) */}
-      <div className="w-[350px] right-0 top-0 fixed h-full"></div>
+      {/* Right Side (PLC Ad Card) */}
+      <div className="w-[350px] right-0 top-0 fixed h-full pt-28 flex flex-col items-center">
+        <PLCAdCard />
+      </div>
 
-      {/* This is the fix. We only render AnnouncementFeed *after* currentUser is loaded, so isAdmin and currentUserId are guaranteed to be defined.
-       */}
+      {/* Center Feed */}
       {currentUser && (
         <AnnouncementFeed
           isAdmin={isAdmin}
           currentUserId={currentUserId}
-          currentType={activeTab}
+          currentType={deferredTab} // Pass deferredTab (delayed) to the feed
           filteredPosts={filteredPosts}
           editorOpen={editorOpen}
           editingPost={editingPost}
@@ -351,6 +414,7 @@ export default function AnnouncementPageContent() {
           onDeletePost={handleDelete}
           onEditPost={handleEdit}
           onCloseEditor={handleCloseEditor}
+          searchTerm={searchTerm}
         />
       )}
     </div>

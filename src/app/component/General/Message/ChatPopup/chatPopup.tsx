@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Maximize2 } from "lucide-react";
+import { Search, Maximize2, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
@@ -8,6 +8,33 @@ import { getCurrentUserDetails } from "../../../../../../supabase/Lib/General/ge
 import type { User } from "../../../../../../supabase/Lib/General/user";
 import { ConversationItem } from "../Utils/types";
 import PopupConversationItem from "./popupConversationitem";
+import { motion, Variants } from "framer-motion";
+
+// ADDED List/Item Variants
+const listVariants: Variants = {
+  visible: {
+    opacity: 1,
+    transition: {
+      when: "beforeChildren",
+      staggerChildren: 0.05,
+    },
+  },
+  hidden: {
+    opacity: 0,
+    transition: {
+      when: "afterChildren",
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 400, damping: 25 },
+  },
+  hidden: { opacity: 0, y: 10 },
+};
 
 // Main Chat Popup Component
 export default function ChatPopup() {
@@ -59,7 +86,7 @@ export default function ChatPopup() {
         );
         const { data: accountsData } = await supabase
           .from("Accounts")
-          .select("id, fullName, avatarURL") // Make sure you're selecting avatarURL here!
+          .select("id, fullName, avatarURL")
           .in("id", otherUserIds);
         const accountsMap = new Map(
           (accountsData || []).map((acc) => [acc.id, acc])
@@ -81,13 +108,14 @@ export default function ChatPopup() {
             .eq("conversation_id", convo.id)
             .order("created_at", { ascending: false })
             .limit(1)
-            .maybeSingle(); // Use maybeSingle for safety
+            .maybeSingle();
 
+          // This query counts exactly how many messages are unread in THIS specific chat
           const { count: unreadCount } = await supabase
             .from("Messages")
-            .select("id", { count: "exact" })
-            .eq("sender_id", otherUserId)
-            .eq("conversation_id", convo.id)
+            .select("id", { count: "exact", head: true })
+            .eq("sender_id", otherUserId) // Messages from the OTHER person
+            .eq("conversation_id", convo.id) // In THIS conversation
             .is("read_at", null);
 
           const lastMessage = lastMsgData?.content || "Start a chat...";
@@ -102,9 +130,9 @@ export default function ChatPopup() {
             id: convo.id,
             otherUserName: otherUser.fullName,
             lastMessagePreview: lastMessage,
-            avatarURL: otherUser.avatarURL, // This now passes the URL to the item
+            avatarURL: otherUser.avatarURL,
             timestamp: timestamp,
-            unreadCount: unreadCount || 0,
+            unreadCount: unreadCount || 0, // This will be 4 if there are 4 messages
           } as ConversationItem;
         });
 
@@ -124,20 +152,13 @@ export default function ChatPopup() {
     convo.otherUserName.toLowerCase().includes(search.toLowerCase())
   );
 
-  // --- START OF FIX & DEBUGGING ---
   const handleSeeAllChats = () => {
+    // Using the logic from your preferred previous fix:
     const navPath = "/Message";
-    console.log(
-      `[DEBUG] ChatPopup: Clicked 'See All'. Queuing navigation to: ${navPath}`
-    );
-
-    // FIX: Wrap in setTimeout to prevent race condition
     setTimeout(() => {
-      console.log(`[DEBUG] ChatPopup: Firing router.push() inside timeout.`);
       router.push(navPath);
     }, 50);
   };
-  // --- END OF FIX & DEBUGGING ---
 
   return (
     <div className="w-80 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden transform transition-all duration-300 z-40">
@@ -146,7 +167,6 @@ export default function ChatPopup() {
         <h2 className="text-[32px] font-montserrat font-bold text-gray-800">
           Chats
         </h2>
-        {/* This click is now fixed */}
         <div
           onClick={handleSeeAllChats}
           title="See all chats"
@@ -157,7 +177,12 @@ export default function ChatPopup() {
       </div>
 
       {/* Search Bar */}
-      <div className="p-4 border-b border-gray-200">
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2, delay: 0.05 }}
+        className="p-4 border-b border-gray-200"
+      >
         <div className="relative">
           <input
             type="text"
@@ -171,27 +196,41 @@ export default function ChatPopup() {
             className="absolute left-3 top-1/2 -translate-y-1/2 text-black/70"
           />
         </div>
-      </div>
+      </motion.div>
 
       {/* Conversation List */}
-      <div className="p-2 space-y-1 max-h-[350px] overflow-y-auto">
+      <motion.div
+        variants={listVariants}
+        initial="hidden"
+        animate="visible"
+        className="p-2 space-y-1 max-h-[350px] overflow-y-auto"
+      >
         {loading ? (
-          <div className="text-center py-4 text-sm text-gray-500">
-            Loading recent chats...
+          <div className="flex justify-center items-center py-4 space-x-2 text-gray-500">
+            <Loader2 className="h-5 w-5 animate-spin text-[#8B0E0E]" />
+            <span className="text-sm font-medium">Loading recent chats...</span>
           </div>
         ) : filteredConversations.length === 0 ? (
-          <div className="text-center py-4 text-sm text-gray-500">
-            No chats found.
-          </div>
+          <motion.div
+            variants={itemVariants}
+            className="text-center py-4 text-sm text-gray-500"
+          >
+            {search.length > 0
+              ? `No results for "${search}"`
+              : "No chats found."}
+          </motion.div>
         ) : (
           filteredConversations.map((item) => (
-            // --- Use the imported component ---
-            <PopupConversationItem key={item.id} conversation={item} />
+            <PopupConversationItem
+              key={item.id}
+              conversation={item}
+              variants={itemVariants}
+            />
           ))
         )}
-      </div>
+      </motion.div>
 
-      {/* Footer Link - This click is also fixed */}
+      {/* Footer Link */}
       <button
         onClick={handleSeeAllChats}
         className="cursor-pointer block w-full text-center py-2 text-[16px] font-montserrat font-medium text-gray-600 hover:text-[#8B0E0E] bg-gray-100 hover:bg-gray-200 transition-colors border-t border-gray-200"

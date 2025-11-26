@@ -5,24 +5,23 @@ import { useRouter } from "next/navigation";
 import type { PostUI, NewPostPayload, UpdatePostPayload } from "@/app/component/General/Announcement/Utils/types";
 import type { UploadButtonHandle } from "@/app/component/General/Announcement/Utils/types";
 import { deleteUrlsFromBucket } from "./storage";
+import { createFeedPost } from "../../Feeds/feeds";
 
 // Props Interface
 export interface UseAddPostFormProps {
   initialPost?: PostUI | null;
-  currentType?: "announcement" | "highlight";
+  currentType?: "announcement" | "highlight" | "feed";
   authorId?: string | null;
   onAddPost?: (post: NewPostPayload) => Promise<void> | void;
   onUpdatePost?: (post: UpdatePostPayload) => Promise<void> | void;
   onClose: () => void;
 }
 
-// Helper Function
 const isCollegeCode = (vis: string | null | undefined): boolean => {
   if (!vis) return false;
   return vis !== "global";
 };
 
-// The Hook
 export const useAddPostForm = ({
   initialPost = null,
   currentType = "announcement",
@@ -42,7 +41,7 @@ export const useAddPostForm = ({
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [postType, setPostType] =
-    useState<"announcement" | "highlight">(currentType);
+    useState<"announcement" | "highlight" | "feed">(currentType);
   const [predefinedImages, setPredefinedImages] = useState<string[]>([]);
 
   // Refs
@@ -50,7 +49,6 @@ export const useAddPostForm = ({
   const uploadRef = useRef<UploadButtonHandle>(null);
   const isMountedRef = useRef(true);
 
-  // Effects
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
@@ -86,7 +84,6 @@ export const useAddPostForm = ({
     }
   }, [initialPost, currentType]);
 
-  // Handlers
   const handleInput = () => {
     const el = textareaRef.current;
     if (!el) return;
@@ -124,7 +121,6 @@ export const useAddPostForm = ({
     setVisibleCollege(newCollege);
   };
 
-  // Supabase Submit Logic
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
@@ -142,45 +138,70 @@ export const useAddPostForm = ({
         : "";
       const combinedDescription = description.trim() + tagString;
 
-      if (!authorId) throw new Error("Author ID not found");
+      if (!authorId && !initialPost) throw new Error("Author ID not found");
 
-      const visibilityToStore: string | null =
-        postType === "highlight"
-          ? "global"
-          : postType === "announcement"
-          ? visibleTo === "global"
+      // --- FEED LOGIC ---
+      if (postType === "feed") {
+         // FIX: Handle Update for Feeds
+         if (initialPost && onUpdatePost) {
+            if (!initialPost.id) throw new Error("Post id missing. Cannot update.");
+            await onUpdatePost({
+                id: initialPost.id,
+                description: combinedDescription,
+                images: uniqueImages,
+                tags: [], // Feeds don't use tags, but payload expects it
+                type: "feed",
+                visibility: "global",
+                title: "",
+            });
+         } else if (authorId) {
+            // Handle Create
+            await createFeedPost(combinedDescription, uniqueImages, authorId);
+         }
+         await deleteUrlsFromBucket(removedUrls);
+      } 
+      // --- ANNOUNCEMENT LOGIC ---
+      else {
+        const visibilityToStore: string | null =
+          postType === "highlight"
             ? "global"
-            : visibleCollege ?? null
-          : null;
+            : visibleTo === "global"
+              ? "global"
+              : visibleCollege ?? null;
 
-      const payload = {
-        title,
-        description: combinedDescription,
-        images: uniqueImages,
-        tags,
-        type: postType,
-        visibility: visibilityToStore,
-      };
+        const payload = {
+          title,
+          description: combinedDescription,
+          images: uniqueImages,
+          tags,
+          type: postType,
+          visibility: visibilityToStore,
+        };
 
-      if (initialPost && onUpdatePost) {
-        if (!initialPost.id) throw new Error("Post id missing. Cannot update.");
-        const updatePayload: UpdatePostPayload = {
-          ...payload,
-          id: initialPost.id,
-        };
-        await onUpdatePost(updatePayload);
-        await deleteUrlsFromBucket(removedUrls);
-      } else if (onAddPost) {
-        const createPayload: NewPostPayload = {
-          ...payload,
-          author_id: authorId,
-        };
-        await onAddPost(createPayload);
-        await deleteUrlsFromBucket(removedUrls);
+        if (initialPost && onUpdatePost) {
+          if (!initialPost.id) throw new Error("Post id missing. Cannot update.");
+          const updatePayload: UpdatePostPayload = {
+            ...payload,
+            id: initialPost.id,
+          };
+          await onUpdatePost(updatePayload);
+          await deleteUrlsFromBucket(removedUrls);
+        } else if (onAddPost && authorId) {
+          const createPayload: NewPostPayload = {
+            ...payload,
+            author_id: authorId,
+          };
+          await onAddPost(createPayload);
+          await deleteUrlsFromBucket(removedUrls);
+        }
       }
 
       onClose();
+      
+      // If a callback for refresh was passed (e.g. from FeedContent), it should be handled by the parent component's subscription
+      // but router.refresh() is a good fallback
       router.refresh();
+      
     } catch (err) {
       console.error("Failed to create/update post:", err);
       alert("Failed to create/update post.");
@@ -189,12 +210,10 @@ export const useAddPostForm = ({
     }
   };
 
-  // Derived State
   const modalTitle = initialPost
-    ? `Edit ${postType === "announcement" ? "Announcement" : "Highlight"}`
-    : `Add ${postType === "announcement" ? "Announcement" : "Highlight"}`;
+    ? `Edit ${postType === "announcement" ? "Announcement" : postType === "feed" ? "Post" : "Highlight"}`
+    : `Add ${postType === "announcement" ? "Announcement" : postType === "feed" ? "Post" : "Highlight"}`;
 
-  // Return values
   return {
     state: {
       loading,

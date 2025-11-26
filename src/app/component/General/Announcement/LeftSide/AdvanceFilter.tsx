@@ -2,35 +2,28 @@
 
 import { useState, useEffect } from "react";
 import { SlidersHorizontal, Circle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion"; // Imported motion
 import {
   SortOption,
   DateOption,
   VisibilityOption,
   FilterState,
-} from "../Utils/types"; // Adjust path as needed
+} from "../Utils/types"; // Keep your imports
 
-// Define the filter types
-
-// Props for the main component
 interface AdvancedFilterProps {
-  // Callback to parent with all active filters
   onChange: (filters: {
     sort: SortOption;
     date: DateOption;
     visibility: VisibilityOption;
   }) => void;
-  // Optional: to control state from parent
   initialFilters?: {
     sort: SortOption;
     date: DateOption;
     visibility: VisibilityOption;
   };
-  // --- ADDED ---
-  // Add new prop to determine the context
   isHighlights?: boolean;
 }
 
-// Default state
 const DEFAULT_FILTERS: FilterState = {
   sort: "Newest First",
   date: "Today",
@@ -40,32 +33,23 @@ const DEFAULT_FILTERS: FilterState = {
 export default function AdvancedFilter({
   onChange,
   initialFilters = DEFAULT_FILTERS,
-  isHighlights = false, // --- ADDED ---
+  isHighlights = false,
 }: AdvancedFilterProps) {
-  // State for the popover
   const [isOpen, setIsOpen] = useState(false);
 
-  // --- MODIFIED ---
-  // Force visibility to "Global" if in highlights section
   const effectiveInitialFilters = {
     ...initialFilters,
     ...(isHighlights && { visibility: "Global" as VisibilityOption }),
   };
 
-  // This is the *applied* filter state
   const [activeFilters, setActiveFilters] = useState<FilterState>(
     effectiveInitialFilters
-  ); // --- MODIFIED ---
+  );
 
-  // This is the *temporary* state while the popover is open
   const [tempFilters, setTempFilters] = useState<FilterState>(
     effectiveInitialFilters
-  ); // --- MODIFIED ---
+  );
 
-  // --- ADDED ---
-  // This effect ensures that if the isHighlights prop changes dynamically,
-  // the component state is corrected to "Global".
-  // --- This is the fixed code ---
   useEffect(() => {
     if (isHighlights && activeFilters.visibility !== "Global") {
       const globalOnlyFilters = {
@@ -79,25 +63,15 @@ export default function AdvancedFilter({
     }
   }, [isHighlights, activeFilters, onChange]);
 
-  // Update temp state when popover opens
-  // ...
-  // Update temp state when popover opens
   useEffect(() => {
     if (isOpen) {
-      // --- THIS IS THE FIX ---
-      // Before setting the temp state, check if we are on the Highlights tab
-      // and if the active filter is still something wrong (like "Course").
       if (isHighlights && activeFilters.visibility !== "Global") {
-        // If it's wrong, force the popover's state to "Global".
         setTempFilters({ ...activeFilters, visibility: "Global" });
       } else {
-        // Otherwise, just show the currently active filter as normal.
         setTempFilters(activeFilters);
       }
-      // --- END FIX ---
     }
-  }, [isOpen, activeFilters, isHighlights]); // <-- Add 'isHighlights' to the dependency array
-  // ...
+  }, [isOpen, activeFilters, isHighlights]);
 
   const handleToggleOpen = () => {
     setIsOpen(!isOpen);
@@ -105,32 +79,31 @@ export default function AdvancedFilter({
 
   const handleCancel = () => {
     setIsOpen(false);
-    // Discard temporary changes
-    setTempFilters(activeFilters);
+    // Wait for animation to finish slightly before resetting (optional) or reset immediately
+    setTimeout(() => setTempFilters(activeFilters), 200);
   };
 
   const handleSave = () => {
-    // Apply temporary changes
     setActiveFilters(tempFilters);
-    // Send changes to parent
     onChange(tempFilters);
-    // Close modal
     setIsOpen(false);
   };
 
-  // Helper to create a tag
   const FilterTag = ({ label }: { label: string }) => (
-    <div className="flex h-[32px] items-center justify-center rounded-[10px] border border-gray-400 bg-white px-[5px] py-1">
+    <motion.div
+      layout // Smoothly adjusts position if tags change size
+      className="flex h-[32px] items-center justify-center rounded-[10px] border border-gray-400 bg-white px-[5px] py-1"
+    >
       <span className="text-[11px] font-montserrat font-medium text-black">
         {label}
       </span>
-    </div>
+    </motion.div>
   );
 
   return (
-    <div className="w-fit max-w-[320px] rounded-lg border border-gray-300 shadow-sm overflow-hidden transition-all">
-      {/* 1. FILTER HEADER (Always visible) */}
-      <div className="flex w-full items-center gap-2 bg-gray-100 p-2">
+    <div className="w-fit max-w-[320px] rounded-lg border border-gray-300 shadow-sm overflow-hidden bg-white">
+      {/* 1. FILTER HEADER */}
+      <div className="flex w-full items-center gap-2 bg-gray-100 p-2 z-20 relative">
         <span className="text-[16px] font-medium text-black">Filter</span>
         <button
           onClick={handleToggleOpen}
@@ -141,83 +114,98 @@ export default function AdvancedFilter({
           <SlidersHorizontal size={20} />
         </button>
 
-        {/* Active Filter Tags (as seen in image) */}
-        <div className="flex flex-1 items-center gap-2 overflow-x-auto py-1">
+        <div className="flex flex-1 items-center gap-2 overflow-x-auto py-1 no-scrollbar">
+          {/* LayoutGroup helps animate these smoothly if they change */}
           <FilterTag label={activeFilters.sort} />
           <FilterTag label={activeFilters.visibility} />
           <FilterTag label={activeFilters.date} />
         </div>
       </div>
 
-      {/* 2. EXPANDABLE CONTENT (Replaces the modal) */}
-      {isOpen && (
-        <div className="bg-white p-6 pt-4">
-          {/* --- Sort By --- */}
-          <FilterRadioGroup
-            label="Sort by"
-            options={["Newest First", "Oldest First"]}
-            activeOption={tempFilters.sort}
-            onChange={(val) =>
-              setTempFilters((prev) => ({ ...prev, sort: val as SortOption }))
-            }
-          />
+      {/* 2. ANIMATED EXPANDABLE CONTENT */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="overflow-hidden bg-white"
+          >
+            <div className="p-6 pt-4">
+              {/* --- Sort By --- */}
+              <FilterRadioGroup
+                label="Sort by"
+                options={["Newest First", "Oldest First"]}
+                activeOption={tempFilters.sort}
+                onChange={(val) =>
+                  setTempFilters((prev) => ({
+                    ...prev,
+                    sort: val as SortOption,
+                  }))
+                }
+              />
 
-          {/* --- Date --- */}
-          <FilterRadioGroup
-            label="Date"
-            options={["Today", "This Week", "This Month", "All Time"]}
-            activeOption={tempFilters.date}
-            onChange={(val) =>
-              setTempFilters((prev) => ({ ...prev, date: val as DateOption }))
-            }
-          />
+              {/* --- Date --- */}
+              <FilterRadioGroup
+                label="Date"
+                options={["Today", "This Week", "This Month", "All Time"]}
+                activeOption={tempFilters.date}
+                onChange={(val) =>
+                  setTempFilters((prev) => ({
+                    ...prev,
+                    date: val as DateOption,
+                  }))
+                }
+              />
 
-          {/* --- Visibility --- */}
-          <FilterRadioGroup
-            label="Visibility"
-            options={["Global", "Course", "All"]}
-            activeOption={tempFilters.visibility}
-            onChange={(val) =>
-              setTempFilters((prev) => ({
-                ...prev,
-                visibility: val as VisibilityOption,
-              }))
-            }
-            // --- ADDED ---
-            // Pass the options to disable
-            disabledOptions={isHighlights ? ["Course", "All"] : []}
-          />
+              {/* --- Visibility --- */}
+              <FilterRadioGroup
+                label="Visibility"
+                options={["Global", "Course", "All"]}
+                activeOption={tempFilters.visibility}
+                onChange={(val) =>
+                  setTempFilters((prev) => ({
+                    ...prev,
+                    visibility: val as VisibilityOption,
+                  }))
+                }
+                disabledOptions={isHighlights ? ["Course", "All"] : []}
+              />
 
-          {/* --- Action Buttons --- */}
-          <div className="mt-6 flex justify-end gap-3 border-t pt-4">
-            <button
-              onClick={handleCancel}
-              className="rounded-lg bg-gray-200 px-5 py-2 text-[15px] font-semibold text-gray-700 transition-colors hover:bg-gray-300 cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              className="rounded-lg bg-maroon px-5 py-2 text-[15px] font-semibold text-white transition-colors hover:bg-maroon/90 cursor-pointer"
-            >
-              Save
-            </button>
-          </div>
-        </div>
-      )}
+              {/* --- Action Buttons --- */}
+              <div className="mt-6 flex justify-end gap-3 border-t pt-4">
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleCancel}
+                  className="rounded-lg bg-gray-200 px-5 py-2 text-[15px] font-semibold text-gray-700 transition-colors hover:bg-gray-300 cursor-pointer"
+                >
+                  Cancel
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleSave}
+                  className="rounded-lg bg-maroon px-5 py-2 text-[15px] font-semibold text-white transition-colors hover:bg-maroon/90 cursor-pointer"
+                >
+                  Save
+                </motion.button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
 // --- HELPER COMPONENT ---
-// (Kept in the same file for simplicity)
 
 interface FilterRadioGroupProps {
   label: string;
   options: string[];
   activeOption: string;
   onChange: (option: string) => void;
-  disabledOptions?: string[]; // --- ADDED ---
+  disabledOptions?: string[];
 }
 
 function FilterRadioGroup({
@@ -225,24 +213,30 @@ function FilterRadioGroup({
   options,
   activeOption,
   onChange,
-  disabledOptions = [], // --- ADDED ---
+  disabledOptions = [],
 }: FilterRadioGroupProps) {
   return (
-    <div className="mb-4 border-b pb-4">
+    <div className="mb-4 border-b pb-4 last:border-0 last:pb-0">
       <span className="text-sm font-semibold text-gray-500">{label}</span>
       <div className="mt-2 flex flex-wrap items-center gap-3">
         {options.map((option) => {
-          // --- ADDED ---
           const isDisabled = disabledOptions.includes(option);
 
           return (
-            <button
+            <motion.button
+              whileTap={!isDisabled ? { scale: 0.95 } : {}}
               key={option}
               onClick={() => onChange(option)}
-              disabled={isDisabled} // --- ADDED ---
-              className={`flex items-center gap-2 rounded-full border border-gray-300 px-4 py-1.5 transition-all ${
-                // --- MODIFIED ---
-                isDisabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+              disabled={isDisabled}
+              className={`flex items-center gap-2 rounded-full border px-4 py-1.5 transition-all ${
+                // Simplified border logic for cleaner active states
+                activeOption === option
+                  ? "border-maroon bg-maroon/5"
+                  : "border-gray-300 bg-transparent"
+              } ${
+                isDisabled
+                  ? "cursor-not-allowed opacity-50"
+                  : "cursor-pointer hover:border-maroon/50"
               }`}
             >
               {activeOption === option ? (
@@ -259,7 +253,7 @@ function FilterRadioGroup({
               >
                 {option}
               </span>
-            </button>
+            </motion.button>
           );
         })}
       </div>

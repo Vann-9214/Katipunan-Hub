@@ -2,6 +2,7 @@
 
 import { OtherAccount } from "../Utils/types";
 import Avatar from "@/app/component/ReusableComponent/Avatar";
+import { motion } from "framer-motion";
 
 export default function SearchResultItem({
   account,
@@ -11,9 +12,11 @@ export default function SearchResultItem({
   onClick: (account: OtherAccount) => void;
 }) {
   return (
-    <div
+    <motion.div
       onClick={() => onClick(account)}
-      className="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors hover:bg-gray-100"
+      whileHover={{ scale: 1.02, backgroundColor: "rgba(0,0,0,0.05)" }}
+      whileTap={{ scale: 0.98 }}
+      className="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors"
     >
       <Avatar
         avatarURL={account.avatarURL}
@@ -25,6 +28,6 @@ export default function SearchResultItem({
           {account.fullName}
         </h3>
       </div>
-    </div>
+    </motion.div>
   );
 }

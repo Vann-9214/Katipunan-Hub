@@ -47,7 +47,7 @@ export interface DBPostRow {
   description: string;
   images: string[] | null;
   tags: string[] | null;
-  type: "announcement" | "highlight";
+  type: "announcement" | "highlight" | "feed"; // Added 'feed'
   author_id: string;
   created_at: string; // ISO timestamp string
   updated_at: string; // ISO timestamp string
@@ -65,7 +65,7 @@ export interface PostUI {
   date: string; // Formatted date string for display (e.g., "Oct 30, 2025")
   images: string[]; // Normalized to always be an array
   tags: string[]; // Normalized to always be an array
-  type: "announcement" | "highlight";
+  type: "announcement" | "highlight" | "feed"; // Added 'feed'
   visibility: string | null;
   author_id: string;
   created_at: string; // Raw ISO string, kept for accurate sorting
@@ -82,7 +82,7 @@ export interface NewPostPayload {
   description: string;
   images: string[];
   tags: string[];
-  type: "announcement" | "highlight";
+  type: "announcement" | "highlight" | "feed"; // Added 'feed'
   visibility: string | null;
   author_id: string;
 }
@@ -97,7 +97,7 @@ export interface UpdatePostPayload {
   description: string;
   images: string[];
   tags: string[];
-  type: "announcement" | "highlight";
+  type: "announcement" | "highlight" | "feed"; // Added 'feed'
   visibility: string | null;
 }
 
@@ -110,7 +110,7 @@ export interface AddPostsProps {
   externalOpen?: boolean;
   onExternalClose?: () => void;
   initialPost?: PostUI | null; // Use the UI shape for consistency
-  currentType?: "announcement" | "highlight";
+  currentType?: "announcement" | "highlight" | "feed"; // Added 'feed'
   authorId?: string; // The ID of the user creating the post
 }
 

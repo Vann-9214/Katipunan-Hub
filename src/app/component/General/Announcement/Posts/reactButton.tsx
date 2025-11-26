@@ -2,20 +2,17 @@
 
 import Image from "next/image";
 import { useState, useRef, useEffect } from "react";
-// --- 1. Import from your new config file ---
 import { reactionsList, getReactionIcon } from "./Utils/config";
+import { motion, AnimatePresence } from "framer-motion";
 
-// --- 2. Update Component Props ---
 interface ReactionButtonProps {
   selectedReactionId: string | null;
   isLoading: boolean;
   onReactionSelect: (id: string) => void;
   onMainButtonClick: () => void;
-  // --- ADDED PROPS ---
   width?: number | "full" | "auto";
   height?: number;
   textSize?: number;
-  // --- END ADDED PROPS ---
 }
 
 export default function ReactionButton({
@@ -23,12 +20,10 @@ export default function ReactionButton({
   isLoading,
   onReactionSelect,
   onMainButtonClick,
-  // --- 3. Set default values to match original code ---
-  width = "full", // Original was w-full
-  height = 35, // Original was h-[35px]
-  textSize = 22, // Original was text-[22px]
+  width = "full",
+  height = 35,
+  textSize = 18,
 }: ReactionButtonProps) {
-  // --- All UI state logic (showPicker, timeouts) is UNCHANGED ---
   const [showPicker, setShowPicker] = useState(false);
   const showTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -54,11 +49,11 @@ export default function ReactionButton({
 
   const handleMouseEnter = () => {
     clearTimeouts();
-    showTimeoutRef.current = setTimeout(() => setShowPicker(true), 800);
+    showTimeoutRef.current = setTimeout(() => setShowPicker(true), 500);
   };
   const handleMouseLeave = () => {
     clearTimeouts();
-    hideTimeoutRef.current = setTimeout(() => setShowPicker(false), 200);
+    hideTimeoutRef.current = setTimeout(() => setShowPicker(false), 300);
   };
   const handlePickerMouseEnter = () => {
     if (hideTimeoutRef.current) {
@@ -72,7 +67,6 @@ export default function ReactionButton({
     return () => clearTimeouts();
   }, []);
 
-  // --- Display Value logic (Unchanged) ---
   const selectedReaction = reactionsList.find(
     (r) => r.id === selectedReactionId
   );
@@ -82,7 +76,6 @@ export default function ReactionButton({
     ? selectedReaction.colorClass
     : "text-black";
 
-  // --- 4. Create dynamic classes from props ---
   const widthClass =
     width === "full"
       ? "w-full"
@@ -90,72 +83,84 @@ export default function ReactionButton({
       ? "w-auto"
       : `w-[${width}px]`;
 
-  // Scale icon size based on text size (Original: 22px text -> 23px icon)
   const iconSize = textSize + 1;
 
-  // --- 5. Update Render logic ---
   return (
     <div
-      className="relative w-full" // Kept w-full as per original
+      className="relative w-full"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Reaction Picker (Unchanged) */}
-      {showPicker && (
-        <div
-          onMouseEnter={handlePickerMouseEnter}
-          onMouseLeave={handleMouseLeave}
-          className="absolute bottom-full h-10 w-62 gap-2 left-1/2 mb-2 -translate-x-1/2 flex items-center justify-center bg-white rounded-full shadow-lg z-10"
-        >
-          {reactionsList.map((reaction) => (
-            <button
-              key={reaction.id}
-              onClick={() => onPickerSelect(reaction.id)}
-              disabled={isLoading}
-              className={`rounded-full transition-transform hover:scale-125 focus:outline-none ${
-                isLoading ? "opacity-50 cursor-not-allowed" : ""
-              }`}
-              aria-label={reaction.label}
-            >
-              <Image
-                src={reaction.icon}
-                alt={reaction.label}
-                width={32}
-                height={32}
-              />
-            </button>
-          ))}
-        </div>
-      )}
+      {/* Reaction Picker */}
+      <AnimatePresence>
+        {showPicker && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.8 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.8 }}
+            transition={{ type: "spring", duration: 0.4, bounce: 0.4 }}
+            onMouseEnter={handlePickerMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            // INCREASED HEIGHT: h-[70px] to fit larger icons comfortably
+            className="w-65 absolute bottom-full left-1/2 mb-2 -translate-x-1/2 h-[45px] px-1 gap-1 flex items-center justify-center bg-white rounded-full shadow-xl z-20 border border-gray-100"
+          >
+            {reactionsList.map((reaction) => (
+              <motion.button
+                key={reaction.id}
+                onClick={() => onPickerSelect(reaction.id)}
+                disabled={isLoading}
+                // Big hover scale effect
+                whileHover={{ scale: 1.35, y: -8 }}
+                whileTap={{ scale: 0.9 }}
+                className={`rounded-full focus:outline-none p-1 ${
+                  isLoading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                }`}
+                aria-label={reaction.label}
+              >
+                <Image
+                  src={reaction.icon}
+                  alt={reaction.label}
+                  // INCREASED SIZE: 48px (Much bigger than 15px)
+                  width={36}
+                  height={36}
+                  className="hover:drop-shadow-md transition-all"
+                />
+              </motion.button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Main Button */}
-      <button
+      <motion.button
         onClick={onMainClick}
         disabled={isLoading}
-        // --- 6. Apply dynamic classes ---
-        className={`cursor-pointer rounded-[10px] font-montserrat font-medium flex gap-1 items-center justify-center px-4 transition-colors ${
-          `text-[${textSize}px]` // Apply text size
-        } ${
-          `h-[${height}px]` // Apply height
-        } ${
-          widthClass // Apply width
-        } ${
+        // Button tactile feedback
+        whileHover={{ scale: 1.05, backgroundColor: "rgba(0,0,0,0.05)" }}
+        whileTap={{ scale: 0.95 }}
+        className={`cursor-pointer rounded-[10px] font-montserrat font-medium flex gap-1 items-center justify-center px-4 transition-colors ${`text-[${textSize}px]`} ${`h-[${height}px]`} ${widthClass} ${
           isLoading
             ? "opacity-50 cursor-not-allowed"
             : selectedReactionId
-            ? "bg-transparent hover:bg-black/10"
-            : "hover:bg-black/10"
+            ? "bg-transparent"
+            : ""
         }`}
       >
-        {/* --- 7. Apply dynamic icon size --- */}
-        <Image
-          src={currentIcon}
-          alt={currentLabel}
-          height={iconSize}
-          width={iconSize}
-        />
+        <motion.div
+          key={selectedReactionId || "default"}
+          initial={{ scale: 0.5 }}
+          animate={{ scale: 1 }}
+          transition={{ type: "spring", stiffness: 500, damping: 15 }}
+        >
+          <Image
+            src={currentIcon}
+            alt={currentLabel}
+            height={iconSize}
+            width={iconSize}
+          />
+        </motion.div>
         <span className={currentColorClass}>{currentLabel}</span>
-      </button>
+      </motion.button>
     </div>
   );
 }

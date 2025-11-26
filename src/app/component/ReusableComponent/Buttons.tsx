@@ -19,7 +19,7 @@ export default function Button({
   disabled?: boolean;
   onClick?: () => void;
   textSize?: string;
-  text: string;
+  text: React.ReactNode; // MODIFIED: Changed 'string' to 'React.ReactNode'
   font?: string;
   textcolor?: string;
   bg?: string;

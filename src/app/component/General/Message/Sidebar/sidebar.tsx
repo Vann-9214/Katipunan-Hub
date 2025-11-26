@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, MessagesSquare, ArrowLeft } from "lucide-react";
+import { Search, MessagesSquare, ArrowLeft, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getSortedUserPair } from "../../../../../../supabase/Lib/Message/auth";
 import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
@@ -11,8 +11,41 @@ import Avatar from "@/app/component/ReusableComponent/Avatar";
 import { OtherAccount, Conversation } from "../Utils/types";
 import ConversationList from "./conversationList";
 import SearchResultItem from "./searchResultItem";
+import { motion, AnimatePresence, Variants } from "framer-motion";
 
-// --- Main Sidebar Component ---
+// --- 1. Defined Variants with Type Safety ---
+const sidebarVariants: Variants = {
+  hidden: { x: -50, opacity: 0 },
+  visible: {
+    x: 0,
+    opacity: 1,
+    transition: {
+      type: "spring",
+      stiffness: 300,
+      damping: 30,
+      staggerChildren: 0.1,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { y: 10, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: { type: "spring", stiffness: 300, damping: 30 },
+  },
+};
+
+const listContainerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.05 },
+  },
+};
+
 export default function ChatSidebar() {
   const [search, setSearch] = useState("");
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -24,12 +57,10 @@ export default function ChatSidebar() {
   const router = useRouter();
 
   const handleHeaderClick = () => {
-    // This navigates to the base /Message page, deselecting any chat
     router.push("/Message");
     router.refresh();
   };
 
-  // Effect to fetch and set the current user details
   useEffect(() => {
     const fetchUser = async () => {
       const user = await getCurrentUserDetails();
@@ -43,7 +74,6 @@ export default function ChatSidebar() {
 
   const currentUserId = currentUser?.id;
 
-  // Effect to fetch conversations
   const fetchConversations = useCallback(async (userId: string) => {
     setLoading(true);
 
@@ -121,7 +151,6 @@ export default function ChatSidebar() {
     setLoading(false);
   }, []);
 
-  // Effect for searching users
   useEffect(() => {
     const performSearch = async () => {
       if (search.trim().length === 0) {
@@ -155,7 +184,6 @@ export default function ChatSidebar() {
     return () => clearTimeout(delayDebounceFn);
   }, [search, currentUserId]);
 
-  // Main conversation fetcher and realtime listener
   useEffect(() => {
     if (!currentUserId) return;
 
@@ -186,7 +214,6 @@ export default function ChatSidebar() {
     };
   }, [currentUserId, fetchConversations, search]);
 
-  // Click handler for search results
   const handleUserClick = async (targetUser: OtherAccount) => {
     if (!currentUser?.id) return;
 
@@ -204,7 +231,7 @@ export default function ChatSidebar() {
 
     if (error && error.code !== "PGRST116") {
       console.error("Error checking for existing conversation:", error);
-      return; // Stop execution
+      return;
     }
     if (existingConvo) {
       router.push(`/Message/${existingConvo.id}`);
@@ -228,7 +255,6 @@ export default function ChatSidebar() {
     setSearch("");
   };
 
-  // Logic for filtering favorites and chats
   const filteredConversations = conversations.filter((convo) =>
     convo.otherUser.fullName.toLowerCase().includes(search.toLowerCase())
   );
@@ -236,46 +262,63 @@ export default function ChatSidebar() {
   const favorites = filteredConversations.filter((c) => c.is_favorite);
   const chats = filteredConversations.filter((c) => !c.is_favorite);
 
-  // Loading/Auth block
   if (!currentUser && !loading) {
     return (
-      <aside className="w-[350px] h-full bg-white border-r border-gray-200 flex flex-col p-4 justify-center items-center shadow-xl">
+      <motion.aside
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        className="w-[350px] h-full bg-white border-r border-gray-200 flex flex-col p-4 justify-center items-center shadow-xl"
+      >
         <h1 className="text-xl font-bold text-red-500">
           Authentication Required
         </h1>
         <p className="text-center text-sm text-gray-600 mt-2">
           Please log in to view your chats.
         </p>
-      </aside>
+      </motion.aside>
     );
   }
 
-  // --- Render ---
   return (
-    <aside className="w-[350px] h-full bg-white border-r border-gray-200 flex flex-col p-4 space-y-4 shadow-xl">
+    <motion.aside
+      initial="hidden"
+      animate="visible"
+      variants={sidebarVariants}
+      className="w-[350px] h-full bg-white border-r border-gray-200 flex flex-col p-4 space-y-4 shadow-xl"
+    >
       {/* Header */}
-      <div className="flex items-center gap-5 ">
+      <motion.div variants={itemVariants} className="flex items-center gap-5">
         <h1 className="text-[36px] font-montserrat font-bold text-black">
           Chats
         </h1>
-        <div
+        <motion.div
+          whileHover={{ scale: 1.1, rotate: 10 }}
+          whileTap={{ scale: 0.9 }}
           onClick={handleHeaderClick}
           className="text-black transition-colors hover:text-gray-700 cursor-pointer"
         >
           <MessagesSquare size={36} />
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* Search Bar */}
-      <div className="relative flex items-center gap-2">
-        {search.length > 0 && (
-          <button
-            onClick={() => setSearch("")}
-            className="p-2 rounded-full hover:bg-gray-200 text-gray-600 flex-shrink-0"
-          >
-            <ArrowLeft size={18} />
-          </button>
-        )}
+      <motion.div
+        variants={itemVariants}
+        className="relative flex items-center gap-2"
+      >
+        <AnimatePresence>
+          {search.length > 0 && (
+            <motion.button
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              onClick={() => setSearch("")}
+              className="p-2 rounded-full hover:bg-gray-200 text-gray-600 flex-shrink-0"
+            >
+              <ArrowLeft size={18} />
+            </motion.button>
+          )}
+        </AnimatePresence>
         <div className="relative flex-1">
           <input
             type="text"
@@ -289,56 +332,80 @@ export default function ChatSidebar() {
             className="absolute left-3 top-1/2 -translate-y-1/2 text-black/70 pointer-events-none"
           />
         </div>
-      </div>
+      </motion.div>
 
-      {/* Conditional Content */}
-      <div className="flex-1 overflow-y-auto space-y-4 pr-1 custom-scrollbar">
+      {/* Content Area */}
+      <motion.div
+        className="flex-1 overflow-y-auto space-y-4 pr-1 custom-scrollbar"
+        variants={listContainerVariants} // Staggers the children inside
+      >
         {isSearching ? (
-          <div className="text-center py-8 text-gray-500">Searching...</div>
+          <motion.div
+            variants={itemVariants}
+            className="text-center py-8 text-gray-500 flex flex-col items-center gap-2"
+          >
+            <Loader2 className="animate-spin" />
+            <span>Searching...</span>
+          </motion.div>
         ) : search.length > 0 && searchResults.length > 0 ? (
-          <>
+          <div className="space-y-1">
             {searchResults.map((account) => (
-              <SearchResultItem
-                key={account.id}
-                account={account}
-                onClick={handleUserClick}
-              />
+              <motion.div key={account.id} variants={itemVariants}>
+                <SearchResultItem account={account} onClick={handleUserClick} />
+              </motion.div>
             ))}
-          </>
+          </div>
         ) : (
           <>
             {loading ? (
-              <div className="text-center py-8 text-gray-500">
+              <motion.div
+                variants={itemVariants}
+                className="text-center py-8 text-gray-500"
+              >
                 Loading chats...
-              </div>
+              </motion.div>
             ) : (
-              <>
-                <ConversationList
-                  title="Favorites (Most Recent)"
-                  conversations={favorites}
-                />
-                <ConversationList
-                  title="Chats (Most Recent)"
-                  conversations={chats}
-                />
+              <div className="space-y-4">
+                <motion.div variants={itemVariants}>
+                  <ConversationList
+                    title="Favorites (Most Recent)"
+                    conversations={favorites}
+                  />
+                </motion.div>
+                <motion.div variants={itemVariants}>
+                  <ConversationList
+                    title="Chats (Most Recent)"
+                    conversations={chats}
+                  />
+                </motion.div>
+
                 {filteredConversations.length === 0 && search.length > 0 && (
-                  <div className="text-center py-8 text-gray-500 text-sm">
+                  <motion.div
+                    variants={itemVariants}
+                    className="text-center py-8 text-gray-500 text-sm"
+                  >
                     No chats found for &quot;{search}&quot;.
-                  </div>
+                  </motion.div>
                 )}
                 {conversations.length === 0 && search.length === 0 && (
-                  <div className="text-center py-8 text-gray-500 text-sm">
+                  <motion.div
+                    variants={itemVariants}
+                    className="text-center py-8 text-gray-500 text-sm"
+                  >
                     No conversations found.
-                  </div>
+                  </motion.div>
                 )}
-              </>
+              </div>
             )}
           </>
         )}
-      </div>
+      </motion.div>
 
-      {/* Current User Footer */}
-      <div className="flex-shrink-0 flex items-center gap-3 p-3 rounded-xl bg-white border border-gray-200 shadow-lg">
+      {/* Footer */}
+      <motion.div
+        variants={itemVariants}
+        className="flex-shrink-0 flex items-center gap-3 p-3 rounded-xl bg-white border border-gray-200 shadow-lg"
+      >
         <Avatar
           avatarURL={currentUser?.avatarURL}
           altText={currentUser?.fullName || "User"}
@@ -353,21 +420,21 @@ export default function ChatSidebar() {
             {currentUser ? "Online" : "Offline"}
           </p>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Your custom scrollbar styles */}
+      {/* Styles */}
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background-color: #d1d5db; /* gray-300 */
+          background-color: #d1d5db;
           border-radius: 3px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-          background-color: #f3f4f6; /* gray-100 */
+          background-color: #f3f4f6;
         }
       `}</style>
-    </aside>
+    </motion.aside>
   );
 }

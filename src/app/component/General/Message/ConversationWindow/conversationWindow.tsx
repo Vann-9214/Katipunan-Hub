@@ -5,14 +5,63 @@ import { useParams } from "next/navigation";
 import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
 import { getCurrentUserDetails } from "../../../../../../supabase/Lib/General/getUser";
 import type { User } from "../../../../../../supabase/Lib/General/user";
-
-// --- CLEANED IMPORTS ---
 import { OtherUser, Message } from "../Utils/types";
 import ConversationHeader from "./conversationHeader";
 import MessageBubble from "./messageBubble";
 import MessageInput from "./messageInput";
+import { motion, AnimatePresence, Variants } from "framer-motion";
 
-// --- Main Component ---
+/* --- Helper: Date Formatter --- */
+const getDateLabel = (dateStr: string) => {
+  const date = new Date(dateStr);
+  const now = new Date();
+
+  const startOfToday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate()
+  );
+  const startOfDate = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate()
+  );
+
+  const diffTime = startOfToday.getTime() - startOfDate.getTime();
+  const diffDays = diffTime / (1000 * 3600 * 24);
+
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+
+  const options: Intl.DateTimeFormatOptions = {
+    month: "short",
+    day: "numeric",
+    weekday: "short",
+  };
+
+  if (date.getFullYear() !== now.getFullYear()) {
+    options.year = "numeric";
+  }
+
+  return date.toLocaleDateString("en-US", options);
+};
+
+/* --- Helper Component: Date Separator --- */
+const DateSeparator = ({ date }: { date: string }) => (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    className="flex items-center py-6 my-2 opacity-80"
+  >
+    <div className="flex-grow h-[1px] bg-gray-300/70" />
+    <span className="px-4 text-[11px] font-bold text-gray-400 font-montserrat uppercase tracking-widest">
+      {date}
+    </span>
+    <div className="flex-grow h-[1px] bg-gray-300/70" />
+  </motion.div>
+);
+
+/* --- Main Component --- */
 export default function ConversationWindow() {
   const params = useParams();
   const conversationId = params.ConversationId as string;
@@ -24,43 +73,45 @@ export default function ConversationWindow() {
   const [otherUser, setOtherUser] = useState<OtherUser | null>(null);
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
 
-  // 1. Fetch current user
+  // Animation Variants
+  const loadingContainerVariants: Variants = {
+    animate: {
+      transition: { staggerChildren: 0.1 },
+    },
+  };
+
+  const loadingLetterVariants: Variants = {
+    initial: { y: 0 },
+    animate: {
+      y: [0, -10, 0],
+      transition: { duration: 1, repeat: Infinity, ease: "easeInOut" },
+    },
+  };
+
+  /* User Fetcher */
   useEffect(() => {
     const fetchUser = async () => {
       const user = await getCurrentUserDetails();
       setCurrentUser(user);
-      console.log("1. Current User Fetched:", user);
     };
     fetchUser();
   }, []);
 
-  // 2. Scroll to bottom when new messages arrive
+  /* Auto Scroll */
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // 3. Fetch messages and conversation details (NO REALTIME)
+  /* Data Fetcher */
   useEffect(() => {
-    console.log(
-      "3. Firing main data useEffect. conversationId:",
-      conversationId,
-      "currentUser?.id:",
-      currentUser?.id
-    );
-
     if (!conversationId || !currentUser?.id) {
       if (!conversationId) setLoading(false);
-      console.warn(
-        "Returning early: No conversationId or current user ID yet."
-      );
       return;
     }
 
     const fetchConversationData = async () => {
       try {
-        console.log("3a. Fetching convo data for ID:", conversationId);
-
-        // A. Get conversation
+        // 1. Get Conversation
         const { data: convoData, error: convoError } = await supabase
           .from("Conversations")
           .select("user_a_id, user_b_id")
@@ -70,17 +121,12 @@ export default function ConversationWindow() {
         if (convoError) throw convoError;
         if (!convoData) throw new Error("Conversation not found");
 
-        console.log("3b. Convo data found:", convoData);
-
-        // B. Identify other user
         const otherUserId =
           convoData.user_a_id === currentUser.id
             ? convoData.user_b_id
             : convoData.user_a_id;
 
-        console.log("3c. Identified otherUserId:", otherUserId);
-
-        // C. Get other user's details AND all messages
+        // 2. Fetch Messages & Other User Details
         const [accountResult, messagesResult] = await Promise.all([
           supabase
             .from("Accounts")
@@ -94,30 +140,13 @@ export default function ConversationWindow() {
             .order("created_at", { ascending: true }),
         ]);
 
-        console.log("3d. Account Query Result:", accountResult);
-        console.log("3e. Messages Query Result:", messagesResult);
-
         if (accountResult.error) throw accountResult.error;
         if (messagesResult.error) throw messagesResult.error;
 
-        // D. Set states
-        if (accountResult.data) {
-          console.log("3f. Setting other user state with:", accountResult.data);
-          setOtherUser(accountResult.data);
-        } else {
-          console.warn("3f. Account query returned NO DATA (data is null).");
-        }
-
-        if (messagesResult.data) {
-          setMessages(messagesResult.data);
-        }
+        if (accountResult.data) setOtherUser(accountResult.data);
+        if (messagesResult.data) setMessages(messagesResult.data);
       } catch (error) {
-        console.error("--- !!! ERROR in fetchConversationData !!! ---:");
-        if (error instanceof Error) {
-          console.error("Error Message:", error.message);
-        } else {
-          console.error("An unknown error occurred:", error);
-        }
+        console.error(error);
       } finally {
         setLoading(false);
       }
@@ -126,14 +155,63 @@ export default function ConversationWindow() {
     fetchConversationData();
   }, [conversationId, currentUser?.id]);
 
-  // 4. Handle sending a message
+  /* --- ADDED: Mark Messages as Read Logic --- */
+  useEffect(() => {
+    if (!conversationId || !currentUser?.id) return;
+
+    const markAsRead = async () => {
+      // CALL THE NEW DATABASE FUNCTION
+      const { error } = await supabase.rpc("mark_messages_read", {
+        p_conversation_id: conversationId,
+      });
+
+      if (error) {
+        console.error("Error marking messages as read:", error);
+      }
+    };
+
+    // Run immediately
+    markAsRead();
+
+    // Depend on messages.length so it runs when new messages arrive
+  }, [conversationId, currentUser?.id, messages.length]);
+
+  /* --- NEW: Realtime Subscription for Messages --- */
+  useEffect(() => {
+    if (!conversationId) return;
+
+    const channel = supabase
+      .channel(`chat_room:${conversationId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "Messages",
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const newMsg = payload.new as Message;
+          setMessages((current) => {
+            // Prevent duplicates (e.g., if we just sent this message ourselves)
+            if (current.some((msg) => msg.id === newMsg.id)) {
+              return current;
+            }
+            return [...current, newMsg];
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [conversationId]);
+
+  /* Send Handler */
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !currentUser?.id || !conversationId) return;
-
-    console.log("--- DEBUGGING: ATTEMPTING TO SEND ---");
-    console.log("currentUser.id:", currentUser.id);
-    console.log("conversationId:", conversationId);
 
     const messagePayload = {
       content: newMessage.trim(),
@@ -148,18 +226,8 @@ export default function ConversationWindow() {
       .insert(messagePayload)
       .select();
 
-    if (error) {
-      console.error("--- !!! REAL RLS INSERT ERROR !!! ---:", error);
-      setNewMessage(messagePayload.content); // Put message back
-      return;
-    }
-
-    if (!newMessageData || newMessageData.length === 0) {
-      console.error(
-        "--- !!! REAL RLS SELECT ERROR !!! ---",
-        "Insert succeeded, but .select() returned no data. Check your SELECT RLS policy."
-      );
-      setNewMessage(messagePayload.content); // Put message back
+    if (error || !newMessageData || newMessageData.length === 0) {
+      setNewMessage(messagePayload.content);
       return;
     }
 
@@ -167,35 +235,94 @@ export default function ConversationWindow() {
     setMessages((currentMessages) => [...currentMessages, theMessage]);
   };
 
-  // --- Render ---
+  /* Render Loading State */
   if (loading) {
+    const loadingText = "LOADING CONVERSATION...";
     return (
-      <div className="h-full flex items-center justify-center text-gray-500">
-        Loading conversation...
+      <div className="h-full flex flex-col items-center justify-center bg-white space-y-6">
+        <motion.div className="flex gap-2">
+          {[0, 1, 2].map((i) => (
+            <motion.div
+              key={i}
+              className="w-4 h-4 bg-[#8B0E0E] rounded-full"
+              animate={{
+                y: [0, -15, 0],
+                scale: [1, 1.2, 1],
+                opacity: [0.7, 1, 0.7],
+              }}
+              transition={{
+                duration: 0.8,
+                repeat: Infinity,
+                delay: i * 0.15,
+                ease: "easeInOut",
+              }}
+            />
+          ))}
+        </motion.div>
+
+        <motion.div
+          className="flex gap-[2px] overflow-hidden"
+          variants={loadingContainerVariants}
+          initial="initial"
+          animate="animate"
+        >
+          {loadingText.split("").map((char, index) => (
+            <motion.span
+              key={index}
+              variants={loadingLetterVariants}
+              className="text-[#8B0E0E] font-montserrat font-bold text-sm tracking-widest"
+            >
+              {char === " " ? "\u00A0" : char}
+            </motion.span>
+          ))}
+        </motion.div>
       </div>
     );
   }
 
-  console.log("Rendering otherUser:", otherUser);
-
   return (
     <div className="flex flex-col h-full bg-white">
-      {/* Header --- REPLACED --- */}
       <ConversationHeader otherUser={otherUser} />
 
-      {/* Message List --- REPLACED --- */}
-      <div className="flex-1 p-4 space-y-4 overflow-y-auto">
-        {messages.map((msg) => (
-          <MessageBubble
-            key={msg.id}
-            message={msg}
-            isCurrentUser={msg.sender_id === currentUser?.id}
-          />
-        ))}
-        <div ref={messagesEndRef} />
-      </div>
+      {/* Message List */}
+      <motion.div
+        key={conversationId}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4 }}
+        className="flex-1 p-4 space-y-1 overflow-y-auto"
+      >
+        <AnimatePresence initial={false} mode="popLayout">
+          {messages.map((msg, index) => {
+            const showDateSeparator =
+              index === 0 ||
+              getDateLabel(messages[index - 1].created_at) !==
+                getDateLabel(msg.created_at);
 
-      {/* Message Input --- REPLACED --- */}
+            return (
+              <motion.div
+                key={msg.id}
+                layout
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className="flex flex-col w-full"
+              >
+                {showDateSeparator && (
+                  <DateSeparator date={getDateLabel(msg.created_at)} />
+                )}
+
+                <MessageBubble
+                  message={msg}
+                  isCurrentUser={msg.sender_id === currentUser?.id}
+                />
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+        <div ref={messagesEndRef} />
+      </motion.div>
+
       <MessageInput
         newMessage={newMessage}
         setNewMessage={setNewMessage}

@@ -62,7 +62,7 @@ const INITIAL_POSTS: Post[] = [
   {
     id: 2,
     type: "Found",
-    imageUrl: "/cat.svg", 
+    imageUrl: "/cat.svg",
     title: "Scientific Calculator",
     postedBy: "Maria S. | BSME",
     lostOn: "Oct 30",
@@ -135,22 +135,22 @@ const categoryIcons: { [key in Category]?: React.ReactNode } = {
 const liquidSpring: Transition = {
   type: "spring",
   stiffness: 700, // High stiffness for speed
-  damping: 25,    // Balanced damping for a snappy stop without too much wobble
-  mass: 0.5,      // Lightweight feel
+  damping: 25, // Balanced damping for a snappy stop without too much wobble
+  mass: 0.5, // Lightweight feel
 };
 
 // 2. Content Fade (Inside the liquid container)
 const contentVariants: Variants = {
   hidden: { opacity: 0, scale: 0.95 },
-  visible: { 
-    opacity: 1, 
-    scale: 1, 
-    transition: { duration: 0.1 } // Very fast fade
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.1 }, // Very fast fade
   },
-  exit: { 
-    opacity: 0, 
-    scale: 0.95, 
-    transition: { duration: 0.1 } 
+  exit: {
+    opacity: 0,
+    scale: 0.95,
+    transition: { duration: 0.1 },
   },
 };
 
@@ -301,11 +301,10 @@ export default function LostandFoundContent() {
         backgroundPosition: "center",
       }}
     >
-      <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-red-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob z-0" />
+      <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-red-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob z-1" />
       <div className="absolute top-1/2 right-1/4 w-48 h-48 bg-yellow-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000 z-0" />
 
-      <main className="max-w-6xl mx-auto px-8 pb-28 relative z-20 pt-[100px]">
-        
+      <main className="max-w-6xl mx-auto px-8 pb-28 relative z-1 pt-[100px]">
         {/* TITLE REMOVED */}
 
         <div className="grid grid-cols-12 items-start gap-8 mt-5">
