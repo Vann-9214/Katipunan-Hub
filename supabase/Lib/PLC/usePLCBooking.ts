@@ -37,6 +37,9 @@ export interface TutorRating {
   review: string;
 }
 
+// Define a type for our ratings map
+type RatingsMap = Map<string, TutorRating>;
+
 export type MonthBooking = Pick<Booking, "id" | "bookingDate" | "status" | "approvedBy" | "startTime" | "endTime">;
 
 const getDateString = (y: number, m: number, d: number) => {
@@ -76,11 +79,13 @@ export const usePLCBookings = (
   
   // Loading States
   const [isLoadingDayBookings, setIsLoadingDayBookings] = useState(false);
-  const [isInitialLoading, setIsInitialLoading] = useState(true); // Start TRUE for immediate feedback
+  const [isInitialLoading, setIsInitialLoading] = useState(true); 
 
   const [isTutor, setIsTutor] = useState(false);
   const [myRejections, setMyRejections] = useState<string[]>([]);
-  const [myRatedBookingIds, setMyRatedBookingIds] = useState<string[]>([]);
+  
+  // State to store actual rating values, not just IDs
+  const [myRatingsMap, setMyRatingsMap] = useState<RatingsMap>(new Map());
 
   // Refs to track state without re-rendering
   const isFetchingRef = useRef(false);
@@ -95,7 +100,6 @@ export const usePLCBookings = (
           setIsTutor(true);
         }
       } else {
-        // If no user is found, stop loading so the app doesn't hang
         setIsInitialLoading(false);
       }
     };
@@ -105,15 +109,24 @@ export const usePLCBookings = (
   // --- 1. HELPERS ---
 
   const fetchMyRatings = useCallback(async () => {
-    if (!currentUser) return [];
+    if (!currentUser) return new Map();
+    
+    // FIX: Select specific rating and review columns
     const { data } = await supabase
       .from("TutorRatings")
-      .select("booking_id")
+      .select("booking_id, rating, review")
       .eq("student_id", currentUser.id);
     
-    const ids = data?.map((row) => row.booking_id) || [];
-    setMyRatedBookingIds(ids);
-    return ids;
+    const map = new Map<string, TutorRating>();
+    
+    if (data) {
+        data.forEach((row: any) => {
+            map.set(row.booking_id, { rating: row.rating, review: row.review });
+        });
+    }
+    
+    setMyRatingsMap(map);
+    return map;
   }, [currentUser]);
 
   const fetchMyRejections = useCallback(async () => {
@@ -161,12 +174,9 @@ export const usePLCBookings = (
     }
   }, [currentUser, year, monthIndex, isTutor]);
 
-  const fetchDayBookings = useCallback(async (silent = false, currentRatedIds: string[] = []) => {
+  const fetchDayBookings = useCallback(async (silent = false, passedMap: RatingsMap | null = null) => {
     if (!currentUser) return;
 
-    // --- FIX: Determine an effective date to fetch ---
-    // If selectedDate is null (like in PLCContent), default to Today (if in current month) or 1st.
-    // This ensures the promise actually does work and waits, keeping the loading screen up.
     let targetDay = selectedDate;
     if (!targetDay) {
       const now = new Date();
@@ -181,7 +191,6 @@ export const usePLCBookings = (
 
     const dateQuery = getDateString(year, monthIndex, targetDay);
 
-    // FIX: Using EXACT Mixed-Case constraint names from your DDL
     let query = supabase
       .from("PLCBookings")
       .select(`
@@ -216,13 +225,20 @@ export const usePLCBookings = (
         return true;
       });
 
-      const idsToCheck = currentRatedIds.length > 0 ? currentRatedIds : myRatedBookingIds;
+      // Use passed map or fallback to state
+      const mapToUse = passedMap || myRatingsMap;
       
-      const mappedData = filtered.map((booking) => ({
-        ...booking,
-        hasRejected: myRejections.includes(booking.id),
-        TutorRatings: idsToCheck.includes(booking.id) ? [{ rating: 5, review: "Rated" }] : [],
-      }));
+      const mappedData = filtered.map((booking) => {
+        // FIX: Get actual rating data
+        const ratingData = mapToUse.get(booking.id);
+        
+        return {
+          ...booking,
+          hasRejected: myRejections.includes(booking.id),
+          // FIX: Assign actual data if it exists
+          TutorRatings: ratingData ? [ratingData] : [],
+        };
+      });
 
       setDayBookings(mappedData);
     } else {
@@ -230,9 +246,9 @@ export const usePLCBookings = (
     }
 
     if (!silent) setIsLoadingDayBookings(false);
-  }, [currentUser, selectedDate, monthIndex, year, isTutor, myRejections, myRatedBookingIds]);
+  }, [currentUser, selectedDate, monthIndex, year, isTutor, myRejections, myRatingsMap]);
 
-  const fetchHistoryBookings = useCallback(async (currentRatedIds: string[] = []) => {
+  const fetchHistoryBookings = useCallback(async (passedMap: RatingsMap | null = null) => {
     if (!currentUser) return;
     
     let query = supabase
@@ -258,35 +274,41 @@ export const usePLCBookings = (
     }
     
     if (data) {
-      const idsToCheck = currentRatedIds.length > 0 ? currentRatedIds : myRatedBookingIds;
+      // Use passed map or fallback to state
+      const mapToUse = passedMap || myRatingsMap;
       
-      const mappedHistory = data.map((booking: any) => ({
-        ...booking,
-        TutorRatings: idsToCheck.includes(booking.id) ? [{ rating: 5, review: "Rated" }] : [],
-      }));
+      const mappedHistory = data.map((booking: any) => {
+        // FIX: Get actual rating data
+        const ratingData = mapToUse.get(booking.id);
+        
+        return {
+          ...booking,
+          // FIX: Assign actual data if it exists
+          TutorRatings: ratingData ? [ratingData] : [],
+        };
+      });
 
       setHistoryBookings(mappedHistory);
     }
-  }, [currentUser, isTutor, myRatedBookingIds]);
+  }, [currentUser, isTutor, myRatingsMap]);
 
   // --- 3. CENTRAL REFRESH ---
   const refreshBookings = useCallback(async (silent = false) => {
     if (isFetchingRef.current) return;
     isFetchingRef.current = true;
 
-    // Only show full screen loader if not silent
     if (!silent) setIsInitialLoading(true);
     
     try {
-      const freshRatedIds = await fetchMyRatings();
+      // Fetch ratings first to get the map
+      const freshRatingsMap = await fetchMyRatings();
       
-      // Execute all fetches. Because fetchDayBookings now defaults to a date,
-      // this Promise.all will wait for the day data too!
       await Promise.all([
         fetchMyRejections(),
         fetchMonthBookings(),
-        fetchDayBookings(silent, freshRatedIds), 
-        fetchHistoryBookings(freshRatedIds)      
+        // Pass the fresh map to avoid stale state issues
+        fetchDayBookings(silent, freshRatingsMap), 
+        fetchHistoryBookings(freshRatingsMap)      
       ]);
     } catch (error) {
       console.error("Critical error during refreshBookings:", error);
@@ -390,14 +412,10 @@ export const usePLCBookings = (
   // --- EFFECTS ---
 
   // 1. MAIN DATA FETCHING
-  // Runs when dependencies change (like switching months/days).
-  // USES isFirstLoad to determine if it should show the full-screen loader.
   useEffect(() => {
     if (currentUser) {
       const shouldShowLoader = isFirstLoad.current;
       
-      // If it's the first load, pass FALSE to 'silent' (show loader).
-      // If it's NOT first load (switching dates), pass TRUE to 'silent' (hide loader).
       refreshBookings(!shouldShowLoader); 
       
       if (shouldShowLoader) {
@@ -407,7 +425,6 @@ export const usePLCBookings = (
   }, [currentUser, year, monthIndex, selectedDate, isTutor]);
 
   // 2. CLEANUP ON MOUNT
-  // Runs only ONCE when the component mounts to clean db.
   useEffect(() => {
     if (currentUser) {
         cleanupExpired();
