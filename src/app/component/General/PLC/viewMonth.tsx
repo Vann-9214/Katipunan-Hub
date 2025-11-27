@@ -7,6 +7,9 @@ import {
   MoveRight,
   Loader2,
   Plus,
+  Clock,
+  User,
+  BookOpen,
 } from "lucide-react";
 import { Montserrat, PT_Sans } from "next/font/google";
 import { WEEKDAYS, MONTHS, getDaysInMonth, getFirstDayOfMonth } from "./Utils";
@@ -48,22 +51,22 @@ const formatTimeDisplay = (startStr: string, endStr?: string) => {
   return end ? `${start} - ${end}` : start;
 };
 
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case "Pending":
-      return "#FFB74D";
-    case "Approved":
-    case "Completed":
-      return "#81C784";
-    case "Rejected":
-    case "Cancelled":
-      return "#EF9A9A";
-    case "Starting...":
-      return "#FFD239";
-    default:
-      return "#FFFFFF";
-  }
-};
+// const getStatusColor = (status: string) => {
+//   switch (status) {
+//     case "Pending":
+//       return "#FFB74D";
+//     case "Approved":
+//     case "Completed":
+//       return "#81C784";
+//     case "Rejected":
+//     case "Cancelled":
+//       return "#EF9A9A";
+//     case "Starting...":
+//       return "#FFD239";
+//     default:
+//       return "#FFFFFF";
+//   }
+// };
 
 // Helper for the small dots in the calendar grid
 const getStatusDotColor = (status: string) => {
@@ -415,29 +418,54 @@ export default function PLCViewMonth({
                       const activeStatus = getStatusForBooking(booking);
                       let displayStatus = activeStatus;
 
-                      // --- DYNAMIC BACKGROUND LOGIC ---
-                      // Matching your original code's color logic
-                      let statusColor = "text-gray-600";
-                      let cardBg = "bg-[#F4E4E4]"; // Default Gray/White mix
+                      // --- BEAUTIFIED CARD LOGIC ---
+                      // Define themes based on status for cleaner UI
+                      let theme = {
+                        bg: "bg-white",
+                        border: "border-l-4 border-gray-300",
+                        badgeBg: "bg-gray-100",
+                        text: "text-gray-600",
+                        icon: "text-gray-400",
+                      };
 
                       if (activeStatus === "Starting...") {
-                        statusColor = "text-[#EFBF04] animate-pulse"; // Gold Text
-                        cardBg = "bg-[#EFBF04]/20"; // Gold Tint BG
-                      } else if (activeStatus === "Completed") {
-                        statusColor = "text-green-600";
-                        cardBg = "bg-green-100 border border-green-700";
-                      } else if (activeStatus === "Approved") {
-                        statusColor = "text-green-600";
-                        cardBg = "bg-green-100";
+                        theme = {
+                          bg: "bg-white",
+                          border: "border-l-4 border-[#EFBF04]",
+                          badgeBg: "bg-[#EFBF04]/20",
+                          text: "text-[#B48E00]", // Darker gold for text
+                          icon: "text-[#EFBF04]",
+                        };
+                      } else if (
+                        activeStatus === "Approved" ||
+                        activeStatus === "Completed"
+                      ) {
+                        theme = {
+                          bg: "bg-white",
+                          border: "border-l-4 border-green-500",
+                          badgeBg: "bg-green-100",
+                          text: "text-green-700",
+                          icon: "text-green-600",
+                        };
                       } else if (activeStatus === "Pending") {
-                        statusColor = "text-[#D97706]"; // Orange
-                        cardBg = "bg-orange-100";
+                        theme = {
+                          bg: "bg-white",
+                          border: "border-l-4 border-[#D97706]", // Orange
+                          badgeBg: "bg-orange-100",
+                          text: "text-[#D97706]",
+                          icon: "text-[#D97706]",
+                        };
                       } else if (
                         activeStatus === "Rejected" ||
                         activeStatus === "Cancelled"
                       ) {
-                        statusColor = "text-red-600";
-                        cardBg = "bg-red-100";
+                        theme = {
+                          bg: "bg-white",
+                          border: "border-l-4 border-red-500",
+                          badgeBg: "bg-red-100",
+                          text: "text-red-600",
+                          icon: "text-red-500",
+                        };
                       }
 
                       if (
@@ -446,12 +474,17 @@ export default function PLCViewMonth({
                         booking.status === "Pending"
                       ) {
                         displayStatus = "Rejected";
-                        statusColor = "text-red-600";
-                        cardBg = "bg-red-100";
+                        theme = {
+                          bg: "bg-white",
+                          border: "border-l-4 border-red-500",
+                          badgeBg: "bg-red-100",
+                          text: "text-red-600",
+                          icon: "text-red-500",
+                        };
                       }
 
                       return (
-                        // 4. Animated Booking Cards
+                        // 4. Animated Booking Cards (Beautified)
                         <motion.div
                           key={booking.id}
                           layout
@@ -464,83 +497,83 @@ export default function PLCViewMonth({
                             stiffness: 300,
                             damping: 25,
                           }}
-                          whileHover={{ scale: 1.02 }}
+                          whileHover={{ scale: 1.02, x: 5 }}
                           whileTap={{ scale: 0.98 }}
                           onClick={() => handleBookingClick(booking)}
-                          // Applied the dynamic cardBg here
-                          className={`relative w-full ${cardBg} rounded-[15px] p-4 flex flex-col gap-2 hover:shadow-lg cursor-pointer group transition-all ${
+                          className={`relative w-full ${theme.bg} ${
+                            theme.border
+                          } rounded-r-[15px] rounded-l-[4px] p-4 flex flex-col gap-3 shadow-sm hover:shadow-lg cursor-pointer group transition-all ${
                             activeStatus === "Starting..."
-                              ? "ring-2 ring-[#EFBF04] border-[#EFBF04]"
+                              ? "border-t border-b border-r border-[#EFBF04] shadow-md"
                               : ""
                           }`}
                         >
-                          <span
-                            className={`absolute top-3 right-4 text-[12px] font-bold ${statusColor} ${montserrat.className}`}
-                          >
-                            {displayStatus}
-                          </span>
-
-                          <div className="flex gap-1 text-black text-[14px]">
+                          {/* Header Row: Subject + Status Badge */}
+                          <div className="flex justify-between items-start gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <BookOpen
+                                size={16}
+                                className={`${theme.icon} shrink-0`}
+                              />
+                              <h3
+                                className={`${montserrat.className} font-bold text-[15px] text-gray-800 truncate`}
+                              >
+                                {booking.subject}
+                              </h3>
+                            </div>
                             <span
-                              className={`${montserrat.className} font-bold`}
+                              className={`shrink-0 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${theme.badgeBg} ${theme.text} ${montserrat.className}`}
                             >
-                              Subject :
-                            </span>
-                            <span
-                              className={`${montserrat.className} font-bold`}
-                            >
-                              {booking.subject}
+                              {displayStatus}
                             </span>
                           </div>
-                          <div className="flex gap-1 text-black text-[14px]">
-                            <span
-                              className={`${montserrat.className} font-bold`}
-                            >
-                              {isTutor
-                                ? "Student :"
-                                : activeStatus === "Approved" ||
-                                  activeStatus === "Starting..." ||
-                                  activeStatus === "Completed"
-                                ? "Tutor :"
-                                : "Time :"}
-                            </span>
-                            <span
-                              className={`${montserrat.className} font-normal`}
-                            >
-                              {isTutor
-                                ? booking.Accounts?.fullName
-                                : activeStatus === "Approved" ||
-                                  activeStatus === "Starting..." ||
-                                  activeStatus === "Completed"
-                                ? booking.Tutor?.fullName
-                                : formatTimeDisplay(
+
+                          {/* Details Row */}
+                          <div className="flex flex-col gap-1.5 pl-1">
+                            {/* Row 1: Person or Time (Based on original logic) */}
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                              {isTutor ||
+                              activeStatus === "Approved" ||
+                              activeStatus === "Starting..." ||
+                              activeStatus === "Completed" ? (
+                                <User size={14} className="text-gray-400" />
+                              ) : (
+                                <Clock size={14} className="text-gray-400" />
+                              )}
+                              <span className={`${ptSans.className} truncate`}>
+                                {isTutor
+                                  ? booking.Accounts?.fullName || "Student"
+                                  : activeStatus === "Approved" ||
+                                    activeStatus === "Starting..." ||
+                                    activeStatus === "Completed"
+                                  ? booking.Tutor?.fullName || "Tutor"
+                                  : formatTimeDisplay(
+                                      booking.startTime,
+                                      booking.endTime
+                                    )}
+                              </span>
+                            </div>
+
+                            {/* Row 2: Time (Only if Row 1 was Person) */}
+                            {(isTutor ||
+                              activeStatus === "Approved" ||
+                              activeStatus === "Starting..." ||
+                              activeStatus === "Completed") && (
+                              <div className="flex items-center gap-2 text-sm text-gray-600">
+                                <Clock size={14} className="text-gray-400" />
+                                <span className={`${ptSans.className}`}>
+                                  {formatTimeDisplay(
                                     booking.startTime,
                                     booking.endTime
                                   )}
-                            </span>
+                                </span>
+                              </div>
+                            )}
                           </div>
-                          {(isTutor ||
-                            activeStatus === "Approved" ||
-                            activeStatus === "Starting..." ||
-                            activeStatus === "Completed") && (
-                            <div className="flex gap-1 text-black text-[14px]">
-                              <span
-                                className={`${montserrat.className} font-bold`}
-                              >
-                                Time :
-                              </span>
-                              <span
-                                className={`${montserrat.className} font-normal`}
-                              >
-                                {formatTimeDisplay(
-                                  booking.startTime,
-                                  booking.endTime
-                                )}
-                              </span>
-                            </div>
-                          )}
-                          <div className="absolute bottom-3 text-black right-3 group-hover:translate-x-1 transition-transform">
-                            <MoveRight size={18} />
+
+                          {/* Hover Arrow */}
+                          <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity transform group-hover:translate-x-1">
+                            <MoveRight size={16} className="text-gray-400" />
                           </div>
                         </motion.div>
                       );

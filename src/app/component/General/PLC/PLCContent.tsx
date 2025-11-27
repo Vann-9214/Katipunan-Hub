@@ -111,10 +111,7 @@ export default function PLCContent() {
               <CalendarIcon size={20} />
             </button>
 
-            {/* Separator Line (only visible if you want it static, 
-                but sliding bg usually looks cleaner without a static line. 
-                I'll hide it or keep it z-index low) 
-            */}
+            {/* Separator Line */}
             <div className="w-[1px] h-full bg-black/10 relative z-10" />
 
             {/* Year Button */}
@@ -140,6 +137,7 @@ export default function PLCContent() {
             onMonthClick={handleMonthClick}
             onPrevYear={() => setCurrentYear((y) => y - 1)}
             onNextYear={() => setCurrentYear((y) => y + 1)}
+            onYearSelect={(y) => setCurrentYear(y)} // <--- THIS FIXED IT
           />
         ) : (
           <PLCViewMonth
