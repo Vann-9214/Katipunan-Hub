@@ -20,36 +20,33 @@ export default function LandingPageTab() {
 
   const handleHomeClick = () => {
     if (pathname === "/") {
-      window.scrollTo({ top: 0, behavior: "smooth" }); // already on home page scroll up
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
-      window.location.href = "/"; // forces full reload and goes landing page
+      window.location.href = "/";
     }
   };
 
   const handleAboutUsClick = () => {
     if (pathname === "/AboutUs") {
-      window.scrollTo({ top: 0, behavior: "smooth" }); // already on home page scroll up
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
-      window.location.href = "/AboutUs"; // forces full reload and goes AboutUs
+      window.location.href = "/AboutUs";
     }
   };
 
   const handleFeaturesClick = () => {
     if (pathname === "/Features") {
-      window.scrollTo({ top: 0, behavior: "smooth" }); // already on home page scroll up
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
-      window.location.href = "/Features"; // forces full reload and goes Features
+      window.location.href = "/Features";
     }
   };
 
   return (
-    // Fixed White Tab
     <div className="z-50 fixed top-0 left-0 py-2 flex shadow-md bg-white w-full h-auto min-h-[60px] max-h-[80px] justify-between items-center">
-      {/* Logo */}
       <div className="ml-10">
         <Logo />
       </div>
-      {/* Buttons */}
       <div className="flex gap-5">
         <div className="flex gap-2">
           <TextButton onClick={handleHomeClick} text="Home" />
@@ -66,7 +63,8 @@ export default function LandingPageTab() {
         />
       </div>
 
-      <AnimatePresence mode="wait">
+      {/* REMOVED mode="wait" to allow smooth crossfade transition */}
+      <AnimatePresence>
         {authMode === "signin" && (
           <SignInForm
             key="signin"

@@ -49,16 +49,11 @@ interface ComboboxProps {
   disabled?: boolean;
   onChange?: (value: string) => void;
 
-  /**
-   * defaultMode controls initial selection behaviour:
-   * - "none"  => no initial selection (user must pick); onChange NOT called on mount
-   * - "first" => auto-select items[0].value (if exists); onChange called once on mount
-   * - "value" => use defaultValue (if provided & found in items); onChange called once on mount
-   *
-   * default: "none"
-   */
   defaultMode?: "none" | "first" | "value";
   defaultValue?: string | null;
+  
+  // 1. Add className to interface
+  className?: string;
 }
 
 export function Combobox({
@@ -94,24 +89,22 @@ export function Combobox({
 
   defaultMode = "none",
   defaultValue = null,
+  
+  // 2. Destructure className
+  className,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
-
-  // internal value state
   const [value, setValue] = React.useState<string>("");
 
-  // Helper: find if items contain a value
   const hasItem = React.useCallback(
     (v: string | null | undefined) =>
       !!v && items && items.some((it) => it.value === v),
     [items]
   );
 
-  // Initialize on mount according to defaultMode:
   React.useEffect(() => {
     if (!items || items.length === 0) {
       setValue("");
-      // don't call onChange here for empty items
       return;
     }
 
@@ -128,46 +121,31 @@ export function Combobox({
       return;
     }
 
-    // defaultMode === "none": do not set any value, keep placeholder and do NOT call onChange
     setValue("");
-    // intentionally do not call onChange
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // run once on mount
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // When `items` change, make sure value stays valid and react according to defaultMode:
   React.useEffect(() => {
     if (!items || items.length === 0) {
-      // clear value
       setValue("");
-      // don't call onChange for absence-of-items
       return;
     }
-
-    // If current value still exists in new items, keep it (no extra onChange)
     if (value && hasItem(value)) {
       return;
     }
-
-    // otherwise pick according to defaultMode
     if (defaultMode === "first") {
       const v = items[0].value;
       setValue(v);
       onChange?.(v);
       return;
     }
-
     if (defaultMode === "value" && defaultValue && hasItem(defaultValue)) {
       setValue(defaultValue);
       onChange?.(defaultValue);
       return;
     }
-
-    // none or fallback: clear selection and DO NOT call onChange
     setValue("");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items, defaultMode, defaultValue]);
+  }, [items, defaultMode, defaultValue]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // compute label shown on the button
   const selectedItem = items.find((item) => item.value === value);
   const selectedLabel = value
     ? selectedItem?.selectedPlaceholder || selectedItem?.label || placeholder
@@ -197,7 +175,9 @@ export function Combobox({
                   hoverTextColor,
                 ],
             open ? activeHoverBG : "",
-            open ? activeHoverTextColor : ""
+            open ? activeHoverTextColor : "",
+            // 3. Apply className to the button
+            className
           )}
         >
           {selectedLabel}
