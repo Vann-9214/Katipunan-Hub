@@ -2,6 +2,7 @@
 
 import { NotificationItem } from "../../../../../supabase/Lib/General/useNotification";
 import { useRouter } from "next/navigation";
+import { BellRing } from "lucide-react"; // Import an icon for system notifs
 
 interface NotificationDropdownProps {
   notifications: NotificationItem[];
@@ -17,11 +18,17 @@ export default function NotificationDropdown({
   const router = useRouter();
 
   const handleItemClick = (notif: NotificationItem) => {
-    // Determine the filter mode required so the announcement page shows the correct list
+    // 1. Handle System/PLC Notifications
+    if (notif.type === "system") {
+      // Just go to their PLC page as requested
+      router.push("/PLC");
+      onClose();
+      return;
+    }
+
+    // 2. Handle Existing Announcement Logic
     const isGlobal = !notif.visibility || notif.visibility === "global";
     const filterMode = isGlobal ? "Global" : "Course";
-
-    // Navigate with params to trigger the scroll and filter switch
     router.push(`/Announcement?id=${notif.id}&filter=${filterMode}`);
     onClose();
   };
@@ -41,11 +48,40 @@ export default function NotificationDropdown({
           </div>
         ) : notifications.length === 0 ? (
           <div className="p-6 text-center text-sm text-gray-500">
-            No new announcements.
+            No new notifications.
           </div>
         ) : (
           notifications.map((notif) => {
-            // Logic to determine if we show "for [College]" or just "new announcement"
+            // --- RENDER LOGIC ---
+
+            // A. System / PLC Notification
+            if (notif.type === "system") {
+              return (
+                <div
+                  key={notif.id}
+                  onClick={() => handleItemClick(notif)}
+                  className="p-4 border-b border-gray-100 hover:bg-yellow-50 cursor-pointer transition-colors flex gap-3"
+                >
+                  <div className="mt-1 shrink-0 text-[#EFBF04]">
+                    <BellRing size={18} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-black mb-1">
+                      {notif.title}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {new Date(notif.created_at).toLocaleDateString()} •{" "}
+                      {new Date(notif.created_at).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
+                </div>
+              );
+            }
+
+            // B. Announcement (Existing Logic)
             const isGlobal = !notif.visibility || notif.visibility === "global";
             const contextText = isGlobal
               ? "a new announcement"
@@ -57,7 +93,6 @@ export default function NotificationDropdown({
                 onClick={() => handleItemClick(notif)}
                 className="p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
               >
-                {/* CHANGED: Hardcoded 'CIT-U' instead of dynamic author name */}
                 <p className="text-sm font-medium text-black mb-1 line-clamp-2">
                   <span className="font-bold text-[#8B0E0E]">CIT-U</span> added{" "}
                   {contextText}: &quot;{notif.title}&quot;

@@ -10,7 +10,7 @@ export interface NotificationItem {
   title: string;
   created_at: string;
   visibility: string | null;
-  // Removed 'author' field since we always display "CIT-U"
+  type: "announcement" | "system"; // Added 'system' for your new table
 }
 
 export function useNotifications(user: User | null) {
@@ -21,7 +21,6 @@ export function useNotifications(user: User | null) {
 
   const userId = user?.id;
 
-  // 1. Resolve User's College Code
   const getUserCollegeCode = useCallback(() => {
     if (!user?.course) return null;
     const courseSlug = user.course.toLowerCase();
@@ -32,7 +31,6 @@ export function useNotifications(user: User | null) {
 
   const userCollegeCode = getUserCollegeCode();
 
-  // 2. Fetch the last time the user checked notifications
   const fetchLastReadStatus = useCallback(async () => {
     if (!userId) return;
     
@@ -49,57 +47,77 @@ export function useNotifications(user: User | null) {
     }
   }, [userId]);
 
-  // 3. Fetch relevant announcements and calculate count
   const fetchNotifications = useCallback(async () => {
     if (!userId) return;
     
     setIsLoading(true);
     try {
-      let query = supabase
+      // 1. Fetch Announcements
+      let announcementQuery = supabase
         .from("Posts")
-        .select(`
-          id, 
-          title, 
-          created_at, 
-          type,
-          visibility
-        `)
+        .select(`id, title, created_at, type, visibility`)
         .eq("type", "announcement")
         .order("created_at", { ascending: false })
         .limit(10);
 
-      // Filter by Visibility (Global OR User's College)
       if (userCollegeCode) {
-        query = query.or(`visibility.eq.global,visibility.eq.${userCollegeCode},visibility.is.null`);
+        announcementQuery = announcementQuery.or(`visibility.eq.global,visibility.eq.${userCollegeCode},visibility.is.null`);
       } else {
-        query = query.or(`visibility.eq.global,visibility.is.null`);
+        announcementQuery = announcementQuery.or(`visibility.eq.global,visibility.is.null`);
       }
 
-      const { data: posts, error } = await query;
+      // 2. Fetch UserNotifications (New Table)
+      const userNotifQuery = supabase
+        .from("UserNotifications")
+        .select(`id, title, created_at, type, is_read`)
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(10);
 
-      if (error) throw error;
+      const [announcementsRes, userNotifRes] = await Promise.all([announcementQuery, userNotifQuery]);
 
-      // REMOVED: Author fetching logic
+      if (announcementsRes.error) throw announcementsRes.error;
+      if (userNotifRes.error) throw userNotifRes.error;
 
-      const formattedNotifications: NotificationItem[] = posts.map((post) => ({
+      // 3. Format and Merge
+      const formattedAnnouncements: NotificationItem[] = (announcementsRes.data || []).map((post) => ({
         id: post.id,
         title: post.title,
         created_at: post.created_at,
         visibility: post.visibility,
+        type: "announcement",
       }));
 
-      setNotifications(formattedNotifications);
+      const formattedUserNotifs: NotificationItem[] = (userNotifRes.data || []).map((notif) => ({
+        id: notif.id,
+        title: notif.title,
+        created_at: notif.created_at,
+        visibility: null,
+        type: "system", // Treat these as system notifications
+      }));
 
-      // Calculate Unread Count
-      let count = 0;
+      // Combine and Sort by Date (Newest First)
+      const combined = [...formattedAnnouncements, ...formattedUserNotifs].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+
+      setNotifications(combined);
+
+      // 4. Calculate Unread Count
+      // Count announcements newer than lastReadAt
+      let announcementUnread = 0;
       if (lastReadAt) {
-        count = posts.filter(
+        announcementUnread = announcementsRes.data!.filter(
           (p) => new Date(p.created_at) > new Date(lastReadAt)
         ).length;
       } else {
-        count = posts.length; 
+        announcementUnread = announcementsRes.data!.length; 
       }
-      setUnreadCount(count);
+
+      // Count unread UserNotifications (using is_read column)
+      const systemUnread = (userNotifRes.data || []).filter((n: any) => !n.is_read).length;
+
+      setUnreadCount(announcementUnread + systemUnread);
 
     } catch (err) {
       console.error("Error fetching notifications:", err);
@@ -108,21 +126,30 @@ export function useNotifications(user: User | null) {
     }
   }, [userId, lastReadAt, userCollegeCode]);
 
-  // 4. Mark as Read Action
   const markAsRead = async () => {
     if (!userId) return;
     const now = new Date().toISOString();
+    
+    // Optimistic Update
     setUnreadCount(0);
     setLastReadAt(now);
 
-    const { error } = await supabase
+    // 1. Update Global Last Read (For announcements)
+    const { error: statusError } = await supabase
       .from("NotificationStatus")
       .upsert({ user_id: userId, last_read_at: now }, { onConflict: "user_id" });
 
-    if (error) console.error("Failed to mark notifications as read", error);
-  };
+    if (statusError) console.error("Failed to mark announcements as read", statusError);
 
-  // --- Effects ---
+    // 2. Update UserNotifications (Set is_read = true)
+    const { error: userNotifError } = await supabase
+      .from("UserNotifications")
+      .update({ is_read: true })
+      .eq("user_id", userId)
+      .eq("is_read", false);
+
+    if (userNotifError) console.error("Failed to mark system notifications as read", userNotifError);
+  };
 
   useEffect(() => {
     fetchLastReadStatus();
@@ -134,10 +161,12 @@ export function useNotifications(user: User | null) {
     }
   }, [userId, fetchLastReadStatus, fetchNotifications]);
 
+  // Realtime Subscriptions
   useEffect(() => {
     if (!userId) return;
 
-    const channel = supabase
+    // Listen to Announcements
+    const announcementChannel = supabase
       .channel(`public:Posts:announcement-check-${userId}`)
       .on(
         "postgres_changes",
@@ -147,14 +176,28 @@ export function useNotifications(user: User | null) {
           table: "Posts",
           filter: "type=eq.announcement", 
         },
-        () => {
-          fetchNotifications();
-        }
+        () => fetchNotifications()
+      )
+      .subscribe();
+
+    // Listen to UserNotifications
+    const userNotifChannel = supabase
+      .channel(`public:UserNotifications:${userId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "UserNotifications",
+          filter: `user_id=eq.${userId}`, 
+        },
+        () => fetchNotifications()
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(announcementChannel);
+      supabase.removeChannel(userNotifChannel);
     };
   }, [userId, fetchNotifications]);
 
