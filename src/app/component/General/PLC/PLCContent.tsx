@@ -83,7 +83,7 @@ export default function PLCContent() {
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
             className="flex items-center gap-4"
           >
             <div className="p-3 bg-gradient-to-br from-[#8B0E0E] to-[#5e0a0a] rounded-2xl shadow-lg shadow-red-900/20 text-white">
@@ -107,7 +107,7 @@ export default function PLCContent() {
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
+            transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
             className="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-sm border border-gray-200/60"
           >
             {/* History Button */}
@@ -115,7 +115,7 @@ export default function PLCContent() {
               whileHover={{ scale: 1.02, backgroundColor: "#f3f4f6" }}
               whileTap={{ scale: 0.95 }}
               onClick={handleHistoryClick}
-              className={`${montserrat.className} flex items-center gap-2 px-4 py-2.5 rounded-xl text-gray-600 hover:text-[#8B0E0E] font-bold transition-colors text-sm`}
+              className={`${montserrat.className} cursor-pointer flex items-center gap-2 px-4 py-2.5 rounded-xl text-gray-600 hover:text-[#8B0E0E] font-bold transition-colors text-sm`}
             >
               <History size={18} />
               <span>History</span>
@@ -133,6 +133,7 @@ export default function PLCContent() {
                 animate={{
                   x: viewMode === "month" ? 0 : "100%",
                 }}
+                // This spring is small and localized, likely not the cause of lag, but can be smoothed if desired. Keeping as is for tactile feel.
                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
               />
 
@@ -164,12 +165,12 @@ export default function PLCContent() {
         </div>
 
         {/* --- View Switcher Content --- */}
+        {/* Removed 'layout' prop to prevent stretchy height animation lag */}
         <motion.div
-          layout
           className="w-full"
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
         >
           {viewMode === "year" ? (
             <PLCViewYear

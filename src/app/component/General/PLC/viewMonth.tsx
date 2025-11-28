@@ -219,13 +219,13 @@ export default function PLCViewMonth({
               <div className="flex gap-2">
                 <button
                   onClick={onPrevMonth}
-                  className="hover:bg-[#8B0E0E]/10 p-2 rounded-full text-[#8B0E0E] transition-colors"
+                  className="hover:bg-[#8B0E0E]/10 p-2 rounded-full text-[#8B0E0E] cursor-pointer transition-colors"
                 >
                   <ChevronLeft size={24} />
                 </button>
                 <button
                   onClick={onNextMonth}
-                  className="hover:bg-[#8B0E0E]/10 p-2 rounded-full text-[#8B0E0E] transition-colors"
+                  className="hover:bg-[#8B0E0E]/10 p-2 rounded-full text-[#8B0E0E] cursor-pointer transition-colors"
                 >
                   <ChevronRight size={24} />
                 </button>
@@ -467,7 +467,7 @@ export default function PLCViewMonth({
                       }
 
                       return (
-                        // 4. Animated Booking Cards (Beautified)
+                        // 4. Animated Booking Cards (Beautified) - REPLACED SPRING WITH EASE
                         <motion.div
                           key={booking.id}
                           layout
@@ -475,10 +475,10 @@ export default function PLCViewMonth({
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0, x: -20 }}
                           transition={{
-                            delay: idx * 0.05, // Stagger effect
-                            type: "spring",
-                            stiffness: 300,
-                            damping: 25,
+                            delay: idx * 0.05,
+                            type: "tween",
+                            ease: "easeOut",
+                            duration: 0.3,
                           }}
                           whileHover={{ scale: 1.02, x: 5 }}
                           whileTap={{ scale: 0.98 }}

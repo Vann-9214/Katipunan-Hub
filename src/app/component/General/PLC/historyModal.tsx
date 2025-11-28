@@ -102,7 +102,7 @@ export default function HistoryModal({
                   </div>
                   <button
                     onClick={onClose}
-                    className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/80 hover:text-white active:scale-95"
+                    className="p-2 cursor-pointer hover:bg-white/10 rounded-full transition-colors text-white/80 hover:text-white active:scale-95"
                   >
                     <X size={24} />
                   </button>
@@ -120,17 +120,22 @@ export default function HistoryModal({
                       // Styles
                       const statusColor = isRejected ? "#EF4444" : "#10B981"; // Red or Green
                       const statusLabel = isRejected ? "Rejected" : "Completed";
-                      const cardBg = "bg-white";
 
                       const otherPartyLabel = isTutor ? "Student" : "Tutor";
                       let otherPartyName = "Unknown";
+
                       if (isTutor) {
                         otherPartyName =
                           booking.Accounts?.fullName || "Unknown Student";
                       } else {
-                        otherPartyName = isRejected
-                          ? "N/A"
-                          : booking.Tutor?.fullName || "Assigned Tutor";
+                        // FIX: Prioritize showing Tutor Name if available, regardless of status
+                        if (booking.Tutor?.fullName) {
+                          otherPartyName = booking.Tutor.fullName;
+                        } else {
+                          otherPartyName = isRejected
+                            ? "N/A"
+                            : "Assigned Tutor";
+                        }
                       }
 
                       // Rating Logic
@@ -253,7 +258,7 @@ export default function HistoryModal({
                                     e.stopPropagation();
                                     onDelete(booking.id);
                                   }}
-                                  className="flex items-center gap-2 px-3 py-1.5 bg-white border border-red-200 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition-all shadow-sm text-xs font-bold"
+                                  className="cursor-pointer flex items-center gap-2 px-3 py-1.5 bg-white border border-red-200 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition-all shadow-sm text-xs font-bold"
                                 >
                                   <Trash2 size={14} />
                                   <span>Delete</span>
@@ -268,7 +273,7 @@ export default function HistoryModal({
                                   onClick={() =>
                                     setSelectedBookingForRate(booking)
                                   }
-                                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#EFBF04] to-[#F59E0B] rounded-lg text-white text-xs font-bold shadow-md hover:shadow-lg transition-all"
+                                  className="flex cursor-pointer items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#EFBF04] to-[#F59E0B] rounded-lg text-white text-xs font-bold shadow-md hover:shadow-lg transition-all"
                                 >
                                   <Star size={14} className="fill-white" />
                                   Rate Tutor
@@ -297,7 +302,7 @@ export default function HistoryModal({
                 <div className="p-4 md:p-5 border-t border-gray-200 bg-white shrink-0 flex justify-end rounded-b-[22px]">
                   <button
                     onClick={onClose}
-                    className={`${montserrat.className} px-6 py-2.5 bg-gray-100 border border-gray-300 hover:bg-gray-200 hover:border-gray-400 text-gray-700 font-bold rounded-xl transition-all active:scale-95 text-sm`}
+                    className={`${montserrat.className} cursor-pointer px-6 py-2.5 bg-gray-100 border border-gray-300 hover:bg-gray-200 hover:border-gray-400 text-gray-700 font-bold rounded-xl transition-all active:scale-95 text-sm`}
                   >
                     Close
                   </button>
