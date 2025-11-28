@@ -13,6 +13,8 @@ import {
 import EventModal from "@/app/component/General/Calendar/EventModal";
 import ReminderPanel from "@/app/component/General/Calendar/ReminderPanel";
 import SchedulePanel from "@/app/component/General/Calendar/SchedulePanel";
+import { getCurrentUserDetails } from "../../../../../supabase/Lib/General/getUser";
+import type { User } from "../../../../../supabase/Lib/General/user";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -118,10 +120,17 @@ export default function CalendarContent() {
   const [newReminder, setNewReminder] = useState("");
   const [personalEvents, setPersonalEvents] = useState<PersonalEvent[]>([]);
   const [postedEvents, setPostedEvents] = useState<PostedEvent[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   // Fix 2: Set client flag after mount
   useEffect(() => {
     setIsClient(true);
+    // Fetch user for role-based access (EventModal)
+    const fetchUser = async () => {
+      const user = await getCurrentUserDetails();
+      setCurrentUser(user);
+    };
+    fetchUser();
   }, []);
 
   // Calendar helpers
@@ -176,9 +185,6 @@ export default function CalendarContent() {
   }
 
   // Helpers for calendar day rendering
-  /* FIX: Replaced 'any' with Union Type 
-     (Holiday | PostedEvent | PersonalEvent | string) 
-  */
   const getEventLabel = (
     ev: Holiday | PostedEvent | PersonalEvent | string
   ): string => {
@@ -198,8 +204,6 @@ export default function CalendarContent() {
   };
 
   // Fix 4: Ensure deterministic color generation
-  /* FIX: Replaced 'any' with Union Type
-   */
   const getEventColor = (
     event: Holiday | PostedEvent | PersonalEvent | string,
     index: number
@@ -550,12 +554,13 @@ export default function CalendarContent() {
         />
       </button>
 
-      {/* Event Modal */}
+      {/* Event Modal - PASSED CURRENT USER */}
       <EventModal
         showAddEvent={showAddEvent}
         setShowAddEvent={setShowAddEvent}
         postedEvents={postedEvents}
         setPostedEvents={setPostedEvents}
+        user={currentUser}
       />
 
       {/* Reminder Panel */}

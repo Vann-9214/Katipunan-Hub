@@ -15,13 +15,15 @@ export default function SearchFilter({
   return (
     <motion.div
       // Animate container properties based on focus state
+      // REMOVED: width animation. Kept border and shadow.
       animate={{
-        width: isFocused ? 330 : 320,
-        borderColor: isFocused ? "maroon" : "#e5e7eb",
-        boxShadow: isFocused ? "0px 4px 20px rgba(0, 0, 0, 0.05)" : "none",
+        borderColor: isFocused ? "#EFBF04" : "transparent", // Gold border on focus
+        boxShadow: isFocused ? "0px 4px 20px rgba(0, 0, 0, 0.2)" : "none",
       }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className="flex items-center h-[40px] bg-white border rounded-[10px] overflow-hidden"
+      // Fixed width of 320px
+      // Applied your specific maroon gradient background
+      className="flex items-center h-[40px] w-[320px] bg-gradient-to-b from-[#6E0A0A] to-[#4e0505] border border-white/10 rounded-[10px] overflow-hidden"
     >
       <motion.div
         animate={{
@@ -31,8 +33,8 @@ export default function SearchFilter({
         className="ml-3 mr-2"
       >
         <Search
-          className={`w-[20px] h-[20px] ${
-            isFocused ? "text-black" : "text-gray-400"
+          className={`w-[20px] h-[20px] transition-colors duration-300 ${
+            isFocused ? "text-[#EFBF04]" : "text-white/70" // Gold icon on focus, white/70 otherwise
           }`}
         />
       </motion.div>
@@ -48,7 +50,9 @@ export default function SearchFilter({
           setSearch(val);
           onSearchChange?.(val);
         }}
-        className="bg-transparent outline-none text-black placeholder:text-gray-400 text-[16px] font-montserrat font-medium w-full pr-4"
+        className={`bg-transparent outline-none placeholder:text-white/70 text-[16px] font-montserrat font-medium w-full pr-4 transition-colors duration-300 ${
+          isFocused ? "text-white" : "text-white/90"
+        }`}
       />
     </motion.div>
   );

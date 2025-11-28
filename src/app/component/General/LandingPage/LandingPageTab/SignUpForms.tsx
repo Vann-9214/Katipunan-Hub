@@ -303,6 +303,7 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
                   checkArrowColor="text-[#EFBF04]"
                   dropdownBorderColor="border-[#EFBF04]"
                   className={inputClasses}
+                  textSize="text-[15px]" // Added text size to match input
                 />
 
                 <div className="flex gap-3">
@@ -335,6 +336,7 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
                       checkArrowColor="text-[#EFBF04]"
                       dropdownBorderColor="border-[#EFBF04]"
                       className={inputClasses}
+                      textSize="text-[15px]" // Added text size to match input
                     />
                   </div>
                 </div>

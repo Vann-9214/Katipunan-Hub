@@ -39,8 +39,8 @@ export default function AnnouncementLeftBar({
           textSize="text-[16px]"
           leftLabel="Announcement"
           rightLabel="Highlights"
-          leftActiveBg="bg-maroon"
-          rightActiveBg="bg-maroon"
+          leftActiveBg="bg-gradient-to-b from-[#6E0A0A] to-[#4e0505]"
+          rightActiveBg="bg-gradient-to-b from-[#6E0A0A] to-[#4e0505]"
           active={activeTab === "announcement" ? "left" : "right"}
           onToggle={(side) =>
             onTabToggle(side === "left" ? "announcement" : "highlight")

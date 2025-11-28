@@ -13,7 +13,8 @@ import {
   usePLCYearBookings,
   MonthBooking,
 } from "../../../../../supabase/Lib/PLC/usePLCBooking";
-import { motion, AnimatePresence } from "framer-motion";
+// 1. Import Variants
+import { motion, AnimatePresence, Variants } from "framer-motion";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -47,20 +48,31 @@ const getStatusColor = (status: string) => {
   }
 };
 
-// --- Animation Variants ---
-const containerVariants = {
+// --- Animation Variants (Professional Smooth) ---
+// 2. Explicitly type as Variants
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.03,
+      staggerChildren: 0.04, // Faster stagger for less waiting
+      delayChildren: 0.05,
     },
   },
 };
 
-const itemVariants = {
-  hidden: { opacity: 0, scale: 0.9 },
-  show: { opacity: 1, scale: 1 },
+// 3. Explicitly type as Variants to fix "type: string" error
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 15 }, // Slide up instead of scale (less laggy)
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "tween",
+      ease: "easeOut",
+      duration: 0.4,
+    },
+  },
 };
 
 export default function PLCViewYear({
@@ -141,9 +153,9 @@ export default function PLCViewYear({
       <div className="absolute inset-0 bg-black/10 rounded-[24px] blur-md -z-10 translate-y-4" />
 
       <motion.div
-        initial={{ opacity: 0, scale: 0.98 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5, type: "spring" }}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
         // --- 2. Gold Gradient Border Container ---
         className="w-full p-[2px] rounded-[24px] bg-gradient-to-br from-[#EFBF04] via-[#FFD700] to-[#D4AF37] shadow-xl"
       >
@@ -155,7 +167,7 @@ export default function PLCViewYear({
               {/* Previous Year Button */}
               <button
                 onClick={onPrevYear}
-                className="group p-2 hover:bg-white/10 rounded-full transition-all active:scale-95 border border-white/5"
+                className="cursor-pointer group p-2 hover:bg-white/10 rounded-full transition-all active:scale-95 border border-white/5"
               >
                 <ChevronLeft
                   size={24}
@@ -176,9 +188,10 @@ export default function PLCViewYear({
                   <AnimatePresence mode="wait">
                     <motion.span
                       key={year}
-                      initial={{ y: 10, opacity: 0 }}
+                      initial={{ y: 5, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
-                      exit={{ y: -10, opacity: 0 }}
+                      exit={{ y: -5, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
                       className={`${montserrat.className} text-[32px] font-bold text-white tracking-tight leading-none`}
                     >
                       {year}
@@ -196,9 +209,10 @@ export default function PLCViewYear({
                 <AnimatePresence>
                   {isYearPickerOpen && (
                     <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      initial={{ opacity: 0, y: 5, scale: 0.98 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10 }}
+                      exit={{ opacity: 0, y: 5 }}
+                      transition={{ duration: 0.2, ease: "easeOut" }}
                       className="absolute top-full mt-4 w-[240px] bg-white rounded-[20px] shadow-2xl border border-gray-100 overflow-hidden max-h-[320px] overflow-y-auto custom-scrollbar z-50"
                     >
                       <div className="p-2 grid grid-cols-2 gap-2">
@@ -206,7 +220,7 @@ export default function PLCViewYear({
                           <button
                             key={yr}
                             onClick={() => handleYearSelect(yr)}
-                            className={`px-2 py-3 rounded-[12px] text-[14px] font-bold transition-colors ${
+                            className={`cursor-pointer px-2 py-3 rounded-[12px] text-[14px] font-bold transition-colors ${
                               yr === year
                                 ? "bg-gradient-to-r from-[#4e0505] to-[#3a0000] text-white shadow-md"
                                 : "text-gray-600 hover:bg-gray-100"
@@ -228,7 +242,7 @@ export default function PLCViewYear({
               >
                 <ChevronRight
                   size={24}
-                  className="text-white/80 group-hover:text-white group-hover:translate-x-1 transition-all"
+                  className="text-white/80 cursor-pointer group-hover:text-white group-hover:translate-x-1 transition-all"
                 />
               </button>
             </div>
@@ -262,9 +276,10 @@ export default function PLCViewYear({
                     variants={itemVariants}
                     whileHover={{
                       y: -4,
-                      boxShadow: "0 10px 30px -10px rgba(78, 5, 5, 0.15)",
+                      boxShadow: "0 10px 30px -10px rgba(78, 5, 5, 0.10)",
+                      transition: { duration: 0.2 },
                     }}
-                    whileTap={{ scale: 0.98 }}
+                    whileTap={{ scale: 0.99 }}
                     onClick={() => onMonthClick(monthIndex)}
                     className="bg-white border border-gray-100 rounded-[20px] p-5 cursor-pointer transition-all shadow-sm hover:border-[#EFBF04]/40 group relative overflow-hidden"
                   >

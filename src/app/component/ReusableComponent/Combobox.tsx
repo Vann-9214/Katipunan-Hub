@@ -28,6 +28,10 @@ interface ComboboxProps {
   dropdownHeight?: string;
   rounded?: string;
 
+  // --- NEW PROPS FOR TEXT MATCHING ---
+  textSize?: string;
+  font?: string;
+
   buttonBG?: string;
   borderColor?: string;
   textColor?: string;
@@ -51,8 +55,7 @@ interface ComboboxProps {
 
   defaultMode?: "none" | "first" | "value";
   defaultValue?: string | null;
-  
-  // 1. Add className to interface
+
   className?: string;
 }
 
@@ -65,6 +68,10 @@ export function Combobox({
   buttonHeight = "h-[55px]",
   dropdownHeight = "h-[300px]",
   rounded = "rounded-[30px]",
+
+  // Default to your original styles
+  textSize = "text-[20px]",
+  font = "font-light font-montserrat",
 
   buttonBG = "bg-white",
   borderColor = "border border-black",
@@ -89,8 +96,7 @@ export function Combobox({
 
   defaultMode = "none",
   defaultValue = null,
-  
-  // 2. Destructure className
+
   className,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
@@ -160,7 +166,10 @@ export function Combobox({
           aria-expanded={open}
           disabled={disabled}
           className={cn(
-            "justify-between transition-colors text-[20px] font-light font-montserrat px-4 select-none overflow-hidden",
+            "justify-between transition-colors px-4 select-none overflow-hidden",
+            // Apply the shared font and text size here
+            font,
+            textSize,
             width,
             buttonHeight,
             rounded,
@@ -176,7 +185,6 @@ export function Combobox({
                 ],
             open ? activeHoverBG : "",
             open ? activeHoverTextColor : "",
-            // 3. Apply className to the button
             className
           )}
         >
@@ -188,7 +196,9 @@ export function Combobox({
       {!disabled && (
         <PopoverContent
           className={cn(
-            "p-0 overflow-y-auto text-[20px] font-light font-montserrat",
+            "p-0 overflow-y-auto",
+            // Apply the same font to the content container
+            font,
             "w-[var(--radix-popover-trigger-width)]",
             dropdownHeight,
             dropdownRounded,
@@ -214,7 +224,10 @@ export function Combobox({
                       onChange?.(newValue);
                     }}
                     className={cn(
-                      "cursor-pointer text-[20px] font-light font-montserrat px-4",
+                      "cursor-pointer px-4",
+                      // Apply the same text size and font to items
+                      font,
+                      textSize,
                       dropdownTextColor,
                       dropdownHoverBG,
                       dropdownHoverTextColor,

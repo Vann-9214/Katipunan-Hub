@@ -230,7 +230,7 @@ export default function BookingModal({
                     whileHover={{ rotate: 90, scale: 1.1, color: "#EFBF04" }}
                     whileTap={{ scale: 0.9 }}
                     onClick={onClose}
-                    className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors text-white backdrop-blur-md border border-white/10"
+                    className="p-2 bg-white/10 cursor-pointer hover:bg-white/20 rounded-full transition-colors text-white backdrop-blur-md border border-white/10"
                   >
                     <X size={20} />
                   </motion.button>
@@ -380,7 +380,7 @@ export default function BookingModal({
                     type="button"
                     onClick={onClose}
                     disabled={isLoading}
-                    className={`${montserrat.className} flex-1 py-3 rounded-xl border-2 border-gray-200 text-gray-600 font-bold hover:border-gray-300 hover:text-gray-800 transition-colors`}
+                    className={`${montserrat.className} cursor-pointer flex-1 py-3 rounded-xl border-2 border-gray-200 text-gray-600 font-bold hover:border-gray-300 hover:text-gray-800 transition-colors`}
                   >
                     Cancel
                   </motion.button>
@@ -390,7 +390,7 @@ export default function BookingModal({
                     whileTap={{ scale: 0.98 }}
                     type="submit"
                     disabled={isLoading}
-                    className={`${montserrat.className} flex-1 py-3 rounded-xl bg-gradient-to-b from-[#4e0505] to-[#3a0000] text-white font-bold shadow-lg shadow-[#4e0505]/30 flex items-center justify-center gap-2 relative overflow-hidden group`}
+                    className={`${montserrat.className} cursor-pointer flex-1 py-3 rounded-xl bg-gradient-to-b from-[#4e0505] to-[#3a0000] text-white font-bold shadow-lg shadow-[#4e0505]/30 flex items-center justify-center gap-2 relative overflow-hidden group`}
                   >
                     <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500" />
                     {isLoading ? (

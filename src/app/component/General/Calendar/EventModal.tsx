@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Montserrat } from "next/font/google";
 import { PostedEvent } from "@/app/component/General/Calendar/types";
+import type { User } from "../../../../../supabase/Lib/General/user";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -32,6 +33,7 @@ interface EventModalProps {
   setShowAddEvent: (show: boolean) => void;
   postedEvents: PostedEvent[];
   setPostedEvents: React.Dispatch<React.SetStateAction<PostedEvent[]>>;
+  user: User | null; // Added user prop
 }
 
 export default function EventModal({
@@ -39,12 +41,27 @@ export default function EventModal({
   setShowAddEvent,
   postedEvents,
   setPostedEvents,
+  user,
 }: EventModalProps) {
   const [selectedDate, setSelectedDate] = useState("");
   const [eventTitle, setEventTitle] = useState("");
-  const [audience, setAudience] = useState("Global");
+  const [audience, setAudience] = useState("Course"); // Default to Course for safety
   const [courseInput, setCourseInput] = useState("");
   const [filteredCourses, setFilteredCourses] = useState<string[]>([]);
+
+  // Determine if user is Platform Admin
+  const isPlatformAdmin =
+    user?.role?.includes("Platform Administrator") ?? false;
+
+  // Available audience types based on role
+  const audienceTypes = isPlatformAdmin ? ["Global", "Course"] : ["Course"];
+
+  // Reset audience when modal opens or user changes
+  useEffect(() => {
+    if (showAddEvent) {
+      setAudience(isPlatformAdmin ? "Global" : "Course");
+    }
+  }, [showAddEvent, isPlatformAdmin]);
 
   useEffect(() => {
     if (courseInput.trim() === "") {
@@ -88,7 +105,7 @@ export default function EventModal({
     };
 
     setPostedEvents((prev) => [...prev, newEvent]);
-    
+
     // Clear only the event title after adding
     setEventTitle("");
   };
@@ -102,12 +119,13 @@ export default function EventModal({
 
     // Close modal - events are already in the calendar
     setShowAddEvent(false);
-    
+
     // Reset form
     setEventTitle("");
     setCourseInput("");
     setSelectedDate("");
-    setAudience("Global");
+    // Reset to default based on permission
+    setAudience(isPlatformAdmin ? "Global" : "Course");
   };
 
   const handleClose = () => {
@@ -115,7 +133,7 @@ export default function EventModal({
     setEventTitle("");
     setCourseInput("");
     setSelectedDate("");
-    setAudience("Global");
+    setAudience(isPlatformAdmin ? "Global" : "Course");
   };
 
   if (!showAddEvent) return null;
@@ -145,7 +163,9 @@ export default function EventModal({
 
         {/* DATE PICKER */}
         <div className="mb-4">
-          <label className="block text-lg font-semibold mb-2">Select Date</label>
+          <label className="block text-lg font-semibold mb-2">
+            Select Date
+          </label>
           <input
             type="date"
             className="w-full border border-gray-300 rounded-lg p-3 text-base focus:ring-2 focus:ring-yellow-400"
@@ -154,9 +174,9 @@ export default function EventModal({
           />
         </div>
 
-        {/* AUDIENCE SELECTOR */}
+        {/* AUDIENCE SELECTOR - DYNAMIC BASED ON ROLE */}
         <div className="flex gap-4 mb-4">
-          {["Global", "Course"].map((type) => (
+          {audienceTypes.map((type) => (
             <button
               key={type}
               onClick={() => setAudience(type)}
@@ -209,7 +229,9 @@ export default function EventModal({
 
         {/* EVENT TITLE with checkmark */}
         <div className="mb-4 relative">
-          <label className="block text-lg font-semibold mb-2">Event Title</label>
+          <label className="block text-lg font-semibold mb-2">
+            Event Title
+          </label>
           <input
             type="text"
             className="w-full border border-gray-300 rounded-lg p-3 text-base focus:ring-2 focus:ring-yellow-400 pr-10"
@@ -217,7 +239,7 @@ export default function EventModal({
             onChange={(e) => setEventTitle(e.target.value)}
             placeholder="Enter event title"
             onKeyPress={(e) => {
-              if (e.key === 'Enter') {
+              if (e.key === "Enter") {
                 createAndAddPostedEvent();
               }
             }}
@@ -239,7 +261,9 @@ export default function EventModal({
         <div className="flex-1 overflow-y-auto border-t border-gray-200 mt-4 pt-4">
           <h3 className="font-semibold mb-2 text-lg">Posted Events</h3>
           {postedEvents.length === 0 ? (
-            <p className="text-gray-500 italic">No events yet. Add events using the checkmark button above.</p>
+            <p className="text-gray-500 italic">
+              No events yet. Add events using the checkmark button above.
+            </p>
           ) : (
             postedEvents.map((evt, idx) => (
               <div
@@ -261,7 +285,9 @@ export default function EventModal({
                   }
                   title="Remove event"
                 >
-                  <span className="text-red-500 font-bold text-xl hover:text-red-700">×</span>
+                  <span className="text-red-500 font-bold text-xl hover:text-red-700">
+                    ×
+                  </span>
                 </button>
               </div>
             ))

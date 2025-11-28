@@ -371,9 +371,19 @@ export const usePLCBookings = (
     if (!error) refreshBookings(false);
   };
 
+  // --- UPDATED DELETE HISTORY WITH LOGGING ---
   const deleteHistoryBooking = async (bookingId: string) => {
-    const { error } = await supabase.from("PLCBookingHistory").delete().eq("id", bookingId);
-    if (!error) refreshBookings(false);
+    const { error } = await supabase
+      .from("PLCBookingHistory")
+      .delete()
+      .eq("id", bookingId);
+
+    if (error) {
+      console.error("Failed to delete history:", error.message);
+      alert(`Delete failed: ${error.message}. Check your database permissions.`);
+    } else {
+      refreshBookings(false);
+    }
   };
 
   const approveBooking = async (bookingId: string) => {
