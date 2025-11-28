@@ -111,7 +111,6 @@ export const usePLCBookings = (
   const fetchMyRatings = useCallback(async () => {
     if (!currentUser) return new Map();
     
-    // FIX: Select specific rating and review columns
     const { data } = await supabase
       .from("TutorRatings")
       .select("booking_id, rating, review")
@@ -229,13 +228,11 @@ export const usePLCBookings = (
       const mapToUse = passedMap || myRatingsMap;
       
       const mappedData = filtered.map((booking) => {
-        // FIX: Get actual rating data
         const ratingData = mapToUse.get(booking.id);
         
         return {
           ...booking,
           hasRejected: myRejections.includes(booking.id),
-          // FIX: Assign actual data if it exists
           TutorRatings: ratingData ? [ratingData] : [],
         };
       });
@@ -274,16 +271,13 @@ export const usePLCBookings = (
     }
     
     if (data) {
-      // Use passed map or fallback to state
       const mapToUse = passedMap || myRatingsMap;
       
       const mappedHistory = data.map((booking: any) => {
-        // FIX: Get actual rating data
         const ratingData = mapToUse.get(booking.id);
         
         return {
           ...booking,
-          // FIX: Assign actual data if it exists
           TutorRatings: ratingData ? [ratingData] : [],
         };
       });
@@ -300,13 +294,11 @@ export const usePLCBookings = (
     if (!silent) setIsInitialLoading(true);
     
     try {
-      // Fetch ratings first to get the map
       const freshRatingsMap = await fetchMyRatings();
       
       await Promise.all([
         fetchMyRejections(),
         fetchMonthBookings(),
-        // Pass the fresh map to avoid stale state issues
         fetchDayBookings(silent, freshRatingsMap), 
         fetchHistoryBookings(freshRatingsMap)      
       ]);
@@ -318,13 +310,33 @@ export const usePLCBookings = (
     }
   }, [fetchMyRatings, fetchMyRejections, fetchMonthBookings, fetchDayBookings, fetchHistoryBookings]);
 
-  // --- 4. CLEANUP ENGINE ---
+  // --- 4. CLEANUP ENGINE (UPDATED FOR NOTIFICATIONS) ---
   const cleanupExpired = useCallback(async () => {
     const now = new Date();
     const dateStr = getDateString(now.getFullYear(), now.getMonth(), now.getDate());
     const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0') + ':00';
 
     try {
+      // --- NOTIFY STUDENTS BEFORE ARCHIVING ---
+      // Find Approved bookings that have ended (using endTime if available)
+      const { data: completedCandidates } = await supabase
+        .from("PLCBookings")
+        .select("id, studentId, subject")
+        .eq("status", "Approved")
+        .or(`bookingDate.lt.${dateStr},and(bookingDate.eq.${dateStr},endTime.lte.${timeStr})`);
+
+      if (completedCandidates && completedCandidates.length > 0) {
+         const notifs = completedCandidates.map(b => ({
+            user_id: b.studentId,
+            title: `Your PLC session for "${b.subject}" has been completed.`,
+            type: 'system',
+            is_read: false
+         }));
+         // Attempt to insert notifications (duplicates possible if multiple clients run this)
+         await supabase.from("UserNotifications").insert(notifs);
+      }
+      // ----------------------------------------
+
       await Promise.all([
         supabase.rpc('move_and_archive_bookings', {
           check_date: dateStr,
@@ -340,7 +352,6 @@ export const usePLCBookings = (
           .or(`bookingDate.lt.${dateStr},and(bookingDate.eq.${dateStr},startTime.lte.${timeStr})`)
       ]);
 
-      // Silent refresh after cleanup
       setTimeout(() => refreshBookings(true), 500);
 
     } catch (err) {
@@ -374,11 +385,26 @@ export const usePLCBookings = (
     if (!error) refreshBookings(false);
   }
 
+  // --- UPDATED DENY BOOKING WITH NOTIFICATION ---
   const denyBooking = async (bookingId: string) => {
+    // 1. Fetch the booking details first to get the Student ID and Subject
+    const { data: bookingData, error: fetchError } = await supabase
+        .from("PLCBookings")
+        .select("studentId, subject")
+        .eq("id", bookingId)
+        .single();
+
+    if (fetchError) {
+        console.error("Error fetching booking for denial:", fetchError);
+    }
+
+    // 2. Perform the Denial RPC
     const { error } = await supabase.rpc("deny_booking", { booking_id: bookingId });
+    
     if (!error) {
       setMyRejections(prev => [...prev, bookingId]);
       refreshBookings(false);
+
     }
   };
 
@@ -415,9 +441,7 @@ export const usePLCBookings = (
   useEffect(() => {
     if (currentUser) {
       const shouldShowLoader = isFirstLoad.current;
-      
       refreshBookings(!shouldShowLoader); 
-      
       if (shouldShowLoader) {
         isFirstLoad.current = false;
       }

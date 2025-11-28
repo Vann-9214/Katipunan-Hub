@@ -51,23 +51,6 @@ const formatTimeDisplay = (startStr: string, endStr?: string) => {
   return end ? `${start} - ${end}` : start;
 };
 
-// const getStatusColor = (status: string) => {
-//   switch (status) {
-//     case "Pending":
-//       return "#FFB74D";
-//     case "Approved":
-//     case "Completed":
-//       return "#81C784";
-//     case "Rejected":
-//     case "Cancelled":
-//       return "#EF9A9A";
-//     case "Starting...":
-//       return "#FFD239";
-//     default:
-//       return "#FFFFFF";
-//   }
-// };
-
 // Helper for the small dots in the calendar grid
 const getStatusDotColor = (status: string) => {
   switch (status) {
@@ -433,7 +416,7 @@ export default function PLCViewMonth({
                           bg: "bg-white",
                           border: "border-l-4 border-[#EFBF04]",
                           badgeBg: "bg-[#EFBF04]/20",
-                          text: "text-[#B48E00]", // Darker gold for text
+                          text: "text-[#B48E00] pulse", // Darker gold for text
                           icon: "text-[#EFBF04]",
                         };
                       } else if (

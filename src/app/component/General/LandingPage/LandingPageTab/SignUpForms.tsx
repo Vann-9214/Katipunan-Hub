@@ -29,13 +29,25 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
     { value: "bsba", label: "Bachelor of Science in Business Administration" },
     { value: "bsoa", label: "Bachelor of Science in Office Administration" },
     { value: "ba-english", label: "Bachelor of Arts in English" },
-    { value: "ba-political-science", label: "Bachelor of Arts in Political Science" },
+    {
+      value: "ba-political-science",
+      label: "Bachelor of Arts in Political Science",
+    },
     { value: "bs-psychology", label: "Bachelor of Science in Psychology" },
     { value: "bs-biology", label: "Bachelor of Science in Biology" },
     { value: "bs-mathematics", label: "Bachelor of Science in Mathematics" },
-    { value: "bs-computer-science", label: "Bachelor of Science in Computer Science" },
-    { value: "bs-information-technology", label: "Bachelor of Science in Information Technology" },
-    { value: "bs-computer-engineering", label: "Bachelor of Science in Computer Engineering" },
+    {
+      value: "bs-computer-science",
+      label: "Bachelor of Science in Computer Science",
+    },
+    {
+      value: "bs-information-technology",
+      label: "Bachelor of Science in Information Technology",
+    },
+    {
+      value: "bs-computer-engineering",
+      label: "Bachelor of Science in Computer Engineering",
+    },
     { value: "beed", label: "Bachelor of Elementary Education" },
     { value: "bsed", label: "Bachelor of Secondary Education" },
     { value: "bsee", label: "Bachelor of Science in Electrical Engineering" },
@@ -43,12 +55,18 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
     { value: "bsce", label: "Bachelor of Science in Civil Engineering" },
     { value: "bsme", label: "Bachelor of Science in Mechanical Engineering" },
     { value: "bsmining", label: "Bachelor of Science in Mining Engineering" },
-    { value: "bs-chemeng", label: "Bachelor of Science in Chemical Engineering" },
+    {
+      value: "bs-chemeng",
+      label: "Bachelor of Science in Chemical Engineering",
+    },
     { value: "bsece", label: "Bachelor of Science in Electronics Engineering" },
     { value: "bsn", label: "Bachelor of Science in Nursing" },
     { value: "midwifery", label: "Diploma in Midwifery" },
     { value: "bs-architecture", label: "Bachelor of Science in Architecture" },
-    { value: "bs-hrm", label: "Bachelor of Science in Hotel and Restaurant Management" },
+    {
+      value: "bs-hrm",
+      label: "Bachelor of Science in Hotel and Restaurant Management",
+    },
     { value: "bstm", label: "Bachelor of Science in Tourism Management" },
   ];
 
@@ -78,7 +96,9 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
       }
 
       if (!email.toLowerCase().endsWith("@cit.edu")) {
-        alert("Please use your valid CIT email address (must end with @cit.edu).");
+        alert(
+          "Please use your valid CIT email address (must end with @cit.edu)."
+        );
         return;
       }
 
@@ -97,10 +117,14 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
         return;
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
       if (!user) {
-        alert("Sign-up succeeded — please check your CIT email to confirm your account.");
+        alert(
+          "Sign-up succeeded — please check your CIT email to confirm your account."
+        );
         return;
       }
 
@@ -132,7 +156,8 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
     }
   };
 
-  const inputClasses = "bg-gray-50 focus:bg-white transition-all border-gray-300 focus:border-[#EFBF04] focus:ring-1 focus:ring-[#EFBF04]/40 text-[15px]";
+  const inputClasses =
+    "bg-gray-50 focus:bg-white transition-all border-gray-300 focus:border-[#EFBF04] focus:ring-1 focus:ring-[#EFBF04]/40 text-[15px]";
 
   return (
     <motion.div
@@ -146,27 +171,37 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
         // REMOVED SCALE ANIMATION on EXIT to prevent "closing" look
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 0 }} 
+        exit={{ opacity: 0, y: 0 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
         className="flex flex-col md:flex-row w-full max-w-[1050px] h-[650px] bg-white rounded-[30px] shadow-2xl relative overflow-hidden"
       >
         {/* Left Side */}
         <div className="relative w-full md:w-[45%] bg-gradient-to-br from-[#EFBF04] via-[#B79308] to-[#8A6D00] p-10 flex flex-col justify-center overflow-hidden text-white">
-          <div 
+          <div
             className="absolute inset-0 opacity-[0.07] pointer-events-none"
-            style={{ backgroundImage: 'radial-gradient(circle, #ffffff 1px, transparent 1px)', backgroundSize: '24px 24px' }}
+            style={{
+              backgroundImage:
+                "radial-gradient(circle, #ffffff 1px, transparent 1px)",
+              backgroundSize: "24px 24px",
+            }}
           />
-           <div className="absolute -right-20 -bottom-20 w-[350px] h-[350px] opacity-[0.1] pointer-events-none mix-blend-overlay">
-            <Image src="/Cit Logo.svg" alt="Watermark" width={350} height={350} />
+          <div className="absolute -right-20 -bottom-20 w-[350px] h-[350px] opacity-[0.1] pointer-events-none mix-blend-overlay">
+            <Image
+              src="/Cit Logo.svg"
+              alt="Watermark"
+              width={350}
+              height={350}
+            />
           </div>
 
           <div className="relative z-10 space-y-5">
             <h1 className="font-bold leading-tight font-montserrat text-[32px] drop-shadow-md">
-              Join the Hub, <br /> <span className="text-[#8B0E0E]">Teknoy!</span>
+              Join the Hub, <br />{" "}
+              <span className="text-[#8B0E0E]">Teknoy!</span>
             </h1>
             <p className="text-white/90 leading-relaxed font-ptsans text-[15px]">
-              Create your account to access announcements, join events, 
-              and connect with the whole CIT university community.
+              Create your account to access announcements, join events, and
+              connect with the whole CIT university community.
             </p>
           </div>
         </div>
@@ -178,7 +213,19 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
             onClick={onClose}
             className="absolute top-6 right-6 p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-800 z-20 cursor-pointer"
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
           </button>
 
           <div className="w-full max-w-[420px] flex flex-col gap-4 h-full justify-center py-6">
@@ -215,6 +262,7 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
               <div className="flex flex-col gap-2.5">
                 <TextBox
                   type="text"
+                  autoFocus={true}
                   placeholder="Full Name"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
@@ -225,7 +273,7 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
                   textSize="text-[15px]"
                   className={inputClasses}
                 />
-                
+
                 <TextBox
                   type="email"
                   placeholder="CIT Email"
@@ -247,13 +295,14 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
                   buttonHeight="h-[45px]"
                   rounded="rounded-full"
                   buttonBG="bg-gray-50"
+                  textColor="text-gray-400"
                   borderColor="border-gray-300"
                   hoverBG="hover:bg-white"
                   activeHoverBG="data-[state=open]:bg-white"
                   activeHoverTextColor="data-[state=open]:text-black"
                   checkArrowColor="text-[#EFBF04]"
                   dropdownBorderColor="border-[#EFBF04]"
-                  className={inputClasses} 
+                  className={inputClasses}
                 />
 
                 <div className="flex gap-3">
@@ -291,7 +340,7 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
                 </div>
 
                 <div className="flex gap-3">
-                    <TextBox
+                  <TextBox
                     type="password"
                     placeholder="Password"
                     value={password}
@@ -304,8 +353,8 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
                     textSize="text-[15px]"
                     className={inputClasses}
                     overrideTypeOnToggle={["password", "text"]}
-                    />
-                    <TextBox
+                  />
+                  <TextBox
                     type="password"
                     placeholder="Confirm"
                     value={confirmPassword}
@@ -318,7 +367,7 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
                     textSize="text-[15px]"
                     className={inputClasses}
                     overrideTypeOnToggle={["password", "text"]}
-                    />
+                  />
                 </div>
               </div>
 
@@ -329,11 +378,11 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
                 textSize="text-[16px]"
                 type="submit"
                 bg="bg-[#EFBF04] hover:bg-[#D4AF37]"
-                textcolor="text-white" 
+                textcolor="text-white"
                 className="rounded-full font-bold shadow-lg shadow-yellow-500/20 mt-2"
               />
 
-               <div className="text-center text-xs font-ptsans text-gray-500 mb-6">
+              <div className="text-center text-xs font-ptsans text-gray-500 mb-6">
                 Already have an account?{" "}
                 <button
                   type="button"
