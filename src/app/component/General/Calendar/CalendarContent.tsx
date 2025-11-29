@@ -8,6 +8,7 @@ import { Holiday, PostedEvent, PersonalEvent, MenuType } from "@/app/component/G
 import EventModal from "@/app/component/General/Calendar/EventModal";
 import ReminderPanel from "@/app/component/General/Calendar/ReminderPanel";
 import SchedulePanel from "@/app/component/General/Calendar/SchedulePanel";
+import LoadingScreen from "@/app/component/ReusableComponent/LoadingScreen";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -20,38 +21,40 @@ const ptSans = PT_Sans({
 });
 
 export default function CalendarContent() {
-  // Fix 1: Use hydration-safe initial state
-  const [isClient, setIsClient] = useState(false);
-  const [currentDate, setCurrentDate] = useState(() => {
-    // Use a static date for SSR, will be updated on client
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), 1);
-  });
-  
+  // Loading state
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Simulate initial loading
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // ---------------------
+  // Core UI state
+  // ---------------------
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectedMenu, setSelectedMenu] = useState<MenuType>("Reminder");
   const [showAddEvent, setShowAddEvent] = useState(false);
   const [viewMode, setViewMode] = useState<"month" | "year">("month");
 
+  // ---------------------
   // Data state
+  // ---------------------
   const [reminders, setReminders] = useState<string[]>([]);
   const [newReminder, setNewReminder] = useState("");
   const [personalEvents, setPersonalEvents] = useState<PersonalEvent[]>([]);
   const [postedEvents, setPostedEvents] = useState<PostedEvent[]>([]);
 
-  // Fix 2: Set client flag after mount
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
+  // ---------------------
   // Calendar helpers
-  const MONTHS = [
-    "January","February","March","April","May","June",
-    "July","August","September","October","November","December"
-  ];
-
-  const monthName = MONTHS[currentDate.getMonth()];
+  // ---------------------
+  const monthName = currentDate.toLocaleString("default", { month: "long" });
   const year = currentDate.getFullYear();
   const firstDay = new Date(year, currentDate.getMonth(), 1).getDay();
   const daysInMonth = new Date(year, currentDate.getMonth() + 1, 0).getDate();
@@ -61,8 +64,7 @@ export default function CalendarContent() {
   const nextMonth = () =>
     setCurrentDate(new Date(year, currentDate.getMonth() + 1, 1));
 
-  // Fix 3: Calculate today in a hydration-safe way
-  const today = useMemo(() => new Date(), []);
+  const today = new Date();
   const isCurrentMonth =
     today.getFullYear() === year && today.getMonth() === currentDate.getMonth();
   const todayDate = today.getDate();
@@ -72,7 +74,9 @@ export default function CalendarContent() {
     return dayNum > 0 && dayNum <= daysInMonth ? dayNum : null;
   });
 
+  // ---------------------
   // Holiday logic
+  // ---------------------
   function computeEasterSunday(y: number): Date {
     const a = y % 19;
     const b = Math.floor(y / 100);
@@ -147,7 +151,9 @@ export default function CalendarContent() {
     (h) => h.month === currentDate.getMonth() + 1
   );
 
+  // ---------------------
   // Menu handler
+  // ---------------------
   function handleMenuSelect(name: string) {
     if (name === "Year") setViewMode("year");
     else if (name === "Month") setViewMode("month");
@@ -155,7 +161,9 @@ export default function CalendarContent() {
     setMenuOpen(false);
   }
 
+  // ---------------------
   // Helpers for calendar day rendering
+  // ---------------------
   const getEventLabel = (ev: any): string => {
     if (!ev) return "";
     if (typeof ev === "string") return ev;
@@ -164,7 +172,7 @@ export default function CalendarContent() {
     return String(ev.title ?? ev.name ?? "");
   };
 
-  // Fix 4: Ensure deterministic color generation
+  // Deterministic color based on event content to avoid hydration mismatch
   const getEventColor = (event: any, index: number) => {
     const colors = ["#C4E1A4", "#FAD6A5", "#A0D8EF", "#F6B6B6", "#D9B3FF"];
     const label = getEventLabel(event);
@@ -172,24 +180,33 @@ export default function CalendarContent() {
     return colors[(hash + index) % colors.length];
   };
 
+  // Show loading screen
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+
+  // ---------------------
+  // JSX
+  // ---------------------
   return (
-    <div
-      className="min-h-screen w-full overflow-hidden relative"
-      style={{
-        backgroundImage: "url('/backgroundimage.svg')",
-        backgroundAttachment: "fixed",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
-    >
-      <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-red-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob z-0" />
-      <div className="absolute top-1/2 right-1/4 w-48 h-48 bg-yellow-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000 z-0" />
+    <div className="relative min-h-screen flex flex-col">
+      {/* Background Image - Full Screen Coverage */}
+      <div className="fixed inset-0 -z-10">
+        <Image
+          src="/backgroundimage.svg"
+          alt="Background"
+          fill
+          className="object-cover"
+          priority
+          quality={100}
+        />
+      </div>
+
       {/* MENU ICON */}
       <button
         className="absolute z-[9999]"
         style={{ left: "1356px", top: "150px" }}
         onClick={() => setMenuOpen(!menuOpen)}
-        suppressHydrationWarning
       >
         <Image src="/menu icon.svg" alt="Menu Icon" width={35} height={35} />
       </button>
@@ -230,7 +247,7 @@ export default function CalendarContent() {
       )}
 
       {/* MAIN WRAPPER */}
-      <div className="relative flex flex-col px-[66px] pt-[130px] z-10">
+      <div className="relative flex flex-col px-[66px] pt-[130px]">
         <h1
           className={`${montserrat.className} text-[#800000] text-[32px] font-extrabold`}
         >
@@ -238,15 +255,7 @@ export default function CalendarContent() {
         </h1>
 
         {/* Calendar Section */}
-        <div className="relative mt-[20px] w-[922px] bg-white rounded-lg shadow-lg">
-          <Image
-            src="/Calendar Box.svg"
-            alt="Calendar Box"
-            width={922}
-            height={650}
-            className="absolute top-0 left-0 -z-10 select-none"
-          />
-
+        <div className="relative mt-[20px] w-[922px] bg-white rounded-lg border-4 border-[#800000] shadow-xl">
           {/* Header */}
           <div
             className={`${montserrat.className} flex justify-between items-center px-10 py-3 bg-[#800000] text-white text-[24px] font-semibold rounded-t-md`}
@@ -254,7 +263,6 @@ export default function CalendarContent() {
             <button
               onClick={prevMonth}
               className="hover:text-[#FFD700] transition"
-              suppressHydrationWarning
             >
               <ChevronLeft size={28} />
             </button>
@@ -264,7 +272,6 @@ export default function CalendarContent() {
             <button
               onClick={nextMonth}
               className="hover:text-[#FFD700] transition"
-              suppressHydrationWarning
             >
               <ChevronRight size={28} />
             </button>
@@ -273,7 +280,7 @@ export default function CalendarContent() {
           {/* Month weekdays header */}
           {viewMode === "month" && (
             <div
-              className={`${ptSans.className} grid grid-cols-7 text-center font-bold text-gray-700 mt-3 text-[15px]`}
+              className={`${ptSans.className} grid grid-cols-7 text-center font-bold text-gray-700 mt-3 text-[15px] px-6`}
             >
               {[
                 "Sunday",
@@ -291,7 +298,7 @@ export default function CalendarContent() {
 
           {/* Month grid */}
           {viewMode === "month" && (
-            <div className="grid grid-cols-7 gap-4 mt-3 px-6">
+            <div className="grid grid-cols-7 gap-4 mt-3 px-6 pb-6">
               {daysArray.map((day, index) => {
                 if (!day) {
                   return (
@@ -299,8 +306,7 @@ export default function CalendarContent() {
                   );
                 }
 
-                // Fix 5: Only check isToday on client side
-                const isToday = isClient && isCurrentMonth && day === todayDate;
+                const isToday = isCurrentMonth && day === todayDate;
 
                 // Find holidays and events for this day
                 const dayHolidays = holidaysForCurrentMonth.filter(
@@ -371,7 +377,7 @@ export default function CalendarContent() {
 
           {/* Year view */}
           {viewMode === "year" && (
-            <div className="grid grid-cols-3 gap-6 p-6">
+            <div className="grid grid-cols-3 gap-6 p-6 pb-8">
               {Array.from({ length: 12 }, (_, monthIndex) => {
                 const monthDate = new Date(year, monthIndex, 1);
                 const monthName = monthDate.toLocaleString("default", {
@@ -456,9 +462,7 @@ export default function CalendarContent() {
                         const dayHasEvent = monthEvents.some(
                           (e) => e.day === day
                         );
-                        // Fix 6: Only check isToday on client side
                         const isToday =
-                          isClient &&
                           today.getFullYear() === year &&
                           today.getMonth() === monthIndex &&
                           today.getDate() === day;
@@ -501,7 +505,6 @@ export default function CalendarContent() {
       <button
         onClick={() => setShowAddEvent(true)}
         className="fixed bottom-6 right-6 z-[99999] cursor-pointer bg-transparent"
-        suppressHydrationWarning
       >
         <Image
           src="/Plus Sign.svg"
