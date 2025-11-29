@@ -18,6 +18,11 @@ export default function SwitchMode() {
     setIsSignInOpen(true);
   };
 
+  const handleSwitchToForgotPassword = () => {
+    console.log("Switching to Forgot Password mode.");
+    handleSwitchToSignIn();
+  };
+
   return (
     <div>
       <h1>Welcome to Katipunan Hub</h1>
@@ -26,7 +31,9 @@ export default function SwitchMode() {
       {isSignInOpen && (
         <SignInForm
           onClose={() => setIsSignInOpen(false)}
-          onSwitch={handleSwitchToSignUp}
+          // FIX: Updated prop names to match the current SignInForm interface
+          onSwitchToSignUp={handleSwitchToSignUp}
+          onSwitchToForgotPassword={handleSwitchToForgotPassword}
         />
       )}
 

@@ -2,7 +2,7 @@
 
 import ToggleButton from "@/app/component/ReusableComponent/ToggleButton";
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Button from "@/app/component/ReusableComponent/Buttons";
 import Logo from "@/app/component/ReusableComponent/Logo";
 import TextBox from "@/app/component/ReusableComponent/Textbox";
@@ -12,10 +12,16 @@ import Image from "next/image";
 
 interface SignUpFormProps {
   onClose?: () => void;
-  onSwitch?: () => void;
+  onSwitch?: () => void; // This switches to SignIn
+  onSuccessfulSignUp?: (email: string) => void; // ADDED
 }
 
-export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
+export default function SignUpForm({
+  onClose,
+  onSwitch,
+  onSuccessfulSignUp,
+}: SignUpFormProps) {
+  // UPDATED
   const year = [
     { value: "1st", label: "1st Year" },
     { value: "2nd", label: "2nd Year" },
@@ -78,10 +84,12 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
   const [selectedCourse, setSelectedCourse] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMessage("");
 
     try {
       if (
@@ -91,68 +99,53 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
         !selectedCourse ||
         !selectedYear
       ) {
-        alert("Please fill in all required fields.");
+        setErrorMessage("Please fill in all required fields.");
         return;
       }
 
       if (!email.toLowerCase().endsWith("@cit.edu")) {
-        alert(
+        setErrorMessage(
           "Please use your valid CIT email address (must end with @cit.edu)."
         );
         return;
       }
 
       if (password !== confirmPassword) {
-        alert("Passwords do not match!");
+        setErrorMessage("Passwords do not match!");
         return;
       }
 
+      // 1. PERFORM SIGN-UP (This sends the confirmation email)
       const { error: signUpError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            fullName: firstName,
+            studentID,
+            course: selectedCourse,
+            year: selectedYear,
+            role: "Student",
+          },
+        },
       });
 
       if (signUpError) {
-        alert(signUpError.message);
+        setErrorMessage(signUpError.message);
         return;
       }
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        alert(
-          "Sign-up succeeded — please check your CIT email to confirm your account."
-        );
-        return;
-      }
-
-      const { error: insertError } = await supabase.from("Accounts").insert([
-        {
-          id: user.id,
-          fullName: firstName,
-          studentID,
-          course: selectedCourse,
-          year: selectedYear,
-          avatarURL: "",
-          role: "Student",
-        },
-      ]);
-
-      if (insertError) {
-        console.error("Insert error:", insertError);
-        alert("Account created, but saving profile failed.");
-        return;
-      }
-
-      alert("Account created successfully! You can now sign in.");
-      onSwitch?.();
+      // 2. SUCCESS: Show Verification UI
+      // This is the CRITICAL line that must run after a successful sign-up initiation.
+      onSuccessfulSignUp?.(email);
     } catch (err: unknown) {
       console.error("Sign up error:", err);
-      alert("Unexpected error during sign-up.");
+      setErrorMessage("Unexpected error during sign-up.");
     } finally {
-      setLoading(false);
+      if (errorMessage) {
+        setLoading(false);
+      }
+      // If successful, the modal will unmount instantly due to state change.
     }
   };
 
@@ -236,7 +229,12 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
           <div className="w-full max-w-[420px] flex flex-col gap-4 h-full justify-center py-6">
             <div className="flex flex-col gap-1 flex-shrink-0">
               <div className="transform scale-90 origin-left">
-                <Logo unclickable={true} width={45} height={55} />
+                <Logo
+                  unclickable={true}
+                  width={45}
+                  height={55}
+                  showText={false}
+                />
               </div>
               <div>
                 <h2 className="text-[26px] font-bold font-montserrat text-gray-900">
@@ -264,6 +262,19 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
             </div>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
+              <AnimatePresence>
+                {errorMessage && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="text-sm p-3 rounded-lg font-ptsans bg-red-100 text-red-700 border border-red-200 overflow-hidden"
+                  >
+                    {errorMessage}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               <div className="flex flex-col gap-2.5">
                 <TextBox
                   type="text"
@@ -387,6 +398,7 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
                 bg="bg-[#EFBF04] hover:bg-[#D4AF37]"
                 textcolor="text-white"
                 className="rounded-full font-bold shadow-lg shadow-yellow-500/20 mt-2"
+                disabled={loading}
               />
 
               <div className="text-center text-xs font-ptsans text-gray-500 mb-6">

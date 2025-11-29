@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { X, Star, Loader2 } from "lucide-react";
-import { Montserrat, PT_Sans } from "next/font/google";
+import { Montserrat } from "next/font/google";
 import { motion, AnimatePresence } from "framer-motion"; // Added AnimatePresence
 
 const montserrat = Montserrat({ subsets: ["latin"], weight: ["600", "700"] });
