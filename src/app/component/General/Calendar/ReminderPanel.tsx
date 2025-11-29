@@ -3,11 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import { PT_Sans } from "next/font/google";
-import {
-  PostedEvent,
-  PersonalEvent,
-  Holiday,
-} from "@/app/component/General/Calendar/types";
+import { PostedEvent, PersonalEvent, Holiday } from "@/app/component/General/Calendar/types";
 
 const ptSans = PT_Sans({
   subsets: ["latin"],
@@ -62,12 +58,16 @@ export default function ReminderPanel({
     // Posted events (Global/Course)
     ...postedEvents.filter(
       (e) =>
-        e.year === year && e.month === currentMonth + 1 && e.day === displayDay
+        e.year === year &&
+        e.month === currentMonth + 1 &&
+        e.day === displayDay
     ),
     // Personal events
     ...personalEvents.filter(
       (e) =>
-        e.year === year && e.month === currentMonth + 1 && e.day === displayDay
+        e.year === year &&
+        e.month === currentMonth + 1 &&
+        e.day === displayDay
     ),
     // Holidays
     ...holidays.filter(
@@ -75,48 +75,20 @@ export default function ReminderPanel({
     ),
   ];
 
-  const getEventLabel = (
-    event: Holiday | PostedEvent | PersonalEvent | string
-  ): string => {
+  const getEventLabel = (event: any): string => {
     if (typeof event === "string") return event;
-
-    // Checks if 'title' exists (Common in PostedEvent and PersonalEvent)
-    if ("title" in event) {
-      return event.title;
-    }
-
-    // Checks if 'name' exists (Common in Holiday)
-    if ("name" in event) {
-      return event.name;
-    }
-
+    if ("title" in event) return event.title;
+    if ("name" in event) return event.name;
     return "";
   };
 
-  const getEventType = (
-    event: Holiday | PostedEvent | PersonalEvent | string
-  ): string => {
-    // Handle string reminders first
-    if (typeof event === "string") return "Reminder";
-
-    // Check for 'audience' to identify PostedEvent
+  const getEventType = (event: any): string => {
     if ("audience" in event) {
-      return event.audience === "Global"
-        ? "Global Event"
-        : `Course: ${event.course}`;
+      return event.audience === "Global" ? "Global Event" : `Course: ${event.course}`;
     }
-
-    // Check for Holiday specific props (name exists, but title does not)
-    if (
-      "name" in event &&
-      "month" in event &&
-      "day" in event &&
-      !("title" in event)
-    ) {
+    if ("name" in event && "month" in event && "day" in event && !("title" in event)) {
       return "Holiday";
     }
-
-    // Default fallback
     return "Personal Event";
   };
 
