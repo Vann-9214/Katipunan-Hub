@@ -4,12 +4,7 @@ import React, { useMemo, useState, useEffect } from "react";
 import Image from "next/image";
 import { Montserrat, PT_Sans } from "next/font/google";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import {
-  Holiday,
-  PostedEvent,
-  PersonalEvent,
-  MenuType,
-} from "@/app/component/General/Calendar/types";
+import { Holiday, PostedEvent, PersonalEvent, MenuType } from "@/app/component/General/Calendar/types";
 import EventModal from "@/app/component/General/Calendar/EventModal";
 import ReminderPanel from "@/app/component/General/Calendar/ReminderPanel";
 import SchedulePanel from "@/app/component/General/Calendar/SchedulePanel";
@@ -26,38 +21,40 @@ const ptSans = PT_Sans({
 });
 
 export default function CalendarContent() {
-  // Fix 1: Use hydration-safe initial state
-  const [isClient, setIsClient] = useState(false);
-  const [currentDate, setCurrentDate] = useState(() => {
-    // Use a static date for SSR, will be updated on client
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), 1);
-  });
-  
+  // Loading state
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Simulate initial loading
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // ---------------------
+  // Core UI state
+  // ---------------------
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectedMenu, setSelectedMenu] = useState<MenuType>("Reminder");
   const [showAddEvent, setShowAddEvent] = useState(false);
   const [viewMode, setViewMode] = useState<"month" | "year">("month");
 
+  // ---------------------
   // Data state
+  // ---------------------
   const [reminders, setReminders] = useState<string[]>([]);
   const [newReminder, setNewReminder] = useState("");
   const [personalEvents, setPersonalEvents] = useState<PersonalEvent[]>([]);
   const [postedEvents, setPostedEvents] = useState<PostedEvent[]>([]);
 
-  // Fix 2: Set client flag after mount
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
+  // ---------------------
   // Calendar helpers
-  const MONTHS = [
-    "January","February","March","April","May","June",
-    "July","August","September","October","November","December"
-  ];
-
-  const monthName = MONTHS[currentDate.getMonth()];
+  // ---------------------
+  const monthName = currentDate.toLocaleString("default", { month: "long" });
   const year = currentDate.getFullYear();
   const firstDay = new Date(year, currentDate.getMonth(), 1).getDay();
   const daysInMonth = new Date(year, currentDate.getMonth() + 1, 0).getDate();
@@ -67,8 +64,7 @@ export default function CalendarContent() {
   const nextMonth = () =>
     setCurrentDate(new Date(year, currentDate.getMonth() + 1, 1));
 
-  // Fix 3: Calculate today in a hydration-safe way
-  const today = useMemo(() => new Date(), []);
+  const today = new Date();
   const isCurrentMonth =
     today.getFullYear() === year && today.getMonth() === currentDate.getMonth();
   const todayDate = today.getDate();
@@ -78,7 +74,9 @@ export default function CalendarContent() {
     return dayNum > 0 && dayNum <= daysInMonth ? dayNum : null;
   });
 
+  // ---------------------
   // Holiday logic
+  // ---------------------
   function computeEasterSunday(y: number): Date {
     const a = y % 19;
     const b = Math.floor(y / 100);
@@ -97,121 +95,57 @@ export default function CalendarContent() {
     return new Date(y, month - 1, day);
   }
 
-function lastMondayOfMonth(y: number, month0Based: number) {
-  const lastDay = new Date(y, month0Based + 1, 0);
-  const dayOfWeek = lastDay.getDay();
-  const offset = (dayOfWeek + 6) % 7;
-  const lastMonday = new Date(y, month0Based + 1, 0 - offset);
-  return lastMonday;
-}
+  function lastMondayOfMonth(y: number, month0Based: number) {
+    const lastDay = new Date(y, month0Based + 1, 0);
+    const dayOfWeek = lastDay.getDay();
+    const offset = (dayOfWeek + 6) % 7;
+    const lastMonday = new Date(y, month0Based + 1, 0 - offset);
+    return lastMonday;
+  }
 
-function getPhilippineHolidays(y: number): Holiday[] {
-  const base: Holiday[] = [
-    { name: "New Year's Day", month: 1, day: 1 },
-    { name: "Araw ng Kagitingan", month: 4, day: 9 },
-    { name: "Labor Day", month: 5, day: 1 },
-    { name: "Independence Day", month: 6, day: 12 },
-    { name: "Ninoy Aquino Day", month: 8, day: 21 },
-    { name: "All Saints' Day", month: 11, day: 1 },
-    { name: "Bonifacio Day", month: 11, day: 30 },
-    { name: "Christmas Day", month: 12, day: 25 },
-    { name: "Rizal Day", month: 12, day: 30 },
-    { name: "Christmas Eve", month: 12, day: 24 },
-    { name: "New Year's Eve", month: 12, day: 31 },
-  ];
+  function getPhilippineHolidays(y: number): Holiday[] {
+    const base: Holiday[] = [
+      { name: "New Year's Day", month: 1, day: 1 },
+      { name: "Araw ng Kagitingan", month: 4, day: 9 },
+      { name: "Labor Day", month: 5, day: 1 },
+      { name: "Independence Day", month: 6, day: 12 },
+      { name: "Ninoy Aquino Day", month: 8, day: 21 },
+      { name: "All Saints' Day", month: 11, day: 1 },
+      { name: "Bonifacio Day", month: 11, day: 30 },
+      { name: "Christmas Day", month: 12, day: 25 },
+      { name: "Rizal Day", month: 12, day: 30 },
+      { name: "Christmas Eve", month: 12, day: 24 },
+      { name: "New Year's Eve", month: 12, day: 31 },
+    ];
 
-  const easter = computeEasterSunday(y);
-  const maundy = new Date(easter);
-  maundy.setDate(easter.getDate() - 3);
-  const goodFriday = new Date(easter);
-  goodFriday.setDate(easter.getDate() - 2);
+    const easter = computeEasterSunday(y);
+    const maundy = new Date(easter);
+    maundy.setDate(easter.getDate() - 3);
+    const goodFriday = new Date(easter);
+    goodFriday.setDate(easter.getDate() - 2);
 
-  base.push({
-    name: "Maundy Thursday",
-    month: maundy.getMonth() + 1,
-    day: maundy.getDate(),
-  });
-  base.push({
-    name: "Good Friday",
-    month: goodFriday.getMonth() + 1,
-    day: goodFriday.getDate(),
-  });
+    base.push({
+      name: "Maundy Thursday",
+      month: maundy.getMonth() + 1,
+      day: maundy.getDate(),
+    });
+    base.push({
+      name: "Good Friday",
+      month: goodFriday.getMonth() + 1,
+      day: goodFriday.getDate(),
+    });
 
-  const lastMonAug = lastMondayOfMonth(y, 7);
-  base.push({
-    name: "National Heroes Day",
-    month: lastMonAug.getMonth() + 1,
-    day: lastMonAug.getDate(),
-  });
+    const lastMonAug = lastMondayOfMonth(y, 7);
+    base.push({
+      name: "National Heroes Day",
+      month: lastMonAug.getMonth() + 1,
+      day: lastMonAug.getDate(),
+    });
 
-  base.sort((a, b) => a.month - b.month || a.day - b.day);
-  return base;
-}
+    base.sort((a, b) => a.month - b.month || a.day - b.day);
+    return base;
+  }
 
-export default function CalendarContent() {
-  // Fix 1: Use hydration-safe initial state
-  const [isClient, setIsClient] = useState(false);
-  const [currentDate, setCurrentDate] = useState(() => {
-    // Use a static date for SSR, will be updated on client
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), 1);
-  });
-
-  const [selectedDay, setSelectedDay] = useState<number | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [selectedMenu, setSelectedMenu] = useState<MenuType>("Reminder");
-  const [showAddEvent, setShowAddEvent] = useState(false);
-  const [viewMode, setViewMode] = useState<"month" | "year">("month");
-
-  // Data state
-  const [reminders, setReminders] = useState<string[]>([]);
-  const [newReminder, setNewReminder] = useState("");
-  const [personalEvents, setPersonalEvents] = useState<PersonalEvent[]>([]);
-  const [postedEvents, setPostedEvents] = useState<PostedEvent[]>([]);
-
-  // Fix 2: Set client flag after mount
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  // Calendar helpers
-  const MONTHS = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
-
-  const monthName = MONTHS[currentDate.getMonth()];
-  const year = currentDate.getFullYear();
-  const firstDay = new Date(year, currentDate.getMonth(), 1).getDay();
-  const daysInMonth = new Date(year, currentDate.getMonth() + 1, 0).getDate();
-
-  const prevMonth = () =>
-    setCurrentDate(new Date(year, currentDate.getMonth() - 1, 1));
-  const nextMonth = () =>
-    setCurrentDate(new Date(year, currentDate.getMonth() + 1, 1));
-
-  // Fix 3: Calculate today in a hydration-safe way
-  const today = useMemo(() => new Date(), []);
-  const isCurrentMonth =
-    today.getFullYear() === year && today.getMonth() === currentDate.getMonth();
-  const todayDate = today.getDate();
-
-  const daysArray = Array.from({ length: 42 }, (_, i) => {
-    const dayNum = i - firstDay + 1;
-    return dayNum > 0 && dayNum <= daysInMonth ? dayNum : null;
-  });
-
-  // Holiday logic (Dependency fixed by moving function outside component)
   const holidaysForYear = useMemo(() => getPhilippineHolidays(year), [year]);
   const holidaysForCurrentMonth = holidaysForYear.filter(
     (h) => h.month === currentDate.getMonth() + 1
@@ -229,29 +163,20 @@ export default function CalendarContent() {
 
   // ---------------------
   // Helpers for calendar day rendering
+  // ---------------------
   const getEventLabel = (ev: any): string => {
     if (!ev) return "";
     if (typeof ev === "string") return ev;
-
-    // Type guards: 'in' narrows the type to an object containing that key
-    if ("title" in ev) {
-      return ev.title ?? "";
-    }
-
-    if ("name" in ev) {
-      return ev.name ?? "";
-    }
-
-    return "";
+    if ("title" in ev && ev.title) return String(ev.title);
+    if ("name" in ev && ev.name) return String(ev.name);
+    return String(ev.title ?? ev.name ?? "");
   };
 
-  // Fix 4: Ensure deterministic color generation
+  // Deterministic color based on event content to avoid hydration mismatch
   const getEventColor = (event: any, index: number) => {
     const colors = ["#C4E1A4", "#FAD6A5", "#A0D8EF", "#F6B6B6", "#D9B3FF"];
     const label = getEventLabel(event);
-    const hash = label
-      .split("")
-      .reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const hash = label.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     return colors[(hash + index) % colors.length];
   };
 
@@ -341,7 +266,9 @@ export default function CalendarContent() {
             >
               <ChevronLeft size={28} />
             </button>
-            <span>{viewMode === "month" ? `${monthName} ${year}` : year}</span>
+            <span>
+              {viewMode === "month" ? `${monthName} ${year}` : year}
+            </span>
             <button
               onClick={nextMonth}
               className="hover:text-[#FFD700] transition"
