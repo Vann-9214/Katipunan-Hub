@@ -40,6 +40,7 @@ export function AddPostModal(props: AddPostModalProps) {
     postType,
     predefinedImages,
     modalTitle,
+    suggestedTags,
   } = state;
 
   const displayName =
@@ -47,14 +48,52 @@ export function AddPostModal(props: AddPostModalProps) {
       ? props.author.fullName
       : "Cebu Institute of Technology - University";
 
+  const handleClose = () => {
+    const isImagesDirty = refs.uploadRef.current?.isDirty() ?? false;
+    const initialTitle = props.initialPost?.title || "";
+    const isTitleDirty = title.trim() !== initialTitle;
+
+    const getInitialDesc = () => {
+      if (!props.initialPost) return "";
+      return (
+        props.initialPost.description?.replace(/\s*#\S+/g, "").trim() || ""
+      );
+    };
+    const initialDesc = getInitialDesc();
+    const isDescDirty = description.trim() !== initialDesc;
+
+    const initialTags = props.initialPost?.tags || [];
+    const sortedCurrentTags = [...tags].sort().join(",");
+    const sortedInitialTags = [...initialTags].sort().join(",");
+    const isTagsDirty = sortedCurrentTags !== sortedInitialTags;
+
+    const hasChanges =
+      isImagesDirty || isTitleDirty || isDescDirty || isTagsDirty;
+
+    if (hasChanges) {
+      const confirmLeave = window.confirm(
+        "You have unsaved changes. Are you sure you want to discard them?"
+      );
+      if (!confirmLeave) {
+        return;
+      }
+    }
+
+    props.onClose();
+  };
+
   const modalContent = (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      // FIX: Changed z-[9999] back to z-50 to prevent covering the dropdowns
       className="fixed inset-0 z-50 flex justify-center items-center bg-black/60 backdrop-blur-sm p-4 modal-root"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          handleClose();
+        }
+      }}
     >
       <motion.div
         layout
@@ -62,11 +101,9 @@ export function AddPostModal(props: AddPostModalProps) {
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: 20 }}
         transition={{ type: "spring", stiffness: 350, damping: 30 }}
-        // Beautified Wrapper: Gold Gradient Border
         className="relative w-full max-w-[700px] p-[2px] rounded-[24px] bg-gradient-to-br from-[#EFBF04] via-[#FFD700] to-[#D4AF37] shadow-2xl flex flex-col max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Inner Content */}
         <div className="bg-white w-full h-full rounded-[22px] flex flex-col overflow-hidden shadow-inner relative">
           <AnimatePresence mode="wait" initial={false}>
             {isAudienceSelectorOpen ? (
@@ -94,9 +131,8 @@ export function AddPostModal(props: AddPostModalProps) {
                 transition={{ duration: 0.2, ease: "easeOut" }}
                 className="flex flex-col h-full overflow-hidden bg-white"
               >
-                {/* Header: Deep Red Gradient */}
+                {/* Header */}
                 <div className="flex justify-between items-center px-6 py-5 bg-gradient-to-b from-[#4e0505] to-[#3a0000] border-b border-[#EFBF04]/30 shrink-0 z-10 relative">
-                  {/* Decorative Glow */}
                   <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/20 blur-3xl rounded-full pointer-events-none" />
 
                   <h1
@@ -106,7 +142,7 @@ export function AddPostModal(props: AddPostModalProps) {
                   </h1>
                   <motion.button
                     type="button"
-                    onClick={props.onClose}
+                    onClick={handleClose}
                     whileHover={{ rotate: 90, scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     className="text-white/80 hover:text-white cursor-pointer p-1 transition-colors absolute right-4"
@@ -120,7 +156,7 @@ export function AddPostModal(props: AddPostModalProps) {
                   onSubmit={handlers.handleSubmit}
                   className="flex flex-col gap-6 p-6 overflow-y-auto custom-scrollbar flex-1 bg-[#F9FAFB]"
                 >
-                  {/* User Profile Section */}
+                  {/* User Profile */}
                   <div className="flex items-center gap-3">
                     {props.isFeed && props.author ? (
                       <Avatar
@@ -146,7 +182,6 @@ export function AddPostModal(props: AddPostModalProps) {
                         {displayName}
                       </span>
 
-                      {/* Audience Selector Button */}
                       {!props.isFeed && postType === "announcement" && (
                         <motion.button
                           type="button"
@@ -195,7 +230,7 @@ export function AddPostModal(props: AddPostModalProps) {
                     </div>
                   </div>
 
-                  {/* Title Input */}
+                  {/* Title */}
                   {!props.isFeed && (
                     <div className="space-y-2">
                       <label
@@ -218,7 +253,7 @@ export function AddPostModal(props: AddPostModalProps) {
                     </div>
                   )}
 
-                  {/* Description Input */}
+                  {/* Description */}
                   <div className="space-y-2">
                     <label
                       htmlFor="description"
@@ -244,18 +279,14 @@ export function AddPostModal(props: AddPostModalProps) {
                     />
                   </div>
 
-                  {/* Tags Input */}
+                  {/* Tags */}
                   {!props.isFeed && (
                     <div className="space-y-2">
-                      <label
-                        className={`${montserrat.className} block text-sm font-bold text-gray-700`}
-                      >
-                        Tags
-                      </label>
                       <div className="p-1">
                         <TagEditor
                           width="w-full"
                           tags={tags}
+                          suggestedTags={suggestedTags}
                           onTagAdd={handlers.addTag}
                           onTagRemove={handlers.removeTag}
                         />
@@ -263,7 +294,7 @@ export function AddPostModal(props: AddPostModalProps) {
                     </div>
                   )}
 
-                  {/* Attachment Section */}
+                  {/* Attachment - Updated Wrapper */}
                   <div className="space-y-2">
                     <label
                       className={`${montserrat.className} block text-sm font-bold text-gray-700`}
@@ -272,7 +303,8 @@ export function AddPostModal(props: AddPostModalProps) {
                         ? "Add to your post"
                         : "Attachments (Optional)"}
                     </label>
-                    <div className="bg-white rounded-xl border border-gray-200 p-1 shadow-sm">
+                    {/* Removed the outer white box style since UploadButton now handles UI */}
+                    <div className="w-full">
                       <UploadButton
                         key={props.initialPost?.id ?? "new"}
                         ref={refs.uploadRef}
