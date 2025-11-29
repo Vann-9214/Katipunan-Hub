@@ -237,6 +237,9 @@ export default function Posts(props: PostsProps) {
                     topReactions={topReactions}
                     totalCount={reactionCount}
                     isLoading={isInitialLoading}
+                    // --- PASSING PROPS FOR HOVER ---
+                    referenceId={postId}
+                    sourceType={isFeed ? "feed" : "post"}
                   />
                 </div>
 

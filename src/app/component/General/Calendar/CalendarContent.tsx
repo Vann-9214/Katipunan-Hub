@@ -9,11 +9,14 @@ import {
   PostedEvent,
   PersonalEvent,
   MenuType,
+  DBEvent,
 } from "@/app/component/General/Calendar/types";
 import EventModal from "@/app/component/General/Calendar/EventModal";
 import ReminderPanel from "@/app/component/General/Calendar/ReminderPanel";
 import SchedulePanel from "@/app/component/General/Calendar/SchedulePanel";
 import LoadingScreen from "@/app/component/ReusableComponent/LoadingScreen";
+import { supabase } from "../../../../../supabase/Lib/General/supabaseClient";
+import { getCurrentUserDetails } from "../../../../../supabase/Lib/General/getUser";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -26,17 +29,7 @@ const ptSans = PT_Sans({
 });
 
 export default function CalendarContent() {
-  // Loading state
   const [isLoading, setIsLoading] = useState(true);
-
-  // Simulate initial loading
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-
-    return () => clearTimeout(timer);
-  }, []);
 
   // ---------------------
   // Core UI state
@@ -55,6 +48,103 @@ export default function CalendarContent() {
   const [newReminder, setNewReminder] = useState("");
   const [personalEvents, setPersonalEvents] = useState<PersonalEvent[]>([]);
   const [postedEvents, setPostedEvents] = useState<PostedEvent[]>([]);
+
+  // ---------------------
+  // Fetching Logic
+  // ---------------------
+  const fetchEvents = async () => {
+    try {
+      const user = await getCurrentUserDetails();
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
+
+      const role = user.role || "";
+      const isAdmin = role.includes("Platform Administrator");
+      const userCourse = user.course || ""; // This is the value e.g., "bs-computer-science"
+
+      let query = supabase.from("Events").select("*");
+
+      if (!isAdmin) {
+        // Filter: Show my personal events OR global events
+        query = query.or(`user_id.eq.${user.id},audience.eq.Global`);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      if (data) {
+        const dbEvents = data as DBEvent[];
+
+        // 1. Personal Events
+        const pEvents: PersonalEvent[] = dbEvents
+          .filter((e) => e.audience === "Personal" && e.user_id === user.id)
+          .map((e) => ({
+            name: e.title,
+            year: e.year,
+            month: e.month,
+            day: e.day,
+          }));
+
+        // 2. Global/Posted Events
+        const gEvents: PostedEvent[] = dbEvents
+          .filter((e) => {
+            if (e.audience !== "Global") return false;
+
+            // If Admin, show all global events regardless of course
+            if (isAdmin) return true;
+
+            // If courses array is empty or null, it implies "All Courses"
+            if (!e.courses || e.courses.length === 0) return true;
+
+            // If array has values, check if user's course VALUE is in it
+            // Both 'userCourse' and 'e.courses' now use values like "bs-computer-science"
+            return e.courses.includes(userCourse);
+          })
+          .map((e) => ({
+            title: e.title,
+            // For display, if there are courses, we just say "Your Course Event" or similar
+            // to keep the calendar cell clean. Or you can join them.
+            course:
+              e.courses && e.courses.length > 0
+                ? e.courses.join(", ")
+                : "All Courses",
+            audience: "Global",
+            year: e.year,
+            month: e.month,
+            day: e.day,
+            date: e.date,
+          }));
+
+        setPersonalEvents(pEvents);
+        setPostedEvents(gEvents);
+      }
+    } catch (err) {
+      console.error("Error fetching events:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEvents();
+
+    const channel = supabase
+      .channel("events-calendar-changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "Events" },
+        () => {
+          fetchEvents();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   // ---------------------
   // Calendar helpers
@@ -156,9 +246,6 @@ export default function CalendarContent() {
     (h) => h.month === currentDate.getMonth() + 1
   );
 
-  // ---------------------
-  // Menu handler
-  // ---------------------
   function handleMenuSelect(name: string) {
     if (name === "Year") setViewMode("year");
     else if (name === "Month") setViewMode("month");
@@ -176,15 +263,8 @@ export default function CalendarContent() {
 
   const getEventLabel = (ev: CalendarEvent): string => {
     if (!ev || typeof ev === "string") return String(ev ?? "");
-
-    if ("title" in ev && ev.title) {
-      return String(ev.title);
-    }
-
-    if ("name" in ev && ev.name) {
-      return String(ev.name);
-    }
-
+    if ("title" in ev && ev.title) return String(ev.title);
+    if ("name" in ev && ev.name) return String(ev.name);
     return "";
   };
 
@@ -197,17 +277,12 @@ export default function CalendarContent() {
     return colors[(hash + index) % colors.length];
   };
 
-  // Show loading screen
   if (isLoading) {
     return <LoadingScreen />;
   }
 
-  // ---------------------
-  // JSX
-  // ---------------------
   return (
     <div className="relative min-h-screen flex flex-col">
-      {/* Background Image - Full Screen Coverage */}
       <div className="fixed inset-0 -z-10">
         <Image
           src="/backgroundimage.svg"
@@ -219,7 +294,6 @@ export default function CalendarContent() {
         />
       </div>
 
-      {/* MENU ICON */}
       <button
         className="absolute z-[9999]"
         style={{ left: "1356px", top: "150px" }}
@@ -228,7 +302,6 @@ export default function CalendarContent() {
         <Image src="/menu icon.svg" alt="Menu Icon" width={35} height={35} />
       </button>
 
-      {/* POPUP MENU */}
       {menuOpen && (
         <div
           className="absolute z-[9999] flex flex-col p-3 shadow-lg"
@@ -263,7 +336,6 @@ export default function CalendarContent() {
         </div>
       )}
 
-      {/* MAIN WRAPPER */}
       <div className="relative flex flex-col px-[66px] pt-[130px]">
         <h1
           className={`${montserrat.className} text-[#800000] text-[32px] font-extrabold`}
@@ -271,9 +343,7 @@ export default function CalendarContent() {
           YOUR EVENT BOARD:
         </h1>
 
-        {/* Calendar Section */}
         <div className="relative mt-[20px] w-[922px] bg-white rounded-lg border-4 border-[#800000] shadow-xl">
-          {/* Header */}
           <div
             className={`${montserrat.className} flex justify-between items-center px-10 py-3 bg-[#800000] text-white text-[24px] font-semibold rounded-t-md`}
           >
@@ -292,110 +362,106 @@ export default function CalendarContent() {
             </button>
           </div>
 
-          {/* Month weekdays header */}
           {viewMode === "month" && (
-            <div
-              className={`${ptSans.className} grid grid-cols-7 text-center font-bold text-gray-700 mt-3 text-[15px] px-6`}
-            >
-              {[
-                "Sunday",
-                "Monday",
-                "Tuesday",
-                "Wednesday",
-                "Thursday",
-                "Friday",
-                "Saturday",
-              ].map((d, i) => (
-                <div key={i}>{d}</div>
-              ))}
-            </div>
-          )}
+            <>
+              <div
+                className={`${ptSans.className} grid grid-cols-7 text-center font-bold text-gray-700 mt-3 text-[15px] px-6`}
+              >
+                {[
+                  "Sunday",
+                  "Monday",
+                  "Tuesday",
+                  "Wednesday",
+                  "Thursday",
+                  "Friday",
+                  "Saturday",
+                ].map((d, i) => (
+                  <div key={i}>{d}</div>
+                ))}
+              </div>
 
-          {/* Month grid */}
-          {viewMode === "month" && (
-            <div className="grid grid-cols-7 gap-4 mt-3 px-6 pb-6">
-              {daysArray.map((day, index) => {
-                if (!day) {
-                  return (
-                    <div key={index} className="w-[85px] h-[85px] opacity-30" />
+              <div className="grid grid-cols-7 gap-4 mt-3 px-6 pb-6">
+                {daysArray.map((day, index) => {
+                  if (!day) {
+                    return (
+                      <div
+                        key={index}
+                        className="w-[85px] h-[85px] opacity-30"
+                      />
+                    );
+                  }
+
+                  const isToday = isCurrentMonth && day === todayDate;
+
+                  const dayHolidays = holidaysForCurrentMonth.filter(
+                    (h) => h.day === day
                   );
-                }
+                  const dayEvents = [
+                    ...personalEvents.filter(
+                      (e) =>
+                        e.year === year &&
+                        e.month === currentDate.getMonth() + 1 &&
+                        e.day === day
+                    ),
+                    ...postedEvents.filter(
+                      (e) =>
+                        e.year === year &&
+                        e.month === currentDate.getMonth() + 1 &&
+                        e.day === day
+                    ),
+                  ];
 
-                const isToday = isCurrentMonth && day === todayDate;
-
-                // Find holidays and events for this day
-                const dayHolidays = holidaysForCurrentMonth.filter(
-                  (h) => h.day === day
-                );
-                const dayEvents = [
-                  ...personalEvents.filter(
-                    (e) =>
-                      e.year === year &&
-                      e.month === currentDate.getMonth() + 1 &&
-                      e.day === day
-                  ),
-                  ...postedEvents.filter((e) => {
-                    const isSameDate =
-                      e.year === year &&
-                      e.month === currentDate.getMonth() + 1 &&
-                      e.day === day;
-                    if (!isSameDate) return false;
-                    return e.audience === "Global" || e.audience === "Course";
-                  }),
-                ];
-
-                return (
-                  <div
-                    key={index}
-                    className={`relative w-[85px] h-[85px] flex flex-col items-center p-1 cursor-pointer`}
-                    onClick={() => setSelectedDay(day)}
-                  >
-                    {isToday && (
-                      <div className="absolute inset-0 border-4 border-[#FFD700] rounded-md pointer-events-none" />
-                    )}
-                    <Image
-                      src="/Date Box.svg"
-                      alt="Date Box"
-                      width={85}
-                      height={85}
-                      className="absolute top-0 left-0 select-none"
-                    />
-                    <span
-                      className={`${
-                        ptSans.className
-                      } text-[14px] font-bold absolute top-[6px] left-1/2 -translate-x-1/2 ${
-                        selectedDay === day
-                          ? "text-[#FFD700]"
-                          : "text-[#800000]"
-                      }`}
+                  return (
+                    <div
+                      key={index}
+                      className={`relative w-[85px] h-[85px] flex flex-col items-center p-1 cursor-pointer`}
+                      onClick={() => setSelectedDay(day)}
                     >
-                      {day}
-                    </span>
+                      {isToday && (
+                        <div className="absolute inset-0 border-4 border-[#FFD700] rounded-md pointer-events-none" />
+                      )}
+                      <Image
+                        src="/Date Box.svg"
+                        alt="Date Box"
+                        width={85}
+                        height={85}
+                        className="absolute top-0 left-0 select-none"
+                      />
+                      <span
+                        className={`${
+                          ptSans.className
+                        } text-[14px] font-bold absolute top-[6px] left-1/2 -translate-x-1/2 ${
+                          selectedDay === day
+                            ? "text-[#FFD700]"
+                            : "text-[#800000]"
+                        }`}
+                      >
+                        {day}
+                      </span>
 
-                    {/* Events inside box */}
-                    <div className="absolute top-[25px] w-[75px] h-[50px] flex flex-col gap-[2px] overflow-hidden">
-                      {[...dayHolidays, ...dayEvents].map((event, i) => (
-                        <div
-                          key={i}
-                          className="text-[10px] text-center rounded-md px-[2px] py-[1px] text-black truncate"
-                          style={{ backgroundColor: getEventColor(event, i) }}
-                        >
-                          {getEventLabel(event)}
-                        </div>
-                      ))}
+                      <div className="absolute top-[25px] w-[75px] h-[50px] flex flex-col gap-[2px] overflow-hidden">
+                        {[...dayHolidays, ...dayEvents].map((event, i) => (
+                          <div
+                            key={i}
+                            className="text-[10px] text-center rounded-md px-[2px] py-[1px] text-black truncate"
+                            style={{ backgroundColor: getEventColor(event, i) }}
+                          >
+                            {getEventLabel(event)}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            </>
           )}
 
-          {/* Year view */}
           {viewMode === "year" && (
             <div className="grid grid-cols-3 gap-6 p-6 pb-8">
               {Array.from({ length: 12 }, (_, monthIndex) => {
                 const monthDate = new Date(year, monthIndex, 1);
-                const monthName = monthDate.toLocaleString("default", {
+                const thisMonthName = monthDate.toLocaleString("default", {
                   month: "long",
                 });
                 const firstDayOfMonth = monthDate.getDay();
@@ -409,7 +475,6 @@ export default function CalendarContent() {
                   return day > 0 && day <= daysInThisMonth ? day : null;
                 });
 
-                // Get events for this month
                 const monthHolidays = holidaysForYear.filter(
                   (h) => h.month === monthIndex + 1
                 );
@@ -418,13 +483,9 @@ export default function CalendarContent() {
                     (e) => e.year === year && e.month === monthIndex + 1
                   ),
                   ...postedEvents.filter(
-                    (e) =>
-                      e.year === year &&
-                      e.month === monthIndex + 1 &&
-                      (e.audience === "Global" || e.audience === "Course")
+                    (e) => e.year === year && e.month === monthIndex + 1
                   ),
                 ];
-
                 const hasEvents =
                   monthHolidays.length > 0 || monthEvents.length > 0;
 
@@ -441,12 +502,9 @@ export default function CalendarContent() {
                       setViewMode("month");
                     }}
                   >
-                    {/* Month name */}
                     <h3 className="text-center font-bold text-[#800000] mb-2 text-[14px]">
-                      {monthName}
+                      {thisMonthName}
                     </h3>
-
-                    {/* Weekday headers */}
                     <div className="grid grid-cols-7 gap-[2px] mb-1">
                       {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
                         <div
@@ -457,20 +515,15 @@ export default function CalendarContent() {
                         </div>
                       ))}
                     </div>
-
-                    {/* Days grid */}
                     <div className="grid grid-cols-7 gap-[2px]">
                       {monthDays.map((day, i) => {
-                        if (!day) {
+                        if (!day)
                           return (
                             <div
                               key={i}
                               className="text-[10px] text-center py-1"
                             />
                           );
-                        }
-
-                        // Check if this day has events
                         const dayHasHoliday = monthHolidays.some(
                           (h) => h.day === day
                         );
@@ -498,16 +551,6 @@ export default function CalendarContent() {
                         );
                       })}
                     </div>
-
-                    {/* Event indicator */}
-                    {hasEvents && (
-                      <div className="text-center mt-2 text-[9px] text-[#800000] font-semibold">
-                        {monthHolidays.length + monthEvents.length} event
-                        {monthHolidays.length + monthEvents.length !== 1
-                          ? "s"
-                          : ""}
-                      </div>
-                    )}
                   </div>
                 );
               })}
@@ -516,7 +559,6 @@ export default function CalendarContent() {
         </div>
       </div>
 
-      {/* Floating Plus Button */}
       <button
         onClick={() => setShowAddEvent(true)}
         className="fixed bottom-6 right-6 z-[99999] cursor-pointer bg-transparent"
@@ -530,15 +572,12 @@ export default function CalendarContent() {
         />
       </button>
 
-      {/* Event Modal - PASSED CURRENT USER */}
       <EventModal
         showAddEvent={showAddEvent}
         setShowAddEvent={setShowAddEvent}
-        postedEvents={postedEvents}
-        setPostedEvents={setPostedEvents}
+        onEventAdded={fetchEvents}
       />
 
-      {/* Reminder Panel */}
       {selectedMenu === "Reminder" && (
         <ReminderPanel
           reminders={reminders}
@@ -556,7 +595,6 @@ export default function CalendarContent() {
         />
       )}
 
-      {/* Schedule Panel */}
       {selectedMenu === "Schedule" && (
         <SchedulePanel
           holidaysForCurrentMonth={holidaysForCurrentMonth}

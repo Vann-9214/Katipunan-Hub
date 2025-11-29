@@ -26,3 +26,19 @@ export type PersonalEvent = {
 export type FilterType = "Global Events" | "Personal Events" | "All";
 
 export type MenuType = "Reminder" | "Schedule" | "Year" | "Month";
+
+// --- NEW: Database Event Type ---
+export interface DBEvent {
+  id: string;
+  created_at: string;
+  user_id: string;
+  title: string;
+  date: string;
+  year: number;
+  month: number;
+  day: number;
+  audience: "Personal" | "Global";
+  courses: string[] | null;
+  created_by_name: string | null;
+  created_by_role: string | null;
+}

@@ -59,7 +59,7 @@ export default function PLCAdCard() {
             onClick={() => setIsModalOpen(true)}
             whileHover={{ scale: 1.02, filter: "brightness(1.1)" }}
             whileTap={{ scale: 0.98 }}
-            className="w-full flex items-center justify-between px-4 py-2.5 bg-[#EFBF04] text-[#800000] font-bold rounded-lg transition-colors shadow-lg shadow-yellow-500/30"
+            className="w-full flex items-center justify-between px-4 py-2.5 bg-[#EFBF04] text-white cursor-pointer font-bold rounded-lg transition-colors shadow-lg shadow-yellow-500/30"
           >
             <span className={`${montserrat.className}`}>Apply to Tutor</span>
             <ChevronRight size={20} />

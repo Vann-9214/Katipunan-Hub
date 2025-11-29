@@ -25,10 +25,8 @@ const formatCommentCount = (count: number) => {
 export default function PostComment() {
   const { spotlightPost, closePostModal } = usePostComment();
 
-  // Determine if it is a feed post
   const isFeedPost = spotlightPost?.isFeed || false;
 
-  // --- USE COMMENTS HOOK (Updated with isFeed flag) ---
   const {
     comments,
     isLoading: isCommentsLoading,
@@ -38,9 +36,7 @@ export default function PostComment() {
     reactingCommentId,
     commentCount,
   } = useComments(spotlightPost?.postId || "", isFeedPost);
-  // ----------------------------------------------------
 
-  // --- REACTION LOGIC SPLIT ---
   const postReactions = usePostReactions({
     postId: spotlightPost && !isFeedPost ? spotlightPost.postId : "",
     userId: spotlightPost?.userId || "",
@@ -60,8 +56,6 @@ export default function PostComment() {
     handleReactionSelect,
     handleMainButtonClick,
   } = spotlightPost && isFeedPost ? feedReactions : postReactions;
-
-  // ---------------------------------------------------
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -123,6 +117,8 @@ export default function PostComment() {
                     topReactions={topReactions}
                     totalCount={reactionCount}
                     isLoading={isReactionsInitialLoading}
+                    referenceId={spotlightPost.postId}
+                    sourceType={isFeedPost ? "feed" : "post"}
                   />
                 </div>
                 <div>
@@ -151,6 +147,7 @@ export default function PostComment() {
                 isLoading={isCommentsLoading}
                 onReact={handleCommentReaction}
                 reactingCommentId={reactingCommentId}
+                isFeed={isFeedPost} // --- PASS PROP HERE ---
               />
             </div>
           </div>

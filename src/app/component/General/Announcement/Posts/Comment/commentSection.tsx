@@ -1,13 +1,14 @@
 "use client";
 import CommentItem from "./commentItem";
 import type { CommentWithAuthor } from "./commentItem";
-import { AnimatePresence, motion } from "framer-motion"; // 1. Import AnimatePresence & motion
+import { AnimatePresence, motion } from "framer-motion";
 
 interface CommentSectionProps {
   comments: CommentWithAuthor[];
   isLoading: boolean;
   onReact: (commentId: string, reactionId: string | null) => void;
   reactingCommentId: string | null;
+  isFeed?: boolean; // Added prop
 }
 
 export default function CommentSection({
@@ -15,10 +16,10 @@ export default function CommentSection({
   isLoading,
   onReact,
   reactingCommentId,
+  isFeed = false, // Default false
 }: CommentSectionProps) {
   return (
     <div className="w-full rounded-b-xl bg-gold p-4 font-montserrat">
-      {/* Comments List */}
       <div className="flex flex-col gap-5">
         {isLoading && (
           <motion.p
@@ -41,7 +42,6 @@ export default function CommentSection({
           </motion.p>
         )}
 
-        {/* 2. Wrap list in AnimatePresence */}
         <AnimatePresence initial={false} mode="popLayout">
           {comments.map((comment) => (
             <CommentItem
@@ -49,6 +49,7 @@ export default function CommentSection({
               comment={comment}
               onReact={onReact}
               isReacting={reactingCommentId === comment.id}
+              isFeed={isFeed} // Pass it down
             />
           ))}
         </AnimatePresence>

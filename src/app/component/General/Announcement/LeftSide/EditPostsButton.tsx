@@ -41,7 +41,7 @@ export default function EditPostsButton({
   };
 
   return (
-    <div ref={menuRef} className="relative select-none z-20">
+    <div ref={menuRef} className="relative select-none z-5">
       {/* Animated 3-dot Trigger Button */}
       <motion.button
         whileHover={{ scale: 1.15, rotate: 90 }} // Rotate slightly on hover
@@ -68,7 +68,7 @@ export default function EditPostsButton({
             exit={{ opacity: 0, scale: 0.8, y: -10 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
             className={clsx(
-              "absolute right-0 mt-2 w-[190px] rounded-[12px] bg-[#D9D9D9] shadow-xl border border-gray-300 p-1.5 z-50 overflow-hidden"
+              "absolute right-0 mt-2 w-[190px] rounded-[12px] bg-[#D9D9D9] shadow-xl border border-gray-300 p-1.5 z-5 overflow-hidden"
             )}
           >
             {/* Edit Post Item */}

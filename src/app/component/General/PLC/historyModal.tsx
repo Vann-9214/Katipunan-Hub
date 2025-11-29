@@ -151,7 +151,7 @@ export default function HistoryModal({
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: index * 0.05 }}
                           key={booking.id}
-                          className={`relative w-full p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 group bg-white overflow-hidden`}
+                          className={`relative w-full shrink-0 p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 group bg-white overflow-hidden`}
                         >
                           {/* Status Strip on Left */}
                           <div

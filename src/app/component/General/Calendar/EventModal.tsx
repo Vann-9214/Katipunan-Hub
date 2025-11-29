@@ -3,51 +3,81 @@
 import React, { useState, useEffect } from "react";
 import { Montserrat } from "next/font/google";
 import { PostedEvent } from "@/app/component/General/Calendar/types";
-import { supabase } from "@/../supabase/Lib/General/supabaseClient";
+import { supabase } from "../../../../../supabase/Lib/General/supabaseClient";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
   weight: ["500", "600"],
 });
 
-const courses = [
-  "BS Accountancy",
-  "BS Architecture",
-  "BS Civil Engineering",
-  "BS Computer Engineering",
-  "BS Computer Science",
-  "BS Education",
-  "BS Electrical Engineering",
-  "BS Electronics Engineering",
-  "BS Hospitality Management",
-  "BS Information Technology",
-  "BS Mechanical Engineering",
-  "BS Nursing",
-  "BS Pharmacy",
-  "BS Psychology",
-  "BS Tourism Management",
+// --- CORRECTED PROGRAMS LIST ---
+const programs = [
+  { value: "bs-accountancy", label: "Bachelor of Science in Accountancy" },
+  { value: "bsba", label: "Bachelor of Science in Business Administration" },
+  { value: "bsoa", label: "Bachelor of Science in Office Administration" },
+  { value: "ba-english", label: "Bachelor of Arts in English" },
+  {
+    value: "ba-political-science",
+    label: "Bachelor of Arts in Political Science",
+  },
+  { value: "bs-psychology", label: "Bachelor of Science in Psychology" },
+  { value: "bs-biology", label: "Bachelor of Science in Biology" },
+  { value: "bs-mathematics", label: "Bachelor of Science in Mathematics" },
+  {
+    value: "bs-computer-science",
+    label: "Bachelor of Science in Computer Science",
+  },
+  {
+    value: "bs-information-technology",
+    label: "Bachelor of Science in Information Technology",
+  },
+  {
+    value: "bs-computer-engineering",
+    label: "Bachelor of Science in Computer Engineering",
+  },
+  { value: "beed", label: "Bachelor of Elementary Education" },
+  { value: "bsed", label: "Bachelor of Secondary Education" },
+  { value: "bsee", label: "Bachelor of Science in Electrical Engineering" },
+  { value: "bsie", label: "Bachelor of Science in Industrial Engineering" },
+  { value: "bsce", label: "Bachelor of Science in Civil Engineering" },
+  { value: "bsme", label: "Bachelor of Science in Mechanical Engineering" },
+  { value: "bsmining", label: "Bachelor of Science in Mining Engineering" },
+  { value: "bs-chemeng", label: "Bachelor of Science in Chemical Engineering" },
+  { value: "bsece", label: "Bachelor of Science in Electronics Engineering" },
+  { value: "bsn", label: "Bachelor of Science in Nursing" },
+  { value: "midwifery", label: "Diploma in Midwifery" },
+  { value: "bs-architecture", label: "Bachelor of Science in Architecture" },
+  {
+    value: "bs-hrm",
+    label: "Bachelor of Science in Hotel and Restaurant Management",
+  },
+  { value: "bstm", label: "Bachelor of Science in Tourism Management" },
 ];
 
 interface EventModalProps {
   showAddEvent: boolean;
   setShowAddEvent: (show: boolean) => void;
-  postedEvents: PostedEvent[];
-  setPostedEvents: React.Dispatch<React.SetStateAction<PostedEvent[]>>;
+  onEventAdded: () => void;
 }
 
 export default function EventModal({
   showAddEvent,
   setShowAddEvent,
-  setPostedEvents,
+  onEventAdded,
 }: EventModalProps) {
   const [userRole, setUserRole] = useState<string>("");
+  const [userId, setUserId] = useState<string>("");
+  const [userName, setUserName] = useState<string>("");
+
   const [selectedDate, setSelectedDate] = useState("");
   const [eventTitle, setEventTitle] = useState("");
   const [audience, setAudience] = useState("Personal");
-  const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
+  const [selectedCourses, setSelectedCourses] = useState<string[]>([]); // Stores 'value' strings
   const [showCourseDropdown, setShowCourseDropdown] = useState(false);
+
   // Local state for events being created in this modal session
   const [pendingEvents, setPendingEvents] = useState<PostedEvent[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch current user role on mount
   useEffect(() => {
@@ -64,14 +94,18 @@ export default function EventModal({
           return;
         }
 
+        if (isMounted) setUserId(user.id);
+
         const { data: account } = await supabase
           .from("Accounts")
-          .select("role")
+          .select("role, fullName")
           .eq("id", user.id)
           .maybeSingle();
 
-        if (isMounted && account?.role) {
-          setUserRole(account.role);
+        if (isMounted && account) {
+          setUserRole(account.role || "");
+          setUserName(account.fullName || "");
+          // Default to Personal
           setAudience("Personal");
         }
       } catch (err) {
@@ -81,31 +115,30 @@ export default function EventModal({
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [showAddEvent]);
 
-  // Check if user is admin
-  const isAdmin =
-    userRole.includes("Platform Administrator") ||
-    userRole.includes("Announcements Moderator");
+  // Check if user is admin based on "contains" logic
+  const isAdmin = userRole.includes("Platform Administrator");
 
-  // Define audience options based on admin status
+  // Define audience options
   const audienceOptions = isAdmin ? ["Personal", "Global"] : ["Personal"];
 
-  const toggleCourse = (course: string) => {
+  // Toggle based on the VALUE (e.g., "bs-computer-science")
+  const toggleCourse = (courseValue: string) => {
     setSelectedCourses((prev) => {
-      if (prev.includes(course)) {
-        return prev.filter((c) => c !== course);
+      if (prev.includes(courseValue)) {
+        return prev.filter((c) => c !== courseValue);
       } else {
-        return [...prev, course];
+        return [...prev, courseValue];
       }
     });
   };
 
   const selectAllCourses = () => {
-    if (selectedCourses.length === courses.length) {
+    if (selectedCourses.length === programs.length) {
       setSelectedCourses([]);
     } else {
-      setSelectedCourses([...courses]);
+      setSelectedCourses(programs.map((p) => p.value));
     }
   };
 
@@ -122,49 +155,92 @@ export default function EventModal({
       return;
     }
 
-    // Validate courses if audience is Global
-    if (audience === "Global" && selectedCourses.length === 0) {
-      alert("Please select at least one course");
-      return;
-    }
+    // Manually split date string to avoid timezone issues
+    const [yearStr, monthStr, dayStr] = selectedDate.split("-");
+    const year = parseInt(yearStr);
+    const month = parseInt(monthStr);
+    const day = parseInt(dayStr);
 
-    const dateObj = new Date(selectedDate);
     const newEvent: PostedEvent = {
       title: eventTitle.trim(),
+      // Store the raw VALUES comma separated for the pending view
       course: selectedCourses.join(", "),
       audience,
       date: selectedDate,
-      year: dateObj.getFullYear(),
-      month: dateObj.getMonth() + 1,
-      day: dateObj.getDate(),
+      year,
+      month,
+      day,
     };
 
-    // Add to pending events (local to this modal session)
+    // Add to pending events
     setPendingEvents((prev) => [...prev, newEvent]);
-
-    // Clear only the event title after adding
     setEventTitle("");
   };
 
-  const handlePost = () => {
-    // Check if there are events to post
+  const handlePost = async () => {
     if (pendingEvents.length === 0) {
       alert("Please add at least one event before posting");
       return;
     }
 
-    // Add all pending events to the calendar (parent state)
-    setPostedEvents((prev) => [...prev, ...pendingEvents]);
+    setIsSubmitting(true);
 
-    // Close modal
-    setShowAddEvent(false);
+    try {
+      // Transform pending events to DB format
+      const dbPayloads = pendingEvents.map((evt) => {
+        // Convert the comma-separated string back to an array of values
+        let coursesArray: string[] | null = null;
 
-    // Reset form and clear pending events
-    setEventTitle("");
-    setSelectedCourses([]);
-    setSelectedDate("");
-    setAudience("Personal");
-    setPendingEvents([]);
+        if (evt.audience === "Global") {
+          // If courses are selected, split the string back to array
+          if (evt.course) {
+            coursesArray = evt.course.split(", ");
+          } else {
+            // If empty string but Global, it usually means 'All' or 'None' depending on logic.
+            // Based on 'selectAll', it populates the array, so empty likely means none selected.
+            // If you want empty to mean "All", change logic here.
+            coursesArray = [];
+          }
+        }
+
+        return {
+          user_id: userId,
+          title: evt.title,
+          date: evt.date!,
+          year: evt.year,
+          month: evt.month,
+          day: evt.day,
+          audience: evt.audience,
+          courses: coursesArray, // This now contains ["bs-computer-science", "bs-it", etc.]
+          created_by_name: userName,
+          created_by_role: userRole,
+        };
+      });
+
+      const { error } = await supabase.from("Events").insert(dbPayloads);
+
+      if (error) throw error;
+
+      // Refresh parent
+      onEventAdded();
+
+      // Close modal
+      setShowAddEvent(false);
+
+      // Reset form
+      setEventTitle("");
+      setSelectedCourses([]);
+      setSelectedDate("");
+      setAudience("Personal");
+      setPendingEvents([]);
+    } catch (err: unknown) {
+      const message = "Unknown error";
+      console.error("Error posting events:", message);
+      console.error(err);
+      alert("Failed to save events. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleClose = () => {
@@ -231,70 +307,51 @@ export default function EventModal({
           ))}
         </div>
 
-        {/* Course Selector - Multi-select with checkboxes */}
-        {isAdmin && (
+        {/* Course Selector */}
+        {isAdmin && audience === "Global" && (
           <div className="mb-4 relative">
             <label className="block text-lg font-semibold mb-2">
               Select Courses
             </label>
             <div
-              onClick={() =>
-                audience === "Global" &&
-                setShowCourseDropdown(!showCourseDropdown)
-              }
-              className={`w-full border rounded-lg p-3 text-base min-h-[48px] flex items-center justify-between cursor-pointer ${
-                audience !== "Global"
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200"
-                  : "border-gray-300 hover:border-yellow-400"
-              }`}
+              onClick={() => setShowCourseDropdown(!showCourseDropdown)}
+              className="w-full border rounded-lg p-3 text-base min-h-[48px] flex items-center justify-between cursor-pointer border-gray-300 hover:border-yellow-400"
             >
               <span
                 className={selectedCourses.length === 0 ? "text-gray-400" : ""}
               >
-                {audience !== "Global"
-                  ? "Select Global audience first"
-                  : selectedCourses.length === 0
+                {selectedCourses.length === 0
                   ? "Click to select courses..."
-                  : selectedCourses.length === courses.length
+                  : selectedCourses.length === programs.length
                   ? "All Courses Selected"
                   : `${selectedCourses.length} course(s) selected`}
               </span>
-              {audience === "Global" && (
-                <span className="text-gray-500">▼</span>
-              )}
+              <span className="text-gray-500">▼</span>
             </div>
 
             {/* Dropdown with checkboxes */}
-            {audience === "Global" && showCourseDropdown && (
+            {showCourseDropdown && (
               <div className="absolute bg-white border border-gray-300 rounded-lg mt-1 w-full max-h-60 overflow-y-auto z-[999] shadow-lg">
-                {/* Select All option */}
                 <div
                   className="p-3 hover:bg-yellow-50 cursor-pointer border-b border-gray-200 font-semibold flex items-center gap-2"
                   onClick={selectAllCourses}
                 >
-                  <input
-                    type="checkbox"
-                    checked={selectedCourses.length === courses.length}
-                    onChange={() => {}}
-                    className="w-4 h-4 cursor-pointer"
-                  />
                   <span>Select All</span>
                 </div>
 
-                {/* Individual courses */}
-                {courses.map((course, idx) => (
+                {programs.map((prog) => (
                   <div
-                    key={idx}
+                    key={prog.value}
                     className="p-3 hover:bg-yellow-50 cursor-pointer flex items-center gap-2"
-                    onClick={() => toggleCourse(course)}
+                    onClick={() => toggleCourse(prog.value)}
                   >
                     <input
                       type="checkbox"
-                      checked={selectedCourses.includes(course)}
-                      onChange={() => {}}
+                      checked={selectedCourses.includes(prog.value)}
+                      readOnly
                       className="w-4 h-4 cursor-pointer"
                     />
-                    <span>{course}</span>
+                    <span className="text-sm">{prog.label}</span>
                   </div>
                 ))}
               </div>
@@ -302,7 +359,7 @@ export default function EventModal({
           </div>
         )}
 
-        {/* EVENT TITLE with checkmark */}
+        {/* EVENT TITLE */}
         <div className="mb-4 relative">
           <label className="block text-lg font-semibold mb-2">
             Event Title
@@ -320,7 +377,6 @@ export default function EventModal({
             }}
           />
 
-          {/* Clickable checkmark - adds to list */}
           {eventTitle.trim() && (
             <button
               onClick={createAndAddPostedEvent}
@@ -346,12 +402,15 @@ export default function EventModal({
                 className="flex items-center justify-between bg-gray-100 rounded-lg p-3 mb-2"
               >
                 <div>
-                  <p className="font-semibold">EVENT: {evt.title}</p>
+                  <p className="font-semibold">{evt.title}</p>
                   <p className="text-sm text-gray-600">
-                    {evt.audience === "Global"
-                      ? `Global Event - Courses: ${evt.course}`
-                      : "Personal Event"}
-                    {evt.date && ` | ${evt.date}`}
+                    {evt.audience} | {evt.date}
+                    {evt.audience === "Global" && evt.course && (
+                      <span className="block text-xs text-gray-500 mt-1 max-w-md truncate">
+                        {/* Show raw values, or you could map back to labels if you want */}
+                        {evt.course}
+                      </span>
+                    )}
                   </p>
                 </div>
                 <button
@@ -379,9 +438,10 @@ export default function EventModal({
           </button>
           <button
             onClick={handlePost}
-            className="px-6 py-2 bg-yellow-400 text-black font-semibold rounded-lg hover:bg-yellow-500 transition-colors"
+            disabled={isSubmitting}
+            className="px-6 py-2 bg-yellow-400 text-black font-semibold rounded-lg hover:bg-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Post
+            {isSubmitting ? "Posting..." : "Post"}
           </button>
         </div>
       </div>

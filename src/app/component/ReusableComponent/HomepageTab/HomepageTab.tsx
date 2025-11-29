@@ -137,7 +137,7 @@ export default function HomepageTab({ user }: HomepageTabProps) {
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
       className="
-        w-full fixed top-0 left-0 z-[20] shadow-md 
+        w-full fixed top-0 left-0 z-20 shadow-md 
         bg-[#FFE6CE]
         h-[80px]
         flex items-center 
