@@ -1,3 +1,4 @@
+// src/app/component/General/Announcement/AnnouncementPageContent.tsx
 "use client";
 
 import {
@@ -53,12 +54,10 @@ export default function AnnouncementPageContent() {
   const [activeTags, setActiveTags] = useState<string[]>([]);
 
   // --- Performance Optimization ---
-  // We defer the values used for the heavy list rendering.
-  // This allows the UI (Toggle button) to update immediately (using activeTab),
-  // while the list updates a split second later (using deferredTab).
   const deferredTab = useDeferredValue(activeTab);
   const deferredTags = useDeferredValue(activeTags);
   const searchParams = useSearchParams();
+
   // --- Data Fetching ---
   useEffect(() => {
     let isMounted = true;
@@ -81,11 +80,7 @@ export default function AnnouncementPageContent() {
     const targetId = searchParams.get("id");
 
     if (targetId && targetFilter) {
-      // Ensure we are on "Announcement" tab
       setActiveTab("announcement");
-
-      // Override the filter state to match the notification
-      // This triggers fetchPosts automatically because 'filters' is a dependency of the fetch useEffect
       if (targetFilter === "Course" || targetFilter === "Global") {
         setFilters((prev) => ({
           ...prev,
@@ -98,26 +93,22 @@ export default function AnnouncementPageContent() {
   useEffect(() => {
     const targetId = searchParams.get("id");
 
-    // Only try to scroll if we have a target ID and posts have loaded
     if (targetId && posts.length > 0) {
-      // We wait a tiny bit to ensure the DOM is fully painted
       const timer = setTimeout(() => {
         const element = document.getElementById(`post-${targetId}`);
         if (element) {
           element.scrollIntoView({ behavior: "smooth", block: "center" });
-
-          // Optional: Add a temporary highlight effect so they see which one it is
           element.style.transition =
             "transform 0.3s ease, box-shadow 0.3s ease";
           element.style.transform = "scale(1.02)";
-          element.style.boxShadow = "0 0 20px rgba(239, 191, 4, 0.6)"; // Gold glow
+          element.style.boxShadow = "0 0 20px rgba(239, 191, 4, 0.6)";
 
           setTimeout(() => {
             element.style.transform = "scale(1)";
             element.style.boxShadow = "none";
           }, 2000);
         }
-      }, 600); // 600ms delay to be safe
+      }, 600);
 
       return () => clearTimeout(timer);
     }
@@ -194,7 +185,6 @@ export default function AnnouncementPageContent() {
   );
 
   useEffect(() => {
-    // Now fetchPosts waits for userCollegeCode to be ready
     fetchPosts(filters, userCollegeCode);
   }, [filters, userCollegeCode, fetchPosts]);
 
@@ -208,7 +198,6 @@ export default function AnnouncementPageContent() {
     setActiveTags([]);
 
     if (tab === "highlight") {
-      // Optimization: Only update filters if needed to prevent double-fetching
       setFilters((prev) => {
         if (prev.visibility === "Global" && prev.date === "All Time")
           return prev;
@@ -326,7 +315,6 @@ export default function AnnouncementPageContent() {
 
   // --- Client-Side Filtering (Optimized) ---
   const derivedTags = useMemo(() => {
-    // Using deferredTab moves this calculation off the main thread
     const candidate = posts.filter((p) => p.type === deferredTab);
     return Array.from(
       new Set(
@@ -340,7 +328,6 @@ export default function AnnouncementPageContent() {
   const filteredPosts = useMemo(() => {
     let list = [...posts];
 
-    // Using deferredTab for list filtering
     list = list.filter((p) => p.type === deferredTab);
 
     if (searchTerm.trim() !== "") {
@@ -352,7 +339,6 @@ export default function AnnouncementPageContent() {
       );
     }
 
-    // Using deferredTags for tag filtering
     if (deferredTags.length > 0) {
       list = list.filter((p) =>
         p.tags?.some((tag) => deferredTags.includes(tag))
@@ -368,6 +354,10 @@ export default function AnnouncementPageContent() {
     (role?.includes("Platform Administrator") ||
       role?.includes("Announcements Moderator")) ??
     false;
+
+  // --- NEW: Check if user is a Tutor ---
+  const isTutor = role?.includes("Tutor") ?? false;
+
   const currentUserId = id || "";
 
   // --- Loading UI ---
@@ -385,27 +375,29 @@ export default function AnnouncementPageContent() {
       <HomepageTab user={currentUser} />
 
       <AnnouncementLeftBar
-        activeTab={activeTab} // Pass activeTab (immediate) to Toggle button
+        activeTab={activeTab}
         onTabToggle={handleTabToggle}
         onSearchChange={setSearchTerm}
         onFilterChange={handleFilterChange}
         filters={filters}
-        isHighlights={activeTab === "highlight"} // Pass activeTab (immediate) to filters
+        isHighlights={activeTab === "highlight"}
         derivedTags={derivedTags}
         onTagClick={setActiveTags}
       />
 
-      {/* Right Side (PLC Ad Card) */}
-      <div className="w-[350px] right-0 top-0 fixed h-full pt-28 flex flex-col items-center">
-        <PLCAdCard />
-      </div>
+      {/* Right Side (PLC Ad Card) - HIDDEN IF USER IS A TUTOR */}
+      {!isTutor && (
+        <div className="w-[350px] right-0 top-0 fixed h-full pt-28 flex flex-col items-center">
+          <PLCAdCard />
+        </div>
+      )}
 
       {/* Center Feed */}
       {currentUser && (
         <AnnouncementFeed
           isAdmin={isAdmin}
           currentUserId={currentUserId}
-          currentType={deferredTab} // Pass deferredTab (delayed) to the feed
+          currentType={deferredTab}
           filteredPosts={filteredPosts}
           editorOpen={editorOpen}
           editingPost={editingPost}
