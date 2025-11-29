@@ -107,9 +107,8 @@ export default function EmailVerificationMessage({
               <span className="text-[#8B0E0E]">Closer to the Hub.</span>
             </h1>
             <p className="text-white/90 leading-relaxed font-ptsans text-[15px]">
-              We just sent a **verification link** to your CIT email. Click the
-              link in the email to complete your registration and unlock full
-              access.
+              We just sent a verification link to your CIT email. Click the link
+              in the email to complete your registration and unlock full access.
             </p>
           </div>
         </div>
