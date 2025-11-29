@@ -1,3 +1,5 @@
+// supabase/Lib/PLC/usePLCBooking.ts
+
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -314,11 +316,12 @@ export const usePLCBookings = (
   const cleanupExpired = useCallback(async () => {
     const now = new Date();
     const dateStr = getDateString(now.getFullYear(), now.getMonth(), now.getDate());
-    const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0') + ':00';
+    // Ensure time string includes seconds for precise database comparison
+    const timeStr = now.toLocaleTimeString('en-GB', { hour12: false }); // "HH:mm:ss"
 
     try {
-      // --- NOTIFY STUDENTS BEFORE ARCHIVING ---
-      // Find Approved bookings that have ended (using endTime if available)
+      // --- STEP 1: NOTIFY STUDENTS BEFORE ARCHIVING ---
+      // Identify Approved bookings that have expired right now
       const { data: completedCandidates } = await supabase
         .from("PLCBookings")
         .select("id, studentId, subject")
@@ -326,17 +329,38 @@ export const usePLCBookings = (
         .or(`bookingDate.lt.${dateStr},and(bookingDate.eq.${dateStr},endTime.lte.${timeStr})`);
 
       if (completedCandidates && completedCandidates.length > 0) {
-         const notifs = completedCandidates.map(b => ({
-            user_id: b.studentId,
-            title: `Your PLC session for "${b.subject}" has been completed.`,
-            type: 'system',
-            is_read: false
-         }));
-         // Attempt to insert notifications (duplicates possible if multiple clients run this)
-         await supabase.from("UserNotifications").insert(notifs);
-      }
-      // ----------------------------------------
+         const notificationsToInsert = [];
 
+         // Build notifications but check for duplicates first
+         for (const b of completedCandidates) {
+             const title = `Your PLC session for "${b.subject}" has been completed.`;
+             
+             // 1a. Check if we already notified this user about this specific completion
+             // This prevents spam if the interval runs multiple times before the item is archived
+             const { data: existing } = await supabase
+                .from("UserNotifications")
+                .select("id")
+                .eq("user_id", b.studentId)
+                .eq("title", title)
+                .maybeSingle();
+
+             if (!existing) {
+                 notificationsToInsert.push({
+                    user_id: b.studentId,
+                    title: title,
+                    type: 'system',
+                    is_read: false
+                 });
+             }
+         }
+
+         // 1b. Insert only new notifications
+         if (notificationsToInsert.length > 0) {
+             await supabase.from("UserNotifications").insert(notificationsToInsert);
+         }
+      }
+
+      // --- STEP 2: ARCHIVE (Move to History) ---
       await Promise.all([
         supabase.rpc('move_and_archive_bookings', {
           check_date: dateStr,
@@ -395,26 +419,15 @@ export const usePLCBookings = (
     if (!error) refreshBookings(false);
   }
 
-  // --- UPDATED DENY BOOKING WITH NOTIFICATION ---
+  // --- FIXED: DENY BOOKING (REMOVED DUPLICATE LOGIC) ---
+  // We simply call the RPC. We do NOT fetch data or insert notifications client-side.
+  // This prevents double notifications if the backend is already sending one.
   const denyBooking = async (bookingId: string) => {
-    // 1. Fetch the booking details first to get the Student ID and Subject
-    const { data: bookingData, error: fetchError } = await supabase
-        .from("PLCBookings")
-        .select("studentId, subject")
-        .eq("id", bookingId)
-        .single();
-
-    if (fetchError) {
-        console.error("Error fetching booking for denial:", fetchError);
-    }
-
-    // 2. Perform the Denial RPC
     const { error } = await supabase.rpc("deny_booking", { booking_id: bookingId });
     
     if (!error) {
       setMyRejections(prev => [...prev, bookingId]);
       refreshBookings(false);
-
     }
   };
 

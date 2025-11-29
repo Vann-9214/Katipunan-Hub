@@ -80,7 +80,7 @@ export default function AddPosts(props: AddPostsProps) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
+        transition={{ duration: 0.2, ease: "easeOut", delay: 0.1 }}
         className="w-[590px] p-[2px] rounded-[24px] bg-gradient-to-br from-[#C5A005] via-[#FFD700] to-[#B8860B] shadow-lg mb-8 relative z-0"
       >
         {/* Inner Content Wrapper */}

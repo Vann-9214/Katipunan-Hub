@@ -1,11 +1,10 @@
 "use client";
 
 import { forwardRef, useImperativeHandle } from "react";
-// 1. FIX: Import from your 'types.ts' file (or whatever you named it)
 import { UploadButtonProps, UploadButtonHandle } from "../Utils/types";
 import { useImageUploader } from "../../../../../../supabase/Lib/Announcement/UploadButton/useImageUploader";
-import { ImagePreview } from "./imagePreviewer"; // Using your file name
-import { Dropzone } from "./dropzone"; // Using your file name
+import { ImagePreview } from "./imagePreviewer";
+import { Dropzone } from "./dropzone";
 
 const UploadButton = forwardRef<UploadButtonHandle, UploadButtonProps>(
   ({ onUpload, predefinedImages = [] }, ref) => {
@@ -22,10 +21,18 @@ const UploadButton = forwardRef<UploadButtonHandle, UploadButtonProps>(
       getRemovedUrls,
     } = useImageUploader({ predefinedImages, onUpload });
 
-    // Expose methods to the parent component
     useImperativeHandle(ref, () => ({
       uploadAndGetFinalUrls,
       getRemovedUrls,
+      isDirty: () => {
+        if (imageSources.length !== predefinedImages.length) return true;
+        const hasNewFile = imageSources.some((s) => s instanceof File);
+        if (hasNewFile) return true;
+        const currentUrls = imageSources as string[];
+        return !currentUrls.every(
+          (url, index) => url === predefinedImages[index]
+        );
+      },
     }));
 
     return (
@@ -33,9 +40,7 @@ const UploadButton = forwardRef<UploadButtonHandle, UploadButtonProps>(
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
-        className={`w-full border-2 rounded-md transition-all bg-customgray border-black p-[5px] ${
-          isDragging ? "border-yellow-600 bg-yellow-50" : ""
-        } max-h-[450px] overflow-y-auto`}
+        className="w-full"
       >
         <ImagePreview
           imageSources={imageSources}
@@ -43,7 +48,11 @@ const UploadButton = forwardRef<UploadButtonHandle, UploadButtonProps>(
           onRemove={handleRemove}
         />
 
-        <Dropzone isDragging={isDragging} onChange={handleChange} />
+        <Dropzone
+          isDragging={isDragging}
+          onChange={handleChange}
+          hasImages={imageSources.length > 0}
+        />
       </div>
     );
   }
@@ -51,6 +60,4 @@ const UploadButton = forwardRef<UploadButtonHandle, UploadButtonProps>(
 
 UploadButton.displayName = "UploadButton";
 export default UploadButton;
-
-// 2. ADD THIS LINE: This makes the types available for AddPosts.tsx to import
 export type { UploadButtonHandle, UploadButtonProps };
