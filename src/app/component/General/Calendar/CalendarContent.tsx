@@ -517,6 +517,7 @@ export default function CalendarContent() {
       </button>
 
       {/* Event Modal - PASSED CURRENT USER */}
+      {/* Event Modal */}
       <EventModal
         showAddEvent={showAddEvent}
         setShowAddEvent={setShowAddEvent}

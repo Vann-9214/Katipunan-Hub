@@ -211,6 +211,7 @@ export default function EventModal({
           <label className="block text-lg font-semibold mb-2">
             Select Date
           </label>
+          <label className="block text-lg font-semibold mb-2">Select Date</label>
           <input
             type="date"
             className="w-full border border-gray-300 rounded-lg p-3 text-base focus:ring-2 focus:ring-yellow-400"
@@ -304,9 +305,7 @@ export default function EventModal({
 
         {/* EVENT TITLE with checkmark */}
         <div className="mb-4 relative">
-          <label className="block text-lg font-semibold mb-2">
-            Event Title
-          </label>
+          <label className="block text-lg font-semibold mb-2">Event Title</label>
           <input
             type="text"
             className="w-full border border-gray-300 rounded-lg p-3 text-base focus:ring-2 focus:ring-yellow-400 pr-10"
@@ -315,6 +314,7 @@ export default function EventModal({
             placeholder="Enter event title"
             onKeyPress={(e) => {
               if (e.key === "Enter") {
+              if (e.key === 'Enter') {
                 createAndAddPostedEvent();
               }
             }}
@@ -361,6 +361,7 @@ export default function EventModal({
                   <span className="text-red-500 font-bold text-xl hover:text-red-700">
                     ×
                   </span>
+                  <span className="text-red-500 font-bold text-xl hover:text-red-700">×</span>
                 </button>
               </div>
             ))
@@ -385,4 +386,5 @@ export default function EventModal({
       </div>
     </>
   );
+}
 }
