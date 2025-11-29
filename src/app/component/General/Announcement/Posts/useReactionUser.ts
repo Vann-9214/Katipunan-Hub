@@ -70,6 +70,10 @@ export function useReactionUsers(
 ) {
   const [users, setUsers] = useState<ReactionUser[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // 1. Add a ref to track loading status synchronously to avoid dependency loops
+  const isLoadingRef = useRef(false);
+  
   const dataRef = useRef<{postId: string, topReactions: ReactionCount[], totalCount: number | null}>({postId, topReactions, totalCount});
 
   // Keep ref updated
@@ -78,29 +82,34 @@ export function useReactionUsers(
   }, [postId, topReactions, totalCount]);
 
   const fetchUsers = useCallback(async () => {
+    // 2. Use dataRef for current data to prevent function re-creation on updates
+    const { totalCount: currentTotalCount, postId: currentPostId, topReactions: currentTopReactions } = dataRef.current;
+
     // Only fetch if the popup is actually visible and there are reactions
-    if (!isPopupVisible || (totalCount === 0 || totalCount === null)) {
+    if (!isPopupVisible || (currentTotalCount === 0 || currentTotalCount === null)) {
       return;
     }
     
-    // Prevent fetching if already loading
-    if (isLoading) return;
+    // 3. Use ref for guard clause to avoid adding isLoading to dependencies
+    if (isLoadingRef.current) return;
     
+    isLoadingRef.current = true;
     setIsLoading(true);
     
     try {
       const fetchedUsers = await mockFetchUsers(
-        dataRef.current.postId,
-        dataRef.current.topReactions
+        currentPostId,
+        currentTopReactions
       );
       setUsers(fetchedUsers);
     } catch (err) {
       console.error("Error fetching reaction users:", err);
       setUsers([]);
     } finally {
+      isLoadingRef.current = false;
       setIsLoading(false);
     }
-  }, [isPopupVisible, totalCount, isLoading]);
+  }, [isPopupVisible]); // Dependencies reduced to just isPopupVisible
 
   useEffect(() => {
     // Only fetch on visibility change (show) or if the post changes while visible
@@ -110,7 +119,7 @@ export function useReactionUsers(
         // Clear list when hidden for fresh data next time
         setUsers([]);
     }
-  }, [isPopupVisible, postId]);
+  }, [isPopupVisible, postId, fetchUsers]); // 4. fetchUsers included safely without warning
 
 
   return {

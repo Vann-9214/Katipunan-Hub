@@ -9,11 +9,12 @@ import TextBox from "@/app/component/ReusableComponent/Textbox";
 import { Combobox } from "@/app/component/ReusableComponent/Combobox";
 import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
 import Image from "next/image";
+import { ArrowRight } from "lucide-react";
 
 interface SignUpFormProps {
   onClose?: () => void;
-  onSwitch?: () => void; // This switches to SignIn
-  onSuccessfulSignUp?: (email: string) => void; // ADDED
+  onSwitch?: () => void;
+  onSuccessfulSignUp?: (email: string) => void;
 }
 
 export default function SignUpForm({
@@ -21,7 +22,6 @@ export default function SignUpForm({
   onSwitch,
   onSuccessfulSignUp,
 }: SignUpFormProps) {
-  // UPDATED
   const year = [
     { value: "1st", label: "1st Year" },
     { value: "2nd", label: "2nd Year" },
@@ -85,41 +85,66 @@ export default function SignUpForm({
   const [selectedYear, setSelectedYear] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [showVerifyPrompt, setShowVerifyPrompt] = useState(false);
+
+  const handleStudentIDChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value.replace(/\D/g, "");
+    if (val.length > 9) val = val.slice(0, 9);
+    let formatted = val;
+    if (val.length > 2) {
+      formatted = `${val.slice(0, 2)}-${val.slice(2)}`;
+    }
+    if (val.length > 6) {
+      formatted = `${val.slice(0, 2)}-${val.slice(2, 6)}-${val.slice(6)}`;
+    }
+    setStudentID(formatted);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setErrorMessage("");
+    setShowVerifyPrompt(false);
+
+    // Validation
+    if (
+      !firstName.trim() ||
+      !email.trim() ||
+      !studentID.trim() ||
+      !selectedCourse ||
+      !selectedYear
+    ) {
+      setErrorMessage("Please fill in all required fields.");
+      return;
+    }
+
+    const idRegex = /^\d{2}-\d{4}-\d{3}$/;
+    if (!idRegex.test(studentID)) {
+      setErrorMessage("Student ID must follow the format: ##-####-###");
+      return;
+    }
+
+    if (!email.toLowerCase().endsWith("@cit.edu")) {
+      setErrorMessage(
+        "Please use your valid CIT email address (must end with @cit.edu)."
+      );
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setErrorMessage("Passwords do not match!");
+      return;
+    }
+
+    setLoading(true);
 
     try {
-      if (
-        !firstName.trim() ||
-        !email.trim() ||
-        !studentID.trim() ||
-        !selectedCourse ||
-        !selectedYear
-      ) {
-        setErrorMessage("Please fill in all required fields.");
-        return;
-      }
-
-      if (!email.toLowerCase().endsWith("@cit.edu")) {
-        setErrorMessage(
-          "Please use your valid CIT email address (must end with @cit.edu)."
-        );
-        return;
-      }
-
-      if (password !== confirmPassword) {
-        setErrorMessage("Passwords do not match!");
-        return;
-      }
-
-      // 1. PERFORM SIGN-UP (This sends the confirmation email)
       const { error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          // --- THIS LINE HANDLES THE REDIRECT ---
+          // We append ?auth=signin so the LandingPageTab knows what to do
+          emailRedirectTo: `${window.location.origin}/?auth=signin`,
           data: {
             fullName: firstName,
             studentID,
@@ -131,22 +156,28 @@ export default function SignUpForm({
       });
 
       if (signUpError) {
+        if (
+          signUpError.message.includes("already registered") ||
+          signUpError.message.includes("User already exists")
+        ) {
+          setShowVerifyPrompt(true);
+          return;
+        }
         setErrorMessage(signUpError.message);
         return;
       }
 
-      // 2. SUCCESS: Show Verification UI
-      // This is the CRITICAL line that must run after a successful sign-up initiation.
       onSuccessfulSignUp?.(email);
     } catch (err: unknown) {
       console.error("Sign up error:", err);
       setErrorMessage("Unexpected error during sign-up.");
     } finally {
-      if (errorMessage) {
-        setLoading(false);
-      }
-      // If successful, the modal will unmount instantly due to state change.
+      setLoading(false);
     }
+  };
+
+  const handleManualVerifyClick = () => {
+    onSuccessfulSignUp?.(email);
   };
 
   const inputClasses =
@@ -161,7 +192,6 @@ export default function SignUpForm({
       className="flex justify-center items-center fixed inset-0 z-50 bg-black/60 backdrop-blur-sm p-4"
     >
       <motion.div
-        // REMOVED SCALE ANIMATION on EXIT to prevent "closing" look
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 0 }}
@@ -186,15 +216,12 @@ export default function SignUpForm({
               height={350}
             />
           </div>
-
           <div className="relative z-10 space-y-5">
-            {/* UPDATED: Title to emphasize "Activate" and "Toolkit" */}
             <h1 className="font-bold leading-tight font-montserrat text-[32px] drop-shadow-md">
               Activate Your <br />{" "}
               <span className="text-[#8B0E0E]">Teknoy Toolkit.</span>
             </h1>
             <p className="text-white/90 leading-relaxed font-ptsans text-[15px]">
-              {/* UPDATED: Description to emphasize unification and integrated access */}
               Create your student account to instantly{" "}
               <span className="font-semibold">unify</span> your campus life.
               Gain <span className="font-semibold">integrated access</span> to
@@ -204,8 +231,7 @@ export default function SignUpForm({
           </div>
         </div>
 
-        {/* Right Side (Form) */}
-        {/* HIDE SCROLLBAR UTILITY CLASSES */}
+        {/* Right Side */}
         <div className="flex-1 bg-white flex flex-col justify-center items-center p-6 sm:p-8 relative overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           <button
             onClick={onClose}
@@ -229,12 +255,7 @@ export default function SignUpForm({
           <div className="w-full max-w-[420px] flex flex-col gap-4 h-full justify-center py-6">
             <div className="flex flex-col gap-1 flex-shrink-0">
               <div className="transform scale-90 origin-left">
-                <Logo
-                  unclickable={true}
-                  width={45}
-                  height={55}
-                  showText={false}
-                />
+                <Logo unclickable={true} width={45} height={55} />
               </div>
               <div>
                 <h2 className="text-[26px] font-bold font-montserrat text-gray-900">
@@ -273,6 +294,39 @@ export default function SignUpForm({
                     {errorMessage}
                   </motion.div>
                 )}
+
+                {showVerifyPrompt && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="p-4 rounded-xl bg-yellow-50 border border-yellow-200 flex flex-col gap-2"
+                  >
+                    <p className="text-sm text-yellow-800 font-medium">
+                      This account is already registered.
+                    </p>
+                    <p className="text-xs text-yellow-700">
+                      If you haven&apos;t verified your email yet, click below.
+                      Otherwise, please sign in.
+                    </p>
+                    <div className="flex gap-3 mt-1">
+                      <button
+                        type="button"
+                        onClick={handleManualVerifyClick}
+                        className="flex-1 bg-yellow-400 hover:bg-yellow-500 text-white text-xs font-bold py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-1"
+                      >
+                        Verify Account <ArrowRight size={12} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={onSwitch}
+                        className="flex-1 bg-white border border-yellow-300 text-yellow-700 hover:bg-yellow-100 text-xs font-bold py-2 px-3 rounded-lg transition-colors"
+                      >
+                        Sign In
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
               </AnimatePresence>
 
               <div className="flex flex-col gap-2.5">
@@ -289,7 +343,6 @@ export default function SignUpForm({
                   textSize="text-[15px]"
                   className={inputClasses}
                 />
-
                 <TextBox
                   type="email"
                   placeholder="CIT Email"
@@ -302,7 +355,6 @@ export default function SignUpForm({
                   textSize="text-[15px]"
                   className={inputClasses}
                 />
-
                 <Combobox
                   items={programs}
                   placeholder="Select Course"
@@ -319,16 +371,15 @@ export default function SignUpForm({
                   checkArrowColor="text-[#EFBF04]"
                   dropdownBorderColor="border-[#EFBF04]"
                   className={inputClasses}
-                  textSize="text-[15px]" // Added text size to match input
+                  textSize="text-[15px]"
                 />
-
                 <div className="flex gap-3">
                   <div className="flex-1">
                     <TextBox
                       type="text"
-                      placeholder="Student ID"
+                      placeholder="Student ID (##-####-###)"
                       value={studentID}
-                      onChange={(e) => setStudentID(e.target.value)}
+                      onChange={handleStudentIDChange}
                       rightImageSrc="/Id Card.svg"
                       rightImageAlt="Id icon"
                       width="w-full"
@@ -352,11 +403,10 @@ export default function SignUpForm({
                       checkArrowColor="text-[#EFBF04]"
                       dropdownBorderColor="border-[#EFBF04]"
                       className={inputClasses}
-                      textSize="text-[15px]" // Added text size to match input
+                      textSize="text-[15px]"
                     />
                   </div>
                 </div>
-
                 <div className="flex gap-3">
                   <TextBox
                     type="password"

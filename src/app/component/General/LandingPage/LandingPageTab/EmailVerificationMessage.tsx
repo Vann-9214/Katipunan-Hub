@@ -1,7 +1,7 @@
 "use client";
 
 import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { Loader2, Mail, RefreshCcw, X } from "lucide-react";
@@ -21,7 +21,18 @@ export default function EmailVerificationMessage({
   const [resendStatus, setResendStatus] = useState<
     "idle" | "success" | "error" | "cooldown"
   >("idle");
-  const [cooldownTime, setCooldownTime] = useState(60); // 60 seconds cooldown
+  const [cooldownTime, setCooldownTime] = useState(60); // Start with 60s
+
+  // --- Auto-decrement timer logic ---
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (cooldownTime > 0) {
+      interval = setInterval(() => {
+        setCooldownTime((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [cooldownTime]);
 
   const handleResend = async () => {
     if (cooldownTime > 0) {
@@ -33,7 +44,6 @@ export default function EmailVerificationMessage({
     setResendStatus("idle");
 
     try {
-      // NOTE: This resends the confirmation email using the signup type
       const { error } = await supabase.auth.resend({
         type: "signup",
         email: email,
@@ -44,16 +54,7 @@ export default function EmailVerificationMessage({
         console.error("Resend error:", error.message);
       } else {
         setResendStatus("success");
-        setCooldownTime(60); // Start cooldown
-        const interval = setInterval(() => {
-          setCooldownTime((prev) => {
-            if (prev <= 1) {
-              clearInterval(interval);
-              return 0;
-            }
-            return prev - 1;
-          });
-        }, 1000);
+        setCooldownTime(60); // Reset cooldown
       }
     } catch (err) {
       setResendStatus("error");
@@ -71,7 +72,8 @@ export default function EmailVerificationMessage({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className="flex justify-center items-center fixed inset-0 z-50 bg-black/60 backdrop-blur-sm p-4"
+      // FIX: Changed z-50 to z-[100] to stay on top of the navbar
+      className="flex justify-center items-center fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm p-4"
     >
       <motion.div
         initial={{ opacity: 0, y: 10 }}
@@ -139,6 +141,12 @@ export default function EmailVerificationMessage({
                 <br />
                 <span className="font-bold text-maroon">{email}</span>
               </p>
+
+              {/* --- NEW: Added Spam Folder Note --- */}
+              <p className="text-gray-400 font-ptsans text-xs mt-3">
+                Can&apos;t find the email? Please check your{" "}
+                <strong>Spam</strong> or <strong>Junk</strong> folder.
+              </p>
             </div>
 
             <AnimatePresence mode="wait">
@@ -193,9 +201,16 @@ export default function EmailVerificationMessage({
                 textSize="text-[16px]"
                 onClick={handleResend}
                 type="button"
-                bg="bg-[#DAA520] hover:bg-[#B79308]"
-                textcolor="text-white"
-                className="rounded-[15px] font-bold shadow-lg shadow-yellow-500/20"
+                bg={
+                  isResendDisabled
+                    ? "bg-gray-300 text-gray-500"
+                    : "bg-[#DAA520] hover:bg-[#B79308] text-white"
+                }
+                className={`rounded-[15px] font-bold shadow-lg ${
+                  isResendDisabled
+                    ? "shadow-none cursor-not-allowed"
+                    : "shadow-yellow-500/20"
+                }`}
                 disabled={isResendDisabled}
               />
 

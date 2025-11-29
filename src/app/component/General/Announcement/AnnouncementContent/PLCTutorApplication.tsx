@@ -1,9 +1,9 @@
 // src/app/component/General/Announcement/AnnouncementContent/PLCTutorApplication.tsx
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { X, Loader2, BookOpenText, User as UserIcon } from "lucide-react";
-import { motion, AnimatePresence, Variants } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Montserrat, PT_Sans } from "next/font/google";
 import { getCurrentUserDetails } from "../../../../../../supabase/Lib/General/getUser";
 import type { User } from "../../../../../../supabase/Lib/General/user";
@@ -135,17 +135,26 @@ const PLCTutorApplicationModal: React.FC<PLCTutorApplicationModalProps> = ({
 
       alert("Application submitted! We will review your request shortly.");
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      // 1. Change 'any' to 'unknown'
       console.error("Application submission failed:", err);
+
       // In a failure scenario, use the UploadButton handle to clean up storage
       const removedUrls = uploadRef.current?.getRemovedUrls() || [];
       if (removedUrls.length > 0) {
         console.log("Cleanup initiated for partially uploaded files.");
       }
 
-      setError(
-        err.message || "An unexpected error occurred during submission."
-      );
+      // 2. Safely extract the error message
+      let errorMessage = "An unexpected error occurred during submission.";
+
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === "string") {
+        errorMessage = err;
+      }
+
+      setError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
