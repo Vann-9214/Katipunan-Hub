@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../General/supabaseClient";
 import { PostUI } from "@/app/component/General/Announcement/Utils/types";
-import { formatDateWithAmPm } from "@/app/component/General/Announcement/AnnouncementContent/utils";
+// 1. Import the relative time formatter instead of the fixed one
+import formatPostDate from "@/app/component/General/Announcement/Utils/formatDate";
 
 export function useUserPosts(userId: string | undefined) {
   const [posts, setPosts] = useState<PostUI[]>([]);
@@ -13,7 +14,6 @@ export function useUserPosts(userId: string | undefined) {
     if (!userId) return;
     setLoading(true);
 
-    // CHANGED: Fetch from 'Feeds' table instead of 'Posts'
     const { data, error } = await supabase
       .from("Feeds")
       .select("*")
@@ -25,15 +25,16 @@ export function useUserPosts(userId: string | undefined) {
     } else if (data) {
       const formatted: PostUI[] = data.map((p) => ({
         id: p.id,
-        title: "", // Feeds don't have titles
-        description: p.content, // Map 'content' to 'description'
+        title: "", 
+        description: p.content, 
         images: p.images || [],
-        tags: [], // Feeds don't use tags
-        type: "feed", // Explicitly set type to feed
-        visibility: "global", // Feeds are usually global
+        tags: [], 
+        type: "feed", 
+        visibility: "global", 
         author_id: p.author_id,
         created_at: p.created_at,
-        date: formatDateWithAmPm(p.created_at),
+        // 2. Use formatPostDate here
+        date: formatPostDate(p.created_at), 
       }));
       setPosts(formatted);
     }

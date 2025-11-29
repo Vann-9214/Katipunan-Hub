@@ -77,7 +77,7 @@ export default function HistoryModal({
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               transition={{ type: "spring", stiffness: 350, damping: 30 }}
-              className="relative w-full max-w-[800px] h-[80vh] p-[2px] rounded-[24px] bg-gradient-to-br from-[#EFBF04] via-[#FFD700] to-[#D4AF37] shadow-2xl flex flex-col"
+              className="relative w-full max-w-[800px] h-[90vh] p-[2px] rounded-[24px] bg-gradient-to-br from-[#EFBF04] via-[#FFD700] to-[#D4AF37] shadow-2xl flex flex-col"
             >
               {/* --- Inner White Content --- */}
               <div className="bg-gray-50/50 w-full h-full rounded-[22px] flex flex-col overflow-hidden shadow-inner relative">

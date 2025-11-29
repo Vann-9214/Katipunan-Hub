@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Pen, MapPin, Calendar, Mail, BookOpen } from "lucide-react";
+import { motion } from "framer-motion";
 
 // Components
 import HomepageTab from "@/app/component/ReusableComponent/HomepageTab/HomepageTab";
 import LoadingScreen from "../../ReusableComponent/LoadingScreen";
-import Avatar from "@/app/component/ReusableComponent/Avatar"; // Reverted to standard Avatar
+import Avatar from "@/app/component/ReusableComponent/Avatar";
 import Posts from "../Announcement/Posts/Posts";
+import AddPosts from "../Announcement/AddPosts/addPosts";
 
 // Modals
 import EditMainProfileModal from "./editMainProfileModal";
@@ -18,7 +20,10 @@ import EditBioDetailsModal from "./editBioDetailsModal";
 // Logic
 import { getCurrentUserDetails } from "../../../../../supabase/Lib/General/getUser";
 import { useUserPosts } from "../../../../../supabase/Lib/Account/useUserPosts";
+import { supabase } from "../../../../../supabase/Lib/General/supabaseClient";
+import { updateFeedPost } from "../../../../../supabase/Lib/Feeds/feeds";
 import type { User } from "../../../../../supabase/Lib/General/user";
+import type { PostUI, UpdatePostPayload } from "../Announcement/Utils/types";
 
 export default function AccountPage() {
   const [user, setUser] = useState<User | null>(null);
@@ -28,7 +33,11 @@ export default function AccountPage() {
   const [showMainEdit, setShowMainEdit] = useState(false);
   const [showBioEdit, setShowBioEdit] = useState(false);
 
-  const { posts, loading: postsLoading } = useUserPosts(user?.id);
+  // Editing Posts State
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editingPost, setEditingPost] = useState<PostUI | null>(null);
+
+  const { posts, loading: postsLoading, refetch } = useUserPosts(user?.id);
   const router = useRouter();
 
   useEffect(() => {
@@ -44,6 +53,70 @@ export default function AccountPage() {
     loadUserData();
   }, [router]);
 
+  // Realtime subscription
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel(`account-feeds-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "Feeds",
+          filter: `author_id=eq.${user.id}`,
+        },
+        () => {
+          refetch();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, refetch]);
+
+  // --- Handlers ---
+  const handleEditPost = (postId: string) => {
+    const postToEdit = posts.find((p) => p.id === postId);
+    if (!postToEdit) return;
+    setEditingPost(postToEdit);
+    setEditorOpen(true);
+  };
+
+  const handleCloseEditor = () => {
+    setEditorOpen(false);
+    setEditingPost(null);
+  };
+
+  const handleUpdatePost = async (updatedPost: UpdatePostPayload) => {
+    if (!updatedPost.description) return;
+    try {
+      await updateFeedPost(
+        updatedPost.id,
+        updatedPost.description,
+        updatedPost.images || []
+      );
+      handleCloseEditor();
+    } catch (error) {
+      console.error("Error updating post:", error);
+      alert("Failed to update post.");
+    }
+  };
+
+  const handleDeletePost = async (postId: string) => {
+    if (!confirm("Are you sure you want to delete this post?")) return;
+    try {
+      const { error } = await supabase.from("Feeds").delete().eq("id", postId);
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      alert("Failed to delete post.");
+    }
+  };
+
   const handleUpdateSuccess = (updatedData: Partial<User>) => {
     setUser((prev) => (prev ? { ...prev, ...updatedData } : null));
   };
@@ -55,156 +128,172 @@ export default function AccountPage() {
     <main className="min-h-screen bg-[#F0F2F5] pb-20">
       <HomepageTab user={user} />
 
-      {/* HEADER SECTION */}
-      <div className="bg-white shadow-sm pb-4">
-        <div className="max-w-[1095px] mx-auto relative">
-          {/* Cover Photo */}
-          <div className="relative w-full h-[200px] md:h-[350px] bg-gradient-to-b from-gray-300 to-gray-400 rounded-b-xl overflow-hidden group">
-            {user.coverURL ? (
-              <Image
-                src={user.coverURL}
-                alt="Cover"
-                fill
-                className="object-cover"
-                priority
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-r from-[#8B0E0E] to-[#4e0505]">
-                <span className="text-white/30 font-bold text-4xl select-none">
-                  KATIPUNAN HUB
-                </span>
-              </div>
-            )}
-
-            {/* Only visual feedback, clicking logic moved to modal */}
-          </div>
-
-          {/* Profile Bar */}
-          <div className="px-4 md:px-8 pb-4">
-            <div className="flex flex-col md:flex-row items-center md:items-end relative -mt-[80px] md:-mt-[40px] gap-4 md:gap-6">
-              {/* Avatar - NON CLICKABLE HERE */}
-              <div className="relative z-10 p-1 bg-white rounded-full">
-                <div className="w-[168px] h-[168px] relative rounded-full overflow-hidden border-[4px] border-white shadow-md bg-white">
-                  <Avatar
-                    avatarURL={user.avatarURL}
-                    altText={user.fullName}
-                    className="w-full h-full"
+      {/* --- HEADER SECTION (Themed) --- */}
+      <div className="pt-[20px] pb-4">
+        <div className="max-w-[1095px] mx-auto px-4">
+          {/* Gold Gradient Border Container */}
+          <div className="p-[3px] rounded-[24px] bg-gradient-to-br from-[#EFBF04] via-[#FFD700] to-[#D4AF37] shadow-xl">
+            {/* Maroon Inner Background */}
+            <div className="bg-gradient-to-b from-[#4e0505] to-[#3a0000] rounded-[22px] overflow-hidden">
+              {/* Cover Photo */}
+              <div className="relative w-full h-[200px] md:h-[350px] bg-gray-800 overflow-hidden group">
+                {user.coverURL ? (
+                  <Image
+                    src={user.coverURL}
+                    alt="Cover"
+                    fill
+                    className="object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                    priority
                   />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-r from-[#2a0303] to-[#4e0505]">
+                    <span className="text-white/20 font-bold text-4xl select-none font-montserrat tracking-widest">
+                      KATIPUNAN HUB
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Profile Bar */}
+              <div className="px-4 md:px-8 pb-6">
+                <div className="flex flex-col md:flex-row items-center md:items-end relative -mt-[80px] md:-mt-[50px] gap-4 md:gap-6">
+                  {/* Avatar */}
+                  <div className="relative z-10">
+                    <div className="w-[168px] h-[168px] relative rounded-full overflow-hidden border-[5px] border-[#EFBF04] shadow-2xl bg-[#3a0000]">
+                      <Avatar
+                        avatarURL={user.avatarURL}
+                        altText={user.fullName}
+                        className="w-full h-full"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Name & Role */}
+                  <div className="flex-1 text-center md:text-left mb-8">
+                    <h1 className="text-[32px] font-bold text-white font-montserrat leading-tight drop-shadow-md">
+                      {user.fullName}
+                    </h1>
+                    <p className="text-[#EFBF04] font-medium text-[16px] uppercase tracking-wide mt-1">
+                      {user.role}
+                    </p>
+                  </div>
+
+                  {/* Edit Profile Button */}
+                  <div className="mb-6 md:mb-4 flex-shrink-0">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setShowMainEdit(true)}
+                      className="bg-white/10 cursor-pointer hover:bg-white/20 border border-white/30 text-white px-5 py-2.5 rounded-xl font-semibold flex items-center gap-2 transition-all shadow-lg backdrop-blur-sm"
+                    >
+                      <Pen size={16} className="text-[#EFBF04]" />
+                      <span className="font-montserrat">Edit Profile</span>
+                    </motion.button>
+                  </div>
+                </div>
+
+                <div className="h-[1px] bg-white/10 w-full mt-6 mb-1" />
+
+                {/* Tabs */}
+                <div className="flex gap-6 px-2">
+                  <button className="px-2 py-3 text-[#EFBF04] font-bold border-b-[3px] border-[#EFBF04] transition-all">
+                    Posts
+                  </button>
+                  <button className="px-2 py-3 text-white/70 font-semibold hover:text-white transition-colors">
+                    Friends
+                  </button>
                 </div>
               </div>
-
-              {/* Name & Role */}
-              <div className="flex-1 text-center md:text-left mb-2">
-                <h1 className="text-[32px] font-bold text-black font-montserrat leading-tight">
-                  {user.fullName}
-                </h1>
-                <p className="text-gray-600 font-medium text-[16px]">
-                  {user.role}
-                </p>
-              </div>
-
-              {/* Edit Profile Button (Triggers Main Edit Modal) */}
-              <div className="mb-4 md:mb-2 flex-shrink-0">
-                <button
-                  onClick={() => setShowMainEdit(true)}
-                  className="bg-gray-200 hover:bg-gray-300 text-black px-4 py-2 rounded-lg font-semibold flex items-center gap-2 transition-colors cursor-pointer shadow-sm"
-                >
-                  <Pen size={16} />
-                  <span>Edit Profile</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="h-[1px] bg-gray-300 w-full mt-6 mb-1" />
-
-            {/* Tabs */}
-            <div className="flex gap-1">
-              <button className="px-4 py-3 text-[#8B0E0E] font-semibold border-b-[3px] border-[#8B0E0E]">
-                Posts
-              </button>
-              <button className="px-4 py-3 text-gray-600 font-semibold hover:bg-gray-100 rounded-lg transition-colors">
-                Friends
-              </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* MAIN CONTENT GRID */}
-      <div className="max-w-[1095px] mx-auto px-4 md:px-0 mt-6 flex flex-col md:flex-row gap-6">
-        {/* LEFT: INTRO & DETAILS */}
+      {/* --- MAIN CONTENT GRID --- */}
+      <div className="max-w-[1095px] mx-auto px-4 mt-6 flex flex-col md:flex-row gap-6">
+        {/* LEFT: INTRO & DETAILS (Themed) */}
         <div className="w-full md:w-[400px] flex-shrink-0 space-y-4">
-          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-            <h2 className="text-xl font-bold mb-4 text-black font-montserrat">
-              Intro
-            </h2>
+          {/* Gold Border Wrapper */}
+          <div className="p-[2px] rounded-[20px] bg-gradient-to-br from-[#EFBF04] via-[#FFD700] to-[#D4AF37] shadow-lg">
+            {/* Maroon Inner */}
+            <div className="bg-gradient-to-b from-[#4e0505] to-[#3a0000] p-6 rounded-[18px]">
+              <h2 className="text-xl font-bold mb-4 text-white font-montserrat">
+                Intro
+              </h2>
 
-            {/* Bio */}
-            <div className="text-center mb-6">
-              {user.bio ? (
-                <p className="text-[15px] text-gray-800 font-montserrat whitespace-pre-wrap">
-                  {user.bio}
-                </p>
-              ) : (
-                <p className="text-sm text-gray-400 italic">No bio yet.</p>
-              )}
-            </div>
+              {/* Bio */}
+              <div className="text-center mb-6">
+                {user.bio ? (
+                  <p className="text-[15px] text-white/90 font-montserrat whitespace-pre-wrap leading-relaxed">
+                    {user.bio}
+                  </p>
+                ) : (
+                  <p className="text-sm text-white/50 italic">No bio yet.</p>
+                )}
+              </div>
 
-            {/* Details List */}
-            <div className="space-y-4 border-t border-gray-100 pt-4">
-              <div className="flex items-center gap-3 text-gray-700">
-                <BookOpen size={20} className="text-gray-400" />
-                <span>
-                  Studies <strong className="text-black">{user.course}</strong>
-                </span>
-              </div>
-              <div className="flex items-center gap-3 text-gray-700">
-                <Calendar size={20} className="text-gray-400" />
-                <span>
-                  Year Level:{" "}
-                  <strong className="text-black">{user.year}</strong>
-                </span>
-              </div>
-              {/* New Location Field */}
-              {user.location && (
-                <div className="flex items-center gap-3 text-gray-700">
-                  <MapPin size={20} className="text-gray-400" />
+              {/* Details List */}
+              <div className="space-y-4 border-t border-white/10 pt-4">
+                <div className="flex items-center gap-3 text-white/80">
+                  <BookOpen size={20} className="text-[#EFBF04]" />
                   <span>
-                    Lives in{" "}
-                    <strong className="text-black">{user.location}</strong>
+                    Studies{" "}
+                    <strong className="text-white">{user.course}</strong>
                   </span>
                 </div>
-              )}
-              <div className="flex items-center gap-3 text-gray-700">
-                <Mail size={20} className="text-gray-400" />
-                <span className="truncate">{user.email}</span>
+                <div className="flex items-center gap-3 text-white/80">
+                  <Calendar size={20} className="text-[#EFBF04]" />
+                  <span>
+                    Year Level:{" "}
+                    <strong className="text-white">{user.year}</strong>
+                  </span>
+                </div>
+                {user.location && (
+                  <div className="flex items-center gap-3 text-white/80">
+                    <MapPin size={20} className="text-[#EFBF04]" />
+                    <span>
+                      Lives in{" "}
+                      <strong className="text-white">{user.location}</strong>
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-center gap-3 text-white/80">
+                  <Mail size={20} className="text-[#EFBF04]" />
+                  <span className="truncate">{user.email}</span>
+                </div>
               </div>
-            </div>
 
-            {/* Trigger Bio/Details Edit */}
-            <button
-              onClick={() => setShowBioEdit(true)}
-              className="w-full mt-5 bg-gray-100 hover:bg-gray-200 text-black font-semibold py-2 rounded-lg transition-colors cursor-pointer"
-            >
-              Edit Bio & Details
-            </button>
+              {/* Trigger Bio/Details Edit */}
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setShowBioEdit(true)}
+                className="w-full cursor-pointer mt-6 bg-[#EFBF04] hover:bg-[#FFD700] text-white/90 font-bold py-2.5 rounded-xl transition-colors shadow-md"
+              >
+                Edit Bio & Details
+              </motion.button>
+            </div>
           </div>
         </div>
 
         {/* RIGHT: POSTS FEED */}
         <div className="flex-1 min-w-0">
-          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 flex gap-3 items-center">
-            <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-100 shrink-0">
-              <Avatar avatarURL={user.avatarURL} className="w-full h-full" />
-            </div>
-            <div className="bg-gray-100 hover:bg-gray-200 text-gray-500 rounded-full px-4 py-2.5 w-full cursor-pointer transition-colors text-sm font-medium">
-              What&apos;s on your mind, {user.fullName.split(" ")[0]}?
-            </div>
-          </div>
+          <div className="flex flex-col items-center space-y-8">
+            <AddPosts
+              currentType="feed"
+              isFeed={true}
+              author={{ fullName: user.fullName, avatarURL: user.avatarURL }}
+              authorId={user.id}
+              externalOpen={editorOpen}
+              initialPost={editingPost}
+              onExternalClose={handleCloseEditor}
+              onUpdatePost={handleUpdatePost}
+            />
 
-          <div className="flex flex-col items-center">
             {postsLoading ? (
-              <div className="py-10 text-gray-400">Loading posts...</div>
+              <div className="py-10 text-gray-400 font-montserrat">
+                Loading posts...
+              </div>
             ) : posts.length > 0 ? (
               posts.map((post) => (
                 <Posts
@@ -216,7 +305,6 @@ export default function AccountPage() {
                   description={post.description}
                   date={post.date}
                   images={post.images}
-                  canEdit={true}
                   visibility={post.visibility}
                   isFeed={true}
                   author={{
@@ -224,16 +312,21 @@ export default function AccountPage() {
                     avatarURL: user.avatarURL,
                     role: user.role,
                   }}
+                  canEdit={true}
+                  onEdit={() => handleEditPost(post.id)}
+                  onDelete={() => handleDeletePost(post.id)}
                 />
               ))
             ) : (
-              <div className="bg-white p-8 rounded-xl text-center border border-gray-200 w-full">
-                <h3 className="text-lg font-bold text-gray-700 mb-1">
-                  No posts yet
-                </h3>
-                <p className="text-gray-500">
-                  Share something with the community!
-                </p>
+              <div className="w-full p-[2px] rounded-[20px] bg-gradient-to-br from-[#EFBF04] via-[#FFD700] to-[#D4AF37] opacity-80">
+                <div className="bg-white p-8 rounded-[18px] text-center">
+                  <h3 className="text-lg font-bold text-gray-700 mb-1 font-montserrat">
+                    No posts yet
+                  </h3>
+                  <p className="text-gray-500 text-sm font-ptsans">
+                    Share something with the community to get started!
+                  </p>
+                </div>
               </div>
             )}
           </div>
