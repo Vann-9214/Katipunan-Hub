@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 
 import ToggleButton from "@/app/component/ReusableComponent/ToggleButton";
-import Button, { TextButton } from "@/app/component/ReusableComponent/Buttons";
+import Button from "@/app/component/ReusableComponent/Buttons";
 import Logo from "@/app/component/ReusableComponent/Logo";
 import TextBox from "@/app/component/ReusableComponent/Textbox";
 
@@ -70,7 +70,7 @@ export default function SignInForm({ onClose, onSwitch }: SignInFormProps) {
         className="flex flex-col md:flex-row w-full max-w-[1050px] h-[650px] bg-white rounded-[30px] shadow-2xl relative overflow-hidden"
       >
         {/* Left Side */}
-        <div className="relative w-full md:w-[45%] bg-gradient-to-br from-[#800000] via-[#5A0505] to-[#2E0202] p-10 flex flex-col justify-center overflow-hidden text-white">
+        <div className="relative w-full md:w-[45%] bg-gradient-to-br from-[#800000] via-[#5A0505] to-[#2E0202] p-10 flex flex-col justify-start overflow-hidden text-white pt-20">
           <div
             className="absolute inset-0 opacity-[0.05] pointer-events-none"
             style={{
@@ -79,7 +79,7 @@ export default function SignInForm({ onClose, onSwitch }: SignInFormProps) {
               backgroundSize: "24px 24px",
             }}
           />
-          <div className="absolute -right-20 -bottom-20 w-[350px] h-[350px] opacity-[0.07] pointer-events-none">
+          <div className="absolute -right-20 -bottom-20 w-[350px] h-[350px] opacity-[0.1] pointer-events-none">
             <Image
               src="/Cit Logo.svg"
               alt="Watermark"
@@ -89,13 +89,17 @@ export default function SignInForm({ onClose, onSwitch }: SignInFormProps) {
           </div>
 
           <div className="relative z-10 space-y-5">
+            {/* UPDATED: Title to emphasize "Nexus" and "Access" */}
             <h1 className="font-bold leading-tight font-montserrat text-[32px] drop-shadow-md">
               Welcome Back, <br />{" "}
               <span className="text-[#FFD700]">Teknoy!</span>
             </h1>
             <p className="text-white/80 leading-relaxed font-ptsans text-[15px]">
-              Access your student dashboard, announcements, and campus tools in
-              one secure hub.
+              {/* UPDATED: Description to emphasize unity and integration */}
+              Continue your journey in the{" "}
+              <span className="font-semibold">all-in-one platform</span>.
+              Seamlessly access announcements, manage your Peer Learning Center
+              sessions, and connect with the community in one integrated system.
             </p>
           </div>
         </div>

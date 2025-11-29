@@ -416,7 +416,8 @@ export default function PLCViewMonth({
                           bg: "bg-white",
                           border: "border-l-4 border-[#EFBF04]",
                           badgeBg: "bg-[#EFBF04]/20",
-                          text: "text-[#B48E00] pulse", // Darker gold for text
+                          // UPDATED: Added animate-pulse to text
+                          text: "text-[#B48E00] animate-pulse",
                           icon: "text-[#EFBF04]",
                         };
                       } else if (

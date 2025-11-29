@@ -3,7 +3,7 @@
 import ToggleButton from "@/app/component/ReusableComponent/ToggleButton";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import Button, { TextButton } from "@/app/component/ReusableComponent/Buttons";
+import Button from "@/app/component/ReusableComponent/Buttons";
 import Logo from "@/app/component/ReusableComponent/Logo";
 import TextBox from "@/app/component/ReusableComponent/Textbox";
 import { Combobox } from "@/app/component/ReusableComponent/Combobox";
@@ -176,7 +176,7 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
         className="flex flex-col md:flex-row w-full max-w-[1050px] h-[650px] bg-white rounded-[30px] shadow-2xl relative overflow-hidden"
       >
         {/* Left Side */}
-        <div className="relative w-full md:w-[45%] bg-gradient-to-br from-[#EFBF04] via-[#B79308] to-[#8A6D00] p-10 flex flex-col justify-center overflow-hidden text-white">
+        <div className="relative w-full md:w-[45%] bg-gradient-to-br from-[#EFBF04] via-[#B79308] to-[#8A6D00] p-10 flex flex-col justify-start overflow-hidden text-white pt-20">
           <div
             className="absolute inset-0 opacity-[0.07] pointer-events-none"
             style={{
@@ -195,13 +195,18 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
           </div>
 
           <div className="relative z-10 space-y-5">
+            {/* UPDATED: Title to emphasize "Activate" and "Toolkit" */}
             <h1 className="font-bold leading-tight font-montserrat text-[32px] drop-shadow-md">
-              Join the Hub, <br />{" "}
-              <span className="text-[#8B0E0E]">Teknoy!</span>
+              Activate Your <br />{" "}
+              <span className="text-[#8B0E0E]">Teknoy Toolkit.</span>
             </h1>
             <p className="text-white/90 leading-relaxed font-ptsans text-[15px]">
-              Create your account to access announcements, join events, and
-              connect with the whole CIT university community.
+              {/* UPDATED: Description to emphasize unification and integrated access */}
+              Create your student account to instantly{" "}
+              <span className="font-semibold">unify</span> your campus life.
+              Gain <span className="font-semibold">integrated access</span> to
+              official announcements, PLC scheduling, Lost & Found resources,
+              and community feeds.
             </p>
           </div>
         </div>

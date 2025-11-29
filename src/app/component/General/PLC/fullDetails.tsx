@@ -10,7 +10,6 @@ import {
   Star,
   Calendar,
   Clock,
-  User,
   FileText,
   Hash,
   Loader2,
@@ -56,9 +55,11 @@ interface BookingDetails {
   studentIDNum?: string;
   avatarURL?: string;
   tutorName?: string;
+  // --- UPDATED: Added avatarURL to Tutor ---
   Tutor?: {
     id: string;
     fullName: string;
+    avatarURL?: string | null;
   };
   TutorRatings?: TutorRating[];
 }
@@ -456,9 +457,12 @@ export default function FullDetails({
                         booking.tutorName ? (
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600">
-                                <User size={20} />
-                              </div>
+                              {/* --- UPDATED: Use Avatar Component for Tutor --- */}
+                              <Avatar
+                                avatarURL={booking.Tutor?.avatarURL}
+                                altText={booking.tutorName}
+                                className="w-10 h-10"
+                              />
                               <div>
                                 <p className="text-xs text-gray-500 font-bold uppercase">
                                   Assigned Tutor
