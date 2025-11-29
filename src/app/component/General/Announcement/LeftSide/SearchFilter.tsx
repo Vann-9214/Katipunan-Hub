@@ -18,7 +18,9 @@ export default function SearchFilter({
       // REMOVED: width animation. Kept border and shadow.
       animate={{
         borderColor: isFocused ? "#EFBF04" : "transparent", // Gold border on focus
-        boxShadow: isFocused ? "0px 4px 20px rgba(0, 0, 0, 0.2)" : "none",
+        boxShadow: isFocused
+          ? "0px 4px 20px rgba(0, 0, 0, 0.2)"
+          : "4px 4px 2px rgba(239, 191, 4, 0.2)",
       }}
       transition={{ duration: 0.3, ease: "easeOut" }}
       // Fixed width of 320px
