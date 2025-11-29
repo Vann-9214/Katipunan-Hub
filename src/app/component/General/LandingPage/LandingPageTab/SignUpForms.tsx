@@ -2,19 +2,26 @@
 
 import ToggleButton from "@/app/component/ReusableComponent/ToggleButton";
 import { useState } from "react";
-import { motion } from "framer-motion";
-import Button, { TextButton } from "@/app/component/ReusableComponent/Buttons";
+import { motion, AnimatePresence } from "framer-motion";
+import Button from "@/app/component/ReusableComponent/Buttons";
 import Logo from "@/app/component/ReusableComponent/Logo";
 import TextBox from "@/app/component/ReusableComponent/Textbox";
 import { Combobox } from "@/app/component/ReusableComponent/Combobox";
 import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
+import Image from "next/image";
 
 interface SignUpFormProps {
   onClose?: () => void;
-  onSwitch?: () => void;
+  onSwitch?: () => void; // This switches to SignIn
+  onSuccessfulSignUp?: (email: string) => void; // ADDED
 }
 
-export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
+export default function SignUpForm({
+  onClose,
+  onSwitch,
+  onSuccessfulSignUp,
+}: SignUpFormProps) {
+  // UPDATED
   const year = [
     { value: "1st", label: "1st Year" },
     { value: "2nd", label: "2nd Year" },
@@ -77,11 +84,12 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
   const [selectedCourse, setSelectedCourse] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  // ✅ FIXED handleSubmit (safe for RLS + session wait)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMessage("");
 
     try {
       if (
@@ -91,266 +99,321 @@ export default function SignUpForm({ onClose, onSwitch }: SignUpFormProps) {
         !selectedCourse ||
         !selectedYear
       ) {
-        alert("Please fill in all required fields.");
+        setErrorMessage("Please fill in all required fields.");
         return;
       }
 
       if (!email.toLowerCase().endsWith("@cit.edu")) {
-        alert(
+        setErrorMessage(
           "Please use your valid CIT email address (must end with @cit.edu)."
         );
         return;
       }
 
       if (password !== confirmPassword) {
-        alert("Passwords do not match!");
+        setErrorMessage("Passwords do not match!");
         return;
       }
 
-      // Step 1: Sign up the user
+      // 1. PERFORM SIGN-UP (This sends the confirmation email)
       const { error: signUpError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            fullName: firstName,
+            studentID,
+            course: selectedCourse,
+            year: selectedYear,
+            role: "Student",
+          },
+        },
       });
 
       if (signUpError) {
-        alert(signUpError.message);
+        setErrorMessage(signUpError.message);
         return;
       }
 
-      // Step 2: Wait for the user session to initialize
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      // Step 3: Handle email confirmation case
-      if (!user) {
-        alert(
-          "Sign-up succeeded — please check your CIT email to confirm your account. Once confirmed, you can sign in."
-        );
-        return;
-      }
-
-      // Step 4: Insert profile row into Accounts table
-      const { error: insertError } = await supabase.from("Accounts").insert([
-        {
-          id: user.id,
-          fullName: firstName,
-          studentID,
-          course: selectedCourse,
-          year: selectedYear,
-          avatarURL: "",
-          role: "Student",
-        },
-      ]);
-
-      if (insertError) {
-        console.error("Insert error:", insertError);
-        alert(
-          "Account created, but saving profile failed. Please check your database policies."
-        );
-        return;
-      }
-
-      alert("Account created successfully! You can now sign in.");
-      onSwitch?.();
+      // 2. SUCCESS: Show Verification UI
+      // This is the CRITICAL line that must run after a successful sign-up initiation.
+      onSuccessfulSignUp?.(email);
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        console.error("Sign up error:", err.message);
-      } else {
-        console.error("Sign up error (non-Error):", err);
-      }
-      alert("Unexpected error during sign-up. Check console for details.");
+      console.error("Sign up error:", err);
+      setErrorMessage("Unexpected error during sign-up.");
     } finally {
-      setLoading(false);
+      if (errorMessage) {
+        setLoading(false);
+      }
+      // If successful, the modal will unmount instantly due to state change.
     }
   };
+
+  const inputClasses =
+    "bg-gray-50 focus:bg-white transition-all border-gray-300 focus:border-[#EFBF04] focus:ring-1 focus:ring-[#EFBF04]/40 text-[15px]";
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.3 }}
-      className="flex justify-center items-center fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+      transition={{ duration: 0.2 }}
+      className="flex justify-center items-center fixed inset-0 z-50 bg-black/60 backdrop-blur-sm p-4"
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.9 }}
-        transition={{ duration: 0.4, ease: "easeInOut" }}
-        className="flex w-[90%] max-w-[1200px] h-[min(90vh,770px)] bg-white rounded-[20px] shadow-md relative overflow-hidden"
+        // REMOVED SCALE ANIMATION on EXIT to prevent "closing" look
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 0 }}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
+        className="flex flex-col md:flex-row w-full max-w-[1050px] h-[650px] bg-white rounded-[30px] shadow-2xl relative overflow-hidden"
       >
         {/* Left Side */}
-        <motion.div
-          initial={{ x: -50, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ delay: 0.2, duration: 0.6 }}
-          className="bg-[linear-gradient(to_bottom,#FFCB00,#B79308)] w-[530px] max-h-full m-[10px] rounded-[20px] p-10"
-        >
-          <h1
-            className="font-bold text-white select-none"
+        <div className="relative w-full md:w-[45%] bg-gradient-to-br from-[#EFBF04] via-[#B79308] to-[#8A6D00] p-10 flex flex-col justify-start overflow-hidden text-white pt-20">
+          <div
+            className="absolute inset-0 opacity-[0.07] pointer-events-none"
             style={{
-              fontFamily: "Montserrat, sans-serif",
-              fontSize: "clamp(18px,4.5vw,32px)",
+              backgroundImage:
+                "radial-gradient(circle, #ffffff 1px, transparent 1px)",
+              backgroundSize: "24px 24px",
             }}
-          >
-            Create Your Account
-          </h1>
-          <p
-            className="text-white select-none mt-3"
-            style={{
-              fontFamily: "PT sans, sans-serif",
-              fontSize: "clamp(12px,4.5vw,20px)",
-            }}
-          >
-            Join the Katipunan Hub and be part of a platform made for every
-            Teknoy. Signing up gives you access to announcements, events,
-            groups, chats, and tools that make campus life more connected and
-            engaging.
-          </p>
-        </motion.div>
-
-        {/* Right Side */}
-        <motion.div
-          initial={{ x: 50, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.6 }}
-          className="ml-8 flex flex-col flex-1 p-8"
-        >
-          <Logo unclickable={true} />
-          <p
-            className="text-[30px] select-none mt-2"
-            style={{ fontFamily: "Montserrat, sans-serif" }}
-          >
-            Join the Katipunan Hub!
-          </p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.5 }}
-          >
-            <ToggleButton
-              textSize="text-[23px]"
-              leftLabel="Sign In"
-              rightLabel="Sign Up"
-              active="right"
-              onToggle={(side) => {
-                if (side === "left") onSwitch?.();
-              }}
+          />
+          <div className="absolute -right-20 -bottom-20 w-[350px] h-[350px] opacity-[0.1] pointer-events-none mix-blend-overlay">
+            <Image
+              src="/Cit Logo.svg"
+              alt="Watermark"
+              width={350}
+              height={350}
             />
-          </motion.div>
+          </div>
 
-          <motion.form
-            onSubmit={handleSubmit}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.5 }}
-            className="flex flex-col justify-between flex-1 gap-3 mt-5 max-w-[540px]"
+          <div className="relative z-10 space-y-5">
+            {/* UPDATED: Title to emphasize "Activate" and "Toolkit" */}
+            <h1 className="font-bold leading-tight font-montserrat text-[32px] drop-shadow-md">
+              Activate Your <br />{" "}
+              <span className="text-[#8B0E0E]">Teknoy Toolkit.</span>
+            </h1>
+            <p className="text-white/90 leading-relaxed font-ptsans text-[15px]">
+              {/* UPDATED: Description to emphasize unification and integrated access */}
+              Create your student account to instantly{" "}
+              <span className="font-semibold">unify</span> your campus life.
+              Gain <span className="font-semibold">integrated access</span> to
+              official announcements, PLC scheduling, Lost & Found resources,
+              and community feeds.
+            </p>
+          </div>
+        </div>
+
+        {/* Right Side (Form) */}
+        {/* HIDE SCROLLBAR UTILITY CLASSES */}
+        <div className="flex-1 bg-white flex flex-col justify-center items-center p-6 sm:p-8 relative overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <button
+            onClick={onClose}
+            className="absolute top-6 right-6 p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-800 z-20 cursor-pointer"
           >
-            <div className="flex flex-col gap-3">
-              <TextBox
-                type="text"
-                placeholder="Full Name"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                rightImageSrc="/User.svg"
-                rightImageAlt="user icon"
-                rightImageWidth={30}
-                rightImageHeight={30}
-                className="w-full"
-                height="h-[55px]"
-              />
-              <TextBox
-                type="email"
-                placeholder="CIT Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                rightImageSrc="/Mail Plus.svg"
-                rightImageAlt="Mail Plus icon"
-                rightImageWidth={30}
-                rightImageHeight={30}
-                className="w-full"
-                height="h-[55px]"
-              />
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
 
-              <Combobox
-                items={programs}
-                placeholder="Select Course"
-                onChange={(val) => setSelectedCourse(val)}
-              />
+          <div className="w-full max-w-[420px] flex flex-col gap-4 h-full justify-center py-6">
+            <div className="flex flex-col gap-1 flex-shrink-0">
+              <div className="transform scale-90 origin-left">
+                <Logo
+                  unclickable={true}
+                  width={45}
+                  height={55}
+                  showText={false}
+                />
+              </div>
+              <div>
+                <h2 className="text-[26px] font-bold font-montserrat text-gray-900">
+                  Sign Up
+                </h2>
+                <p className="text-gray-500 font-ptsans text-sm">
+                  Fill in your details to get started.
+                </p>
+              </div>
+            </div>
 
-              <div className="flex justify-between">
+            <div className="w-full flex-shrink-0">
+              <ToggleButton
+                width="w-full"
+                height="h-[40px]"
+                textSize="text-[14px]"
+                leftLabel="Sign In"
+                rightLabel="Sign Up"
+                active="right"
+                rightActiveBg="bg-[#EFBF04]"
+                onToggle={(side) => {
+                  if (side === "left") onSwitch?.();
+                }}
+              />
+            </div>
+
+            <form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
+              <AnimatePresence>
+                {errorMessage && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="text-sm p-3 rounded-lg font-ptsans bg-red-100 text-red-700 border border-red-200 overflow-hidden"
+                  >
+                    {errorMessage}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <div className="flex flex-col gap-2.5">
                 <TextBox
                   type="text"
-                  placeholder="Student ID"
-                  value={studentID}
-                  onChange={(e) => setStudentID(e.target.value)}
-                  rightImageSrc="/Id Card.svg"
-                  rightImageAlt="Id icon"
-                  rightImageWidth={30}
-                  rightImageHeight={30}
-                  width="w-[260px]"
-                  height="h-[55px]"
+                  autoFocus={true}
+                  placeholder="Full Name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  rightImageSrc="/User.svg"
+                  rightImageAlt="user icon"
+                  width="w-full"
+                  height="h-[45px]"
+                  textSize="text-[15px]"
+                  className={inputClasses}
                 />
+
+                <TextBox
+                  type="email"
+                  placeholder="CIT Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  rightImageSrc="/Mail Plus.svg"
+                  rightImageAlt="mail icon"
+                  width="w-full"
+                  height="h-[45px]"
+                  textSize="text-[15px]"
+                  className={inputClasses}
+                />
+
                 <Combobox
-                  items={year}
-                  width="w-[260px]"
-                  dropdownHeight="h-[260px]"
-                  placeholder="Select Year"
-                  onChange={(val) => setSelectedYear(val)}
+                  items={programs}
+                  placeholder="Select Course"
+                  onChange={(val) => setSelectedCourse(val)}
+                  width="w-full"
+                  buttonHeight="h-[45px]"
+                  rounded="rounded-full"
+                  buttonBG="bg-gray-50"
+                  textColor="text-gray-400"
+                  borderColor="border-gray-300"
+                  hoverBG="hover:bg-white"
+                  activeHoverBG="data-[state=open]:bg-white"
+                  activeHoverTextColor="data-[state=open]:text-black"
+                  checkArrowColor="text-[#EFBF04]"
+                  dropdownBorderColor="border-[#EFBF04]"
+                  className={inputClasses}
+                  textSize="text-[15px]" // Added text size to match input
                 />
+
+                <div className="flex gap-3">
+                  <div className="flex-1">
+                    <TextBox
+                      type="text"
+                      placeholder="Student ID"
+                      value={studentID}
+                      onChange={(e) => setStudentID(e.target.value)}
+                      rightImageSrc="/Id Card.svg"
+                      rightImageAlt="Id icon"
+                      width="w-full"
+                      height="h-[45px]"
+                      textSize="text-[15px]"
+                      className={inputClasses}
+                    />
+                  </div>
+                  <div className="w-[130px]">
+                    <Combobox
+                      items={year}
+                      placeholder="Year"
+                      onChange={(val) => setSelectedYear(val)}
+                      width="w-full"
+                      buttonHeight="h-[45px]"
+                      dropdownHeight="h-[180px]"
+                      rounded="rounded-full"
+                      buttonBG="bg-gray-50"
+                      borderColor="border-gray-300"
+                      hoverBG="hover:bg-white"
+                      checkArrowColor="text-[#EFBF04]"
+                      dropdownBorderColor="border-[#EFBF04]"
+                      className={inputClasses}
+                      textSize="text-[15px]" // Added text size to match input
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <TextBox
+                    type="password"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    rightImageSrc="/Open Eye Icon.svg"
+                    rightToggleImageSrc="/Eye Off.svg"
+                    rightImageAlt="password icon"
+                    width="w-full"
+                    height="h-[45px]"
+                    textSize="text-[15px]"
+                    className={inputClasses}
+                    overrideTypeOnToggle={["password", "text"]}
+                  />
+                  <TextBox
+                    type="password"
+                    placeholder="Confirm"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    rightImageSrc="/Open Eye Icon.svg"
+                    rightToggleImageSrc="/Eye Off.svg"
+                    rightImageAlt="password icon"
+                    width="w-full"
+                    height="h-[45px]"
+                    textSize="text-[15px]"
+                    className={inputClasses}
+                    overrideTypeOnToggle={["password", "text"]}
+                  />
+                </div>
               </div>
 
-              <div className="flex justify-between">
-                <TextBox
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  rightImageSrc="/Open Eye Icon.svg"
-                  rightToggleImageSrc="Eye Off.svg"
-                  rightImageAlt="password icon"
-                  rightImageWidth={30}
-                  rightImageHeight={30}
-                  width="w-[260px]"
-                  overrideTypeOnToggle={["password", "text"]}
-                  height="h-[55px]"
-                />
-                <TextBox
-                  type="password"
-                  placeholder="Confirm Password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  rightImageSrc="/Open Eye Icon.svg"
-                  rightToggleImageSrc="Eye Off.svg"
-                  rightImageAlt="password icon"
-                  rightImageWidth={30}
-                  rightImageHeight={30}
-                  width="w-[260px]"
-                  overrideTypeOnToggle={["password", "text"]}
-                  height="h-[55px]"
-                />
-              </div>
-            </div>
-
-            <div>
               <Button
-                text={loading ? "Signing Up..." : "Sign Up"}
-                bg="bg-gold"
+                text={loading ? "Creating..." : "Sign Up"}
                 width="w-full"
+                height="h-[45px]"
+                textSize="text-[16px]"
                 type="submit"
+                bg="bg-[#EFBF04] hover:bg-[#D4AF37]"
+                textcolor="text-white"
+                className="rounded-full font-bold shadow-lg shadow-yellow-500/20 mt-2"
+                disabled={loading}
               />
-            </div>
-          </motion.form>
-        </motion.div>
 
-        <TextButton
-          text="X"
-          onClick={onClose}
-          className="absolute top-3 right-3"
-        />
+              <div className="text-center text-xs font-ptsans text-gray-500 mb-6">
+                Already have an account?{" "}
+                <button
+                  type="button"
+                  onClick={onSwitch}
+                  className="font-bold text-[#EFBF04] hover:underline cursor-pointer"
+                >
+                  Sign In
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       </motion.div>
     </motion.div>
   );

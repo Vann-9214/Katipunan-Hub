@@ -31,7 +31,7 @@ export default function AnnouncementLeftBar({
 }: AnnouncementSidebarProps) {
   // Render
   return (
-    <div className="bg-white w-[350px] left-0 top-0 fixed h-full pt-28 flex flex-col items-center overflow-y-auto">
+    <div className="bg-gray-100/50 w-[350px] left-0 top-0 fixed h-full pt-28 flex flex-col items-center overflow-y-auto">
       <div className="mb-8">
         <ToggleButton
           width="w-[320px]"
@@ -39,8 +39,8 @@ export default function AnnouncementLeftBar({
           textSize="text-[16px]"
           leftLabel="Announcement"
           rightLabel="Highlights"
-          leftActiveBg="bg-maroon"
-          rightActiveBg="bg-maroon"
+          leftActiveBg="bg-gradient-to-b from-[#6E0A0A] to-[#4e0505]"
+          rightActiveBg="bg-gradient-to-b from-[#6E0A0A] to-[#4e0505]"
           active={activeTab === "announcement" ? "left" : "right"}
           onToggle={(side) =>
             onTabToggle(side === "left" ? "announcement" : "highlight")

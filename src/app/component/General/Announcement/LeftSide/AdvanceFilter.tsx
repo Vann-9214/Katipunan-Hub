@@ -1,14 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { SlidersHorizontal, Circle } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion"; // Imported motion
+import { createPortal } from "react-dom";
+import { SlidersHorizontal, Circle, X, Check } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   SortOption,
   DateOption,
   VisibilityOption,
   FilterState,
-} from "../Utils/types"; // Keep your imports
+} from "../Utils/types";
 
 interface AdvancedFilterProps {
   onChange: (filters: {
@@ -36,6 +37,7 @@ export default function AdvancedFilter({
   isHighlights = false,
 }: AdvancedFilterProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const effectiveInitialFilters = {
     ...initialFilters,
@@ -49,6 +51,10 @@ export default function AdvancedFilter({
   const [tempFilters, setTempFilters] = useState<FilterState>(
     effectiveInitialFilters
   );
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (isHighlights && activeFilters.visibility !== "Global") {
@@ -74,12 +80,11 @@ export default function AdvancedFilter({
   }, [isOpen, activeFilters, isHighlights]);
 
   const handleToggleOpen = () => {
-    setIsOpen(!isOpen);
+    setIsOpen(true);
   };
 
   const handleCancel = () => {
     setIsOpen(false);
-    // Wait for animation to finish slightly before resetting (optional) or reset immediately
     setTimeout(() => setTempFilters(activeFilters), 200);
   };
 
@@ -89,117 +94,173 @@ export default function AdvancedFilter({
     setIsOpen(false);
   };
 
+  // --- FILTER TAG (Updated Gold Gradient) ---
   const FilterTag = ({ label }: { label: string }) => (
     <motion.div
-      layout // Smoothly adjusts position if tags change size
-      className="flex h-[32px] items-center justify-center rounded-[10px] border border-gray-400 bg-white px-[5px] py-1"
+      layout
+      className="flex h-[28px] items-center justify-center rounded-[10px] bg-gradient-to-br from-[#EFBF04] via-[#FFD700] to-[#D4AF37] px-[5px] shrink-0 shadow-sm"
     >
-      <span className="text-[11px] font-montserrat font-medium text-black">
+      <span className="text-[10px] font-montserrat font-bold text-white whitespace-nowrap">
         {label}
       </span>
     </motion.div>
   );
 
-  return (
-    <div className="w-fit max-w-[320px] rounded-lg border border-gray-300 shadow-sm overflow-hidden bg-white">
-      {/* 1. FILTER HEADER */}
-      <div className="flex w-full items-center gap-2 bg-gray-100 p-2 z-20 relative">
-        <span className="text-[16px] font-medium text-black">Filter</span>
-        <button
-          onClick={handleToggleOpen}
-          className="rounded-md p-1 text-gray-600 transition-colors hover:bg-gray-200 hover:text-gray-900 cursor-pointer"
-          aria-label={isOpen ? "Close filters" : "Open filters"}
-          aria-expanded={isOpen}
-        >
-          <SlidersHorizontal size={20} />
-        </button>
+  // --- MODAL CONTENT ---
+  const modalContent = (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center px-4">
+      {/* Backdrop */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={handleCancel}
+        className="absolute inset-0 bg-black/50 backdrop-blur-[6px]"
+      />
 
-        <div className="flex flex-1 items-center gap-2 overflow-x-auto py-1 no-scrollbar">
-          {/* LayoutGroup helps animate these smoothly if they change */}
-          <FilterTag label={activeFilters.sort} />
-          <FilterTag label={activeFilters.visibility} />
-          <FilterTag label={activeFilters.date} />
+      {/* Modal Box */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        transition={{ type: "spring", stiffness: 350, damping: 25 }}
+        // ADDED: Gold Gradient Border via padding
+        className="relative w-full max-w-[450px] p-[2px] rounded-[24px] bg-gradient-to-br from-[#EFBF04] via-[#FFD700] to-[#D4AF37] shadow-2xl z-10"
+      >
+        {/* Inner White Container */}
+        <div className="bg-white rounded-[22px] overflow-hidden w-full h-full flex flex-col">
+          {/* Header: Custom Maroon Gradient */}
+          <div className="flex items-center justify-between px-6 py-5 bg-gradient-to-b from-[#4e0505] to-[#3a0000] border-b border-[#EFBF04]/30">
+            <div>
+              <h2 className="text-[20px] font-bold font-montserrat text-white tracking-wide">
+                Filter Posts
+              </h2>
+              <p className="text-white/70 text-xs font-ptsans mt-0.5">
+                Customize your feed view
+              </p>
+            </div>
+            <motion.button
+              onClick={handleCancel}
+              whileHover={{
+                scale: 1.1,
+                backgroundColor: "rgba(255,255,255,0.1)",
+              }}
+              whileTap={{ scale: 0.9 }}
+              className="p-2 rounded-full text-white/80 hover:text-white transition-colors cursor-pointer border border-white/10"
+            >
+              <X size={20} />
+            </motion.button>
+          </div>
+
+          {/* Body */}
+          <div className="p-6 space-y-6">
+            <FilterRadioGroup
+              label="Sort by"
+              options={["Newest First", "Oldest First"]}
+              activeOption={tempFilters.sort}
+              onChange={(val) =>
+                setTempFilters((prev) => ({
+                  ...prev,
+                  sort: val as SortOption,
+                }))
+              }
+            />
+
+            <FilterRadioGroup
+              label="Date"
+              options={["Today", "This Week", "This Month", "All Time"]}
+              activeOption={tempFilters.date}
+              onChange={(val) =>
+                setTempFilters((prev) => ({
+                  ...prev,
+                  date: val as DateOption,
+                }))
+              }
+            />
+
+            <FilterRadioGroup
+              label="Visibility"
+              options={["Global", "Course", "All"]}
+              activeOption={tempFilters.visibility}
+              onChange={(val) =>
+                setTempFilters((prev) => ({
+                  ...prev,
+                  visibility: val as VisibilityOption,
+                }))
+              }
+              disabledOptions={isHighlights ? ["Course", "All"] : []}
+            />
+          </div>
+
+          {/* Footer */}
+          <div className="px-6 py-5 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+            <motion.button
+              onClick={handleCancel}
+              whileHover={{ scale: 1.02, backgroundColor: "#e5e7eb" }}
+              whileTap={{ scale: 0.98 }}
+              className="px-5 cursor-pointer py-2.5 rounded-xl text-[14px] font-bold font-montserrat text-gray-600 bg-white border border-gray-200 hover:border-gray-300 transition-colors shadow-sm"
+            >
+              Cancel
+            </motion.button>
+            <motion.button
+              onClick={handleSave}
+              whileHover={{ scale: 1.02, filter: "brightness(1.1)" }}
+              whileTap={{ scale: 0.98 }}
+              className="px-6 py-2.5 cursor-pointer rounded-xl text-[14px] font-bold font-montserrat text-white bg-gradient-to-br from-[#EFBF04] via-[#FFD700] to-[#D4AF37] shadow-md flex items-center gap-2"
+            >
+              <Check size={16} strokeWidth={3} />
+              Apply Filters
+            </motion.button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+
+  return (
+    <>
+      {/* --- TRIGGER BAR (In Sidebar) --- */}
+      <div className="w-full max-w-[320px] rounded-lg border border-gray-200 shadow-sm overflow-hidden bg-gradient-to-b from-[#6E0A0A] to-[#4e0505]">
+        <div className="flex w-full items-center gap-2 p-2 pl-3">
+          <span className="text-[16px] font-bold text-white font-montserrat">
+            Filter
+          </span>
+
+          <div className="h-5 w-[1px] bg-white/20 shrink-0" />
+
+          <motion.button
+            onClick={handleToggleOpen}
+            whileHover={{
+              scale: 1.1,
+              backgroundColor: "rgba(255,255,255,0.1)",
+            }}
+            whileTap={{ scale: 0.9 }}
+            className="p-1.5 rounded-md text-white/80 hover:text-white transition-colors cursor-pointer shrink-0"
+            aria-label="Open filters"
+          >
+            <SlidersHorizontal size={18} />
+          </motion.button>
+
+          {/* Tags List: HIDDEN scrollbar */}
+          <div className="flex flex-1 items-center gap-1 overflow-x-auto py-[3px] hide-scrollbar mask-linear-fade">
+            <FilterTag label={activeFilters.sort} />
+            <FilterTag label={activeFilters.visibility} />
+            <FilterTag label={activeFilters.date} />
+          </div>
         </div>
       </div>
 
-      {/* 2. ANIMATED EXPANDABLE CONTENT */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="overflow-hidden bg-white"
-          >
-            <div className="p-6 pt-4">
-              {/* --- Sort By --- */}
-              <FilterRadioGroup
-                label="Sort by"
-                options={["Newest First", "Oldest First"]}
-                activeOption={tempFilters.sort}
-                onChange={(val) =>
-                  setTempFilters((prev) => ({
-                    ...prev,
-                    sort: val as SortOption,
-                  }))
-                }
-              />
-
-              {/* --- Date --- */}
-              <FilterRadioGroup
-                label="Date"
-                options={["Today", "This Week", "This Month", "All Time"]}
-                activeOption={tempFilters.date}
-                onChange={(val) =>
-                  setTempFilters((prev) => ({
-                    ...prev,
-                    date: val as DateOption,
-                  }))
-                }
-              />
-
-              {/* --- Visibility --- */}
-              <FilterRadioGroup
-                label="Visibility"
-                options={["Global", "Course", "All"]}
-                activeOption={tempFilters.visibility}
-                onChange={(val) =>
-                  setTempFilters((prev) => ({
-                    ...prev,
-                    visibility: val as VisibilityOption,
-                  }))
-                }
-                disabledOptions={isHighlights ? ["Course", "All"] : []}
-              />
-
-              {/* --- Action Buttons --- */}
-              <div className="mt-6 flex justify-end gap-3 border-t pt-4">
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleCancel}
-                  className="rounded-lg bg-gray-200 px-5 py-2 text-[15px] font-semibold text-gray-700 transition-colors hover:bg-gray-300 cursor-pointer"
-                >
-                  Cancel
-                </motion.button>
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleSave}
-                  className="rounded-lg bg-maroon px-5 py-2 text-[15px] font-semibold text-white transition-colors hover:bg-maroon/90 cursor-pointer"
-                >
-                  Save
-                </motion.button>
-              </div>
-            </div>
-          </motion.div>
+      {/* --- RENDER MODAL --- */}
+      {mounted &&
+        createPortal(
+          <AnimatePresence>{isOpen && modalContent}</AnimatePresence>,
+          document.body
         )}
-      </AnimatePresence>
-    </div>
+    </>
   );
 }
 
 // --- HELPER COMPONENT ---
-
 interface FilterRadioGroupProps {
   label: string;
   options: string[];
@@ -216,43 +277,42 @@ function FilterRadioGroup({
   disabledOptions = [],
 }: FilterRadioGroupProps) {
   return (
-    <div className="mb-4 border-b pb-4 last:border-0 last:pb-0">
-      <span className="text-sm font-semibold text-gray-500">{label}</span>
-      <div className="mt-2 flex flex-wrap items-center gap-3">
+    <div className="space-y-3">
+      <span className="text-xs font-bold text-gray-500 uppercase tracking-wider font-montserrat">
+        {label}
+      </span>
+      <div className="flex flex-wrap items-center gap-2">
         {options.map((option) => {
           const isDisabled = disabledOptions.includes(option);
+          const isActive = activeOption === option;
 
           return (
             <motion.button
-              whileTap={!isDisabled ? { scale: 0.95 } : {}}
               key={option}
               onClick={() => onChange(option)}
               disabled={isDisabled}
-              className={`flex items-center gap-2 rounded-full border px-4 py-1.5 transition-all ${
-                // Simplified border logic for cleaner active states
-                activeOption === option
-                  ? "border-maroon bg-maroon/5"
-                  : "border-gray-300 bg-transparent"
-              } ${
-                isDisabled
-                  ? "cursor-not-allowed opacity-50"
-                  : "cursor-pointer hover:border-maroon/50"
-              }`}
+              whileHover={!isDisabled ? { scale: 1.05 } : {}}
+              whileTap={!isDisabled ? { scale: 0.95 } : {}}
+              className={`
+                relative flex items-center gap-2 px-4 py-2 rounded-[10px] border text-[14px] font-medium transition-colors duration-200 font-montserrat
+                ${
+                  isActive
+                    ? "bg-gradient-to-b from-[#6E0A0A] to-[#4e0505] text-white shadow-md"
+                    : "border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50"
+                }
+                ${
+                  isDisabled
+                    ? "cursor-not-allowed opacity-50"
+                    : "cursor-pointer"
+                }
+              `}
             >
-              {activeOption === option ? (
-                <Circle size={18} className="text-maroon" fill="currentColor" />
+              {isActive ? (
+                <Circle size={14} className="fill-white text-white" />
               ) : (
-                <Circle size={18} className="text-gray-400" />
+                <Circle size={14} className="text-gray-300" />
               )}
-              <span
-                className={`text-[15px] ${
-                  activeOption === option
-                    ? "font-semibold text-maroon"
-                    : "font-medium text-gray-600"
-                }`}
-              >
-                {option}
-              </span>
+              {option}
             </motion.button>
           );
         })}

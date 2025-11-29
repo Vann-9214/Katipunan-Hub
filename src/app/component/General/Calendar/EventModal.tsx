@@ -33,6 +33,7 @@ interface EventModalProps {
   setShowAddEvent: (show: boolean) => void;
   postedEvents: PostedEvent[];
   setPostedEvents: React.Dispatch<React.SetStateAction<PostedEvent[]>>;
+  user: User | null; // Added user prop
 }
 
 export default function EventModal({
@@ -40,6 +41,7 @@ export default function EventModal({
   setShowAddEvent,
   postedEvents,
   setPostedEvents,
+  user,
 }: EventModalProps) {
   const [userRole, setUserRole] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState("");
@@ -206,7 +208,9 @@ export default function EventModal({
 
         {/* DATE PICKER */}
         <div className="mb-4">
-          <label className="block text-lg font-semibold mb-2">Select Date</label>
+          <label className="block text-lg font-semibold mb-2">
+            Select Date
+          </label>
           <input
             type="date"
             className="w-full border border-gray-300 rounded-lg p-3 text-base focus:ring-2 focus:ring-yellow-400"
@@ -215,7 +219,7 @@ export default function EventModal({
           />
         </div>
 
-        {/* AUDIENCE SELECTOR */}
+        {/* AUDIENCE SELECTOR - DYNAMIC BASED ON ROLE */}
         <div className="flex gap-4 mb-4">
           {audienceOptions.map((type) => (
             <button
@@ -300,7 +304,9 @@ export default function EventModal({
 
         {/* EVENT TITLE with checkmark */}
         <div className="mb-4 relative">
-          <label className="block text-lg font-semibold mb-2">Event Title</label>
+          <label className="block text-lg font-semibold mb-2">
+            Event Title
+          </label>
           <input
             type="text"
             className="w-full border border-gray-300 rounded-lg p-3 text-base focus:ring-2 focus:ring-yellow-400 pr-10"
@@ -308,7 +314,7 @@ export default function EventModal({
             onChange={(e) => setEventTitle(e.target.value)}
             placeholder="Enter event title"
             onKeyPress={(e) => {
-              if (e.key === 'Enter') {
+              if (e.key === "Enter") {
                 createAndAddPostedEvent();
               }
             }}
@@ -352,7 +358,9 @@ export default function EventModal({
                   }
                   title="Remove event"
                 >
-                  <span className="text-red-500 font-bold text-xl hover:text-red-700">×</span>
+                  <span className="text-red-500 font-bold text-xl hover:text-red-700">
+                    ×
+                  </span>
                 </button>
               </div>
             ))

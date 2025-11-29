@@ -50,6 +50,7 @@ export default function CalendarContent() {
   const [newReminder, setNewReminder] = useState("");
   const [personalEvents, setPersonalEvents] = useState<PersonalEvent[]>([]);
   const [postedEvents, setPostedEvents] = useState<PostedEvent[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   // ---------------------
   // Calendar helpers
@@ -515,12 +516,13 @@ export default function CalendarContent() {
         />
       </button>
 
-      {/* Event Modal */}
+      {/* Event Modal - PASSED CURRENT USER */}
       <EventModal
         showAddEvent={showAddEvent}
         setShowAddEvent={setShowAddEvent}
         postedEvents={postedEvents}
         setPostedEvents={setPostedEvents}
+        user={currentUser}
       />
 
       {/* Reminder Panel */}

@@ -25,9 +25,11 @@ export interface Booking {
     studentID: string;
     avatarURL: string;
   };
+  // --- UPDATED: Added avatarURL ---
   Tutor?: {
     id: string;
     fullName: string;
+    avatarURL: string | null;
   };
   TutorRatings?: TutorRating[];
 }
@@ -36,6 +38,9 @@ export interface TutorRating {
   rating: number;
   review: string;
 }
+
+// Define a type for our ratings map
+type RatingsMap = Map<string, TutorRating>;
 
 export type MonthBooking = Pick<Booking, "id" | "bookingDate" | "status" | "approvedBy" | "startTime" | "endTime">;
 
@@ -76,11 +81,13 @@ export const usePLCBookings = (
   
   // Loading States
   const [isLoadingDayBookings, setIsLoadingDayBookings] = useState(false);
-  const [isInitialLoading, setIsInitialLoading] = useState(true); // Start TRUE for immediate feedback
+  const [isInitialLoading, setIsInitialLoading] = useState(true); 
 
   const [isTutor, setIsTutor] = useState(false);
   const [myRejections, setMyRejections] = useState<string[]>([]);
-  const [myRatedBookingIds, setMyRatedBookingIds] = useState<string[]>([]);
+  
+  // State to store actual rating values, not just IDs
+  const [myRatingsMap, setMyRatingsMap] = useState<RatingsMap>(new Map());
 
   // Refs to track state without re-rendering
   const isFetchingRef = useRef(false);
@@ -95,7 +102,6 @@ export const usePLCBookings = (
           setIsTutor(true);
         }
       } else {
-        // If no user is found, stop loading so the app doesn't hang
         setIsInitialLoading(false);
       }
     };
@@ -105,15 +111,23 @@ export const usePLCBookings = (
   // --- 1. HELPERS ---
 
   const fetchMyRatings = useCallback(async () => {
-    if (!currentUser) return [];
+    if (!currentUser) return new Map();
+    
     const { data } = await supabase
       .from("TutorRatings")
-      .select("booking_id")
+      .select("booking_id, rating, review")
       .eq("student_id", currentUser.id);
     
-    const ids = data?.map((row) => row.booking_id) || [];
-    setMyRatedBookingIds(ids);
-    return ids;
+    const map = new Map<string, TutorRating>();
+    
+    if (data) {
+        data.forEach((row: any) => {
+            map.set(row.booking_id, { rating: row.rating, review: row.review });
+        });
+    }
+    
+    setMyRatingsMap(map);
+    return map;
   }, [currentUser]);
 
   const fetchMyRejections = useCallback(async () => {
@@ -161,12 +175,9 @@ export const usePLCBookings = (
     }
   }, [currentUser, year, monthIndex, isTutor]);
 
-  const fetchDayBookings = useCallback(async (silent = false, currentRatedIds: string[] = []) => {
+  const fetchDayBookings = useCallback(async (silent = false, passedMap: RatingsMap | null = null) => {
     if (!currentUser) return;
 
-    // --- FIX: Determine an effective date to fetch ---
-    // If selectedDate is null (like in PLCContent), default to Today (if in current month) or 1st.
-    // This ensures the promise actually does work and waits, keeping the loading screen up.
     let targetDay = selectedDate;
     if (!targetDay) {
       const now = new Date();
@@ -181,13 +192,13 @@ export const usePLCBookings = (
 
     const dateQuery = getDateString(year, monthIndex, targetDay);
 
-    // FIX: Using EXACT Mixed-Case constraint names from your DDL
+    // --- UPDATED: Added avatarURL to Tutor selection ---
     let query = supabase
       .from("PLCBookings")
       .select(`
         *, 
         Accounts:Accounts!PLCBookings_studentId_fkey (fullName, course, year, studentID, avatarURL), 
-        Tutor:Accounts!PLCBookings_approvedBy_fkey (id, fullName)
+        Tutor:Accounts!PLCBookings_approvedBy_fkey (id, fullName, avatarURL)
       `)
       .eq("bookingDate", dateQuery)
       .in("status", ["Pending", "Approved", "Rejected", "Completed"])
@@ -216,13 +227,18 @@ export const usePLCBookings = (
         return true;
       });
 
-      const idsToCheck = currentRatedIds.length > 0 ? currentRatedIds : myRatedBookingIds;
+      // Use passed map or fallback to state
+      const mapToUse = passedMap || myRatingsMap;
       
-      const mappedData = filtered.map((booking) => ({
-        ...booking,
-        hasRejected: myRejections.includes(booking.id),
-        TutorRatings: idsToCheck.includes(booking.id) ? [{ rating: 5, review: "Rated" }] : [],
-      }));
+      const mappedData = filtered.map((booking) => {
+        const ratingData = mapToUse.get(booking.id);
+        
+        return {
+          ...booking,
+          hasRejected: myRejections.includes(booking.id),
+          TutorRatings: ratingData ? [ratingData] : [],
+        };
+      });
 
       setDayBookings(mappedData);
     } else {
@@ -230,17 +246,18 @@ export const usePLCBookings = (
     }
 
     if (!silent) setIsLoadingDayBookings(false);
-  }, [currentUser, selectedDate, monthIndex, year, isTutor, myRejections, myRatedBookingIds]);
+  }, [currentUser, selectedDate, monthIndex, year, isTutor, myRejections, myRatingsMap]);
 
-  const fetchHistoryBookings = useCallback(async (currentRatedIds: string[] = []) => {
+  const fetchHistoryBookings = useCallback(async (passedMap: RatingsMap | null = null) => {
     if (!currentUser) return;
     
+    // --- UPDATED: Added avatarURL to Tutor selection ---
     let query = supabase
       .from("PLCBookingHistory")
       .select(`
         *, 
         Accounts:Accounts!plcbookinghistory_studentid_fkey (fullName, course, year, studentID, avatarURL), 
-        Tutor:Accounts!plcbookinghistory_approvedby_fkey (id, fullName)
+        Tutor:Accounts!plcbookinghistory_approvedby_fkey (id, fullName, avatarURL)
       `)
       .order("bookingDate", { ascending: false });
 
@@ -258,35 +275,36 @@ export const usePLCBookings = (
     }
     
     if (data) {
-      const idsToCheck = currentRatedIds.length > 0 ? currentRatedIds : myRatedBookingIds;
+      const mapToUse = passedMap || myRatingsMap;
       
-      const mappedHistory = data.map((booking: any) => ({
-        ...booking,
-        TutorRatings: idsToCheck.includes(booking.id) ? [{ rating: 5, review: "Rated" }] : [],
-      }));
+      const mappedHistory = data.map((booking: any) => {
+        const ratingData = mapToUse.get(booking.id);
+        
+        return {
+          ...booking,
+          TutorRatings: ratingData ? [ratingData] : [],
+        };
+      });
 
       setHistoryBookings(mappedHistory);
     }
-  }, [currentUser, isTutor, myRatedBookingIds]);
+  }, [currentUser, isTutor, myRatingsMap]);
 
   // --- 3. CENTRAL REFRESH ---
   const refreshBookings = useCallback(async (silent = false) => {
     if (isFetchingRef.current) return;
     isFetchingRef.current = true;
 
-    // Only show full screen loader if not silent
     if (!silent) setIsInitialLoading(true);
     
     try {
-      const freshRatedIds = await fetchMyRatings();
+      const freshRatingsMap = await fetchMyRatings();
       
-      // Execute all fetches. Because fetchDayBookings now defaults to a date,
-      // this Promise.all will wait for the day data too!
       await Promise.all([
         fetchMyRejections(),
         fetchMonthBookings(),
-        fetchDayBookings(silent, freshRatedIds), 
-        fetchHistoryBookings(freshRatedIds)      
+        fetchDayBookings(silent, freshRatingsMap), 
+        fetchHistoryBookings(freshRatingsMap)      
       ]);
     } catch (error) {
       console.error("Critical error during refreshBookings:", error);
@@ -296,13 +314,55 @@ export const usePLCBookings = (
     }
   }, [fetchMyRatings, fetchMyRejections, fetchMonthBookings, fetchDayBookings, fetchHistoryBookings]);
 
-  // --- 4. CLEANUP ENGINE ---
+  // --- 4. CLEANUP ENGINE (UPDATED FOR NOTIFICATIONS) ---
   const cleanupExpired = useCallback(async () => {
     const now = new Date();
     const dateStr = getDateString(now.getFullYear(), now.getMonth(), now.getDate());
-    const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0') + ':00';
+    // Ensure time string includes seconds for precise database comparison
+    const timeStr = now.toLocaleTimeString('en-GB', { hour12: false }); // "HH:mm:ss"
 
     try {
+      // --- STEP 1: NOTIFY STUDENTS BEFORE ARCHIVING ---
+      // Identify Approved bookings that have expired right now
+      const { data: completedCandidates } = await supabase
+        .from("PLCBookings")
+        .select("id, studentId, subject")
+        .eq("status", "Approved")
+        .or(`bookingDate.lt.${dateStr},and(bookingDate.eq.${dateStr},endTime.lte.${timeStr})`);
+
+      if (completedCandidates && completedCandidates.length > 0) {
+         const notificationsToInsert = [];
+
+         // Build notifications but check for duplicates first
+         for (const b of completedCandidates) {
+             const title = `Your PLC session for "${b.subject}" has been completed.`;
+             
+             // 1a. Check if we already notified this user about this specific completion
+             // This prevents spam if the interval runs multiple times before the item is archived
+             const { data: existing } = await supabase
+                .from("UserNotifications")
+                .select("id")
+                .eq("user_id", b.studentId)
+                .eq("title", title)
+                .maybeSingle();
+
+             if (!existing) {
+                 notificationsToInsert.push({
+                    user_id: b.studentId,
+                    title: title,
+                    type: 'system',
+                    is_read: false
+                 });
+             }
+         }
+
+         // 1b. Insert only new notifications
+         if (notificationsToInsert.length > 0) {
+             await supabase.from("UserNotifications").insert(notificationsToInsert);
+         }
+      }
+
+      // --- STEP 2: ARCHIVE (Move to History) ---
       await Promise.all([
         supabase.rpc('move_and_archive_bookings', {
           check_date: dateStr,
@@ -318,7 +378,6 @@ export const usePLCBookings = (
           .or(`bookingDate.lt.${dateStr},and(bookingDate.eq.${dateStr},startTime.lte.${timeStr})`)
       ]);
 
-      // Silent refresh after cleanup
       setTimeout(() => refreshBookings(true), 500);
 
     } catch (err) {
@@ -338,9 +397,19 @@ export const usePLCBookings = (
     if (!error) refreshBookings(false);
   };
 
+  // --- UPDATED DELETE HISTORY WITH LOGGING ---
   const deleteHistoryBooking = async (bookingId: string) => {
-    const { error } = await supabase.from("PLCBookingHistory").delete().eq("id", bookingId);
-    if (!error) refreshBookings(false);
+    const { error } = await supabase
+      .from("PLCBookingHistory")
+      .delete()
+      .eq("id", bookingId);
+
+    if (error) {
+      console.error("Failed to delete history:", error.message);
+      alert(`Delete failed: ${error.message}. Check your database permissions.`);
+    } else {
+      refreshBookings(false);
+    }
   };
 
   const approveBooking = async (bookingId: string) => {
@@ -352,8 +421,12 @@ export const usePLCBookings = (
     if (!error) refreshBookings(false);
   }
 
+  // --- FIXED: DENY BOOKING (REMOVED DUPLICATE LOGIC) ---
+  // We simply call the RPC. We do NOT fetch data or insert notifications client-side.
+  // This prevents double notifications if the backend is already sending one.
   const denyBooking = async (bookingId: string) => {
     const { error } = await supabase.rpc("deny_booking", { booking_id: bookingId });
+    
     if (!error) {
       setMyRejections(prev => [...prev, bookingId]);
       refreshBookings(false);
@@ -390,16 +463,10 @@ export const usePLCBookings = (
   // --- EFFECTS ---
 
   // 1. MAIN DATA FETCHING
-  // Runs when dependencies change (like switching months/days).
-  // USES isFirstLoad to determine if it should show the full-screen loader.
   useEffect(() => {
     if (currentUser) {
       const shouldShowLoader = isFirstLoad.current;
-      
-      // If it's the first load, pass FALSE to 'silent' (show loader).
-      // If it's NOT first load (switching dates), pass TRUE to 'silent' (hide loader).
       refreshBookings(!shouldShowLoader); 
-      
       if (shouldShowLoader) {
         isFirstLoad.current = false;
       }
@@ -407,7 +474,6 @@ export const usePLCBookings = (
   }, [currentUser, year, monthIndex, selectedDate, isTutor]);
 
   // 2. CLEANUP ON MOUNT
-  // Runs only ONCE when the component mounts to clean db.
   useEffect(() => {
     if (currentUser) {
         cleanupExpired();
