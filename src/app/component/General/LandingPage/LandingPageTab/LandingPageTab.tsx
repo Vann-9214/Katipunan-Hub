@@ -6,9 +6,9 @@ import SignInForm from "./SignInForms";
 import Button from "../../../ReusableComponent/Buttons";
 import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import { usePathname } from "next/navigation";
+import ForgotPasswordForm from "./ForgotPasswordForm"; // ADDED
 
-type AuthMode = "signin" | "signup" | null;
+type AuthMode = "signin" | "signup" | "forgotpassword" | null; // UPDATED
 
 export default function LandingPageTab() {
   const [authMode, setAuthMode] = useState<AuthMode>(null);
@@ -16,6 +16,7 @@ export default function LandingPageTab() {
   const handleClose = () => setAuthMode(null);
   const handleSwitchToSignUp = () => setAuthMode("signup");
   const handleSwitchToSignIn = () => setAuthMode("signin");
+  const handleSwitchToForgotPassword = () => setAuthMode("forgotpassword"); // ADDED
 
   return (
     <div className="z-50 fixed top-0 left-0 py-2 flex shadow-md bg-white w-full h-auto min-h-[60px] max-h-[80px] justify-between items-center">
@@ -32,13 +33,13 @@ export default function LandingPageTab() {
         />
       </div>
 
-      {/* REMOVED mode="wait" to allow smooth crossfade transition */}
       <AnimatePresence>
         {authMode === "signin" && (
           <SignInForm
             key="signin"
             onClose={handleClose}
-            onSwitch={handleSwitchToSignUp}
+            onSwitchToSignUp={handleSwitchToSignUp} // UPDATED PROP NAME
+            onSwitchToForgotPassword={handleSwitchToForgotPassword} // ADDED
           />
         )}
         {authMode === "signup" && (
@@ -46,6 +47,13 @@ export default function LandingPageTab() {
             key="signup"
             onClose={handleClose}
             onSwitch={handleSwitchToSignIn}
+          />
+        )}
+        {authMode === "forgotpassword" && ( // ADDED
+          <ForgotPasswordForm
+            key="forgotpassword"
+            onClose={handleClose}
+            onSwitchToSignIn={handleSwitchToSignIn}
           />
         )}
       </AnimatePresence>

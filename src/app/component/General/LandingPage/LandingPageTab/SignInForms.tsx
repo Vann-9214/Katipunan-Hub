@@ -12,10 +12,16 @@ import TextBox from "@/app/component/ReusableComponent/Textbox";
 
 interface SignInFormProps {
   onClose?: () => void;
-  onSwitch?: () => void;
+  onSwitchToSignUp?: () => void;
+  onSwitchToForgotPassword?: () => void; // ADDED
 }
 
-export default function SignInForm({ onClose, onSwitch }: SignInFormProps) {
+export default function SignInForm({
+  onClose,
+  onSwitchToSignUp,
+  onSwitchToForgotPassword,
+}: SignInFormProps) {
+  // UPDATED
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -153,7 +159,7 @@ export default function SignInForm({ onClose, onSwitch }: SignInFormProps) {
                 rightLabel="Sign Up"
                 active="left"
                 onToggle={(side) => {
-                  if (side === "right") onSwitch?.();
+                  if (side === "right") onSwitchToSignUp?.(); // UPDATED
                 }}
               />
             </div>
@@ -192,6 +198,7 @@ export default function SignInForm({ onClose, onSwitch }: SignInFormProps) {
                   <div className="flex justify-end">
                     <button
                       type="button"
+                      onClick={onSwitchToForgotPassword}
                       className="text-xs font-semibold text-gray-500 hover:text-maroon transition-colors cursor-pointer mt-1"
                     >
                       Forgot Password?
@@ -214,7 +221,7 @@ export default function SignInForm({ onClose, onSwitch }: SignInFormProps) {
                 Don&apos;t have an account?{" "}
                 <button
                   type="button"
-                  onClick={onSwitch}
+                  onClick={onSwitchToSignUp} // UPDATED
                   className="font-bold text-maroon hover:underline cursor-pointer"
                 >
                   Sign Up
