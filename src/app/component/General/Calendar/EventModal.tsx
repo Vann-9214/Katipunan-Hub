@@ -38,7 +38,6 @@ interface EventModalProps {
 export default function EventModal({
   showAddEvent,
   setShowAddEvent,
-  postedEvents,
   setPostedEvents,
 }: EventModalProps) {
   const [userRole, setUserRole] = useState<string>("");
@@ -65,7 +64,7 @@ export default function EventModal({
           return;
         }
 
-        const { data: account, error: accountError } = await supabase
+        const { data: account } = await supabase
           .from("Accounts")
           .select("role")
           .eq("id", user.id)

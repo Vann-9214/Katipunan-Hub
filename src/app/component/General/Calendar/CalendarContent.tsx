@@ -166,19 +166,29 @@ export default function CalendarContent() {
     setMenuOpen(false);
   }
 
-  // ---------------------
-  // Helpers for calendar day rendering
-  // ---------------------
-  const getEventLabel = (ev: any): string => {
-    if (!ev) return "";
-    if (typeof ev === "string") return ev;
-    if ("title" in ev && ev.title) return String(ev.title);
-    if ("name" in ev && ev.name) return String(ev.name);
-    return String(ev.title ?? ev.name ?? "");
+  type CalendarEvent =
+    | Holiday
+    | PostedEvent
+    | PersonalEvent
+    | string
+    | null
+    | undefined;
+
+  const getEventLabel = (ev: CalendarEvent): string => {
+    if (!ev || typeof ev === "string") return String(ev ?? "");
+
+    if ("title" in ev && ev.title) {
+      return String(ev.title);
+    }
+
+    if ("name" in ev && ev.name) {
+      return String(ev.name);
+    }
+
+    return "";
   };
 
-  // Deterministic color based on event content to avoid hydration mismatch
-  const getEventColor = (event: any, index: number) => {
+  const getEventColor = (event: CalendarEvent, index: number) => {
     const colors = ["#C4E1A4", "#FAD6A5", "#A0D8EF", "#F6B6B6", "#D9B3FF"];
     const label = getEventLabel(event);
     const hash = label
