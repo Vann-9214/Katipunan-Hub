@@ -86,6 +86,9 @@ export default function FeedCard({ post }: { post: FeedPost }) {
           topReactions={topReactions}
           totalCount={reactionCount}
           isLoading={isInitialLoading}
+          // --- PASSING PROPS FOR HOVER ---
+          referenceId={post.id}
+          sourceType="feed"
         />
       </div>
 
