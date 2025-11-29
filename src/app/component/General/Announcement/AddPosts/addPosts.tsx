@@ -97,7 +97,7 @@ export default function AddPosts(props: AddPostsProps) {
                 <Avatar
                   avatarURL={author.avatarURL}
                   altText={author.fullName}
-                  className="w-[52px] h-[52px] border-2 border-[#FFD700]/30 shadow-md relative z-10"
+                  className="w-[52px] h-[52px] shadow-md relative z-10"
                 />
               ) : (
                 <Image

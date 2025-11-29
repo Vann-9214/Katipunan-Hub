@@ -29,8 +29,8 @@ export default function FeedsLeftBar({
           textSize="text-[16px]"
           leftLabel="Feed"
           rightLabel="PLC"
-          leftActiveBg="bg-maroon"
-          rightActiveBg="bg-gold"
+          leftActiveBg="bg-gradient-to-b from-[#6E0A0A] to-[#4e0505]"
+          rightActiveBg="bg-gradient-to-br from-[#EFBF04] via-[#FFD700] to-[#D4AF37]"
           active={activeTab === "feed" ? "left" : "right"}
           onToggle={(side) => onTabToggle(side === "left" ? "feed" : "plc")}
         />

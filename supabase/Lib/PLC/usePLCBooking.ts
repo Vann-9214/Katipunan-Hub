@@ -1,5 +1,3 @@
-// supabase/Lib/PLC/usePLCBooking.ts
-
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -27,9 +25,11 @@ export interface Booking {
     studentID: string;
     avatarURL: string;
   };
+  // --- UPDATED: Added avatarURL ---
   Tutor?: {
     id: string;
     fullName: string;
+    avatarURL: string | null;
   };
   TutorRatings?: TutorRating[];
 }
@@ -192,12 +192,13 @@ export const usePLCBookings = (
 
     const dateQuery = getDateString(year, monthIndex, targetDay);
 
+    // --- UPDATED: Added avatarURL to Tutor selection ---
     let query = supabase
       .from("PLCBookings")
       .select(`
         *, 
         Accounts:Accounts!PLCBookings_studentId_fkey (fullName, course, year, studentID, avatarURL), 
-        Tutor:Accounts!PLCBookings_approvedBy_fkey (id, fullName)
+        Tutor:Accounts!PLCBookings_approvedBy_fkey (id, fullName, avatarURL)
       `)
       .eq("bookingDate", dateQuery)
       .in("status", ["Pending", "Approved", "Rejected", "Completed"])
@@ -250,12 +251,13 @@ export const usePLCBookings = (
   const fetchHistoryBookings = useCallback(async (passedMap: RatingsMap | null = null) => {
     if (!currentUser) return;
     
+    // --- UPDATED: Added avatarURL to Tutor selection ---
     let query = supabase
       .from("PLCBookingHistory")
       .select(`
         *, 
         Accounts:Accounts!plcbookinghistory_studentid_fkey (fullName, course, year, studentID, avatarURL), 
-        Tutor:Accounts!plcbookinghistory_approvedby_fkey (id, fullName)
+        Tutor:Accounts!plcbookinghistory_approvedby_fkey (id, fullName, avatarURL)
       `)
       .order("bookingDate", { ascending: false });
 

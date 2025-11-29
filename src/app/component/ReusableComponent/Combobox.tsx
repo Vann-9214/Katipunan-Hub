@@ -223,8 +223,9 @@ export function Combobox({
                       setOpen(false);
                       onChange?.(newValue);
                     }}
+                    /* Added whitespace-nowrap to prevent text wrapping on short widths */
                     className={cn(
-                      "cursor-pointer px-4",
+                      "cursor-pointer px-4 whitespace-nowrap",
                       // Apply the same text size and font to items
                       font,
                       textSize,
