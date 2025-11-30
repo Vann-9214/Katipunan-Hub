@@ -318,14 +318,30 @@ export default function AccountPage() {
                 />
               ))
             ) : (
-              <div className="w-full p-[2px] rounded-[20px] bg-gradient-to-br from-[#EFBF04] via-[#FFD700] to-[#D4AF37] opacity-80">
-                <div className="bg-white p-8 rounded-[18px] text-center">
-                  <h3 className="text-lg font-bold text-gray-700 mb-1 font-montserrat">
-                    No posts yet
-                  </h3>
-                  <p className="text-gray-500 text-sm font-ptsans">
-                    Share something with the community to get started!
-                  </p>
+              // --- EDITED: No Posts Card with Theme (Gold Border, Maroon Header, White Body) ---
+              <div className="w-[590px] p-[2px] rounded-[20px] bg-gradient-to-br from-[#EFBF04] via-[#FFD700] to-[#D4AF37] shadow-xl">
+                <div className="bg-white w-full h-full rounded-[18px] flex flex-col overflow-hidden">
+                  {/* Header */}
+                  <div className="px-6 py-4 border-b border-[#EFBF04]/30 bg-gradient-to-b from-[#4e0505] to-[#3a0000] flex items-center gap-3">
+                    <div className="p-1.5 bg-white/10 rounded-full border border-white/10">
+                      <Pen size={18} className="text-[#EFBF04]" />
+                    </div>
+                    <h3 className="font-montserrat font-bold text-[18px] text-white tracking-wide">
+                      Timeline
+                    </h3>
+                  </div>
+                  {/* Body */}
+                  <div className="p-10 text-center flex flex-col items-center">
+                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-3 border border-gray-100">
+                      <Pen size={24} className="text-gray-300" />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-700 mb-1 font-montserrat">
+                      No posts yet
+                    </h3>
+                    <p className="text-gray-500 text-sm font-ptsans">
+                      Share something with the community to get started!
+                    </p>
+                  </div>
                 </div>
               </div>
             )}

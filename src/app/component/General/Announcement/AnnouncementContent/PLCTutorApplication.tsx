@@ -94,15 +94,12 @@ const PLCTutorApplicationModal: React.FC<PLCTutorApplicationModalProps> = ({
       return;
     }
 
-    // --- REMOVED SUBJECT VALIDATION HERE TO MAKE IT OPTIONAL ---
-
     const isScholar = formData.isScholar === "scholar";
     let gradesUrl: string | null = null;
 
     try {
-      // 2. Conditional Grade/File Handling
+      // 1. Conditional Grade/File Handling
       if (!isScholar) {
-        // Non-Scholar Path: Upload file and get URL.
         if (!uploadRef.current) throw new Error("Upload component not ready.");
 
         // Use the UploadButton's internal method
@@ -118,34 +115,48 @@ const PLCTutorApplicationModal: React.FC<PLCTutorApplicationModalProps> = ({
         gradesUrl = uploadedUrls[0];
       }
 
-      // 3. Placeholder Logic: Send Application Data
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
+      // 2. Prepare Payload for API Route (MODIFIED to include user details)
       const applicationPayload = {
-        applicantId: currentUser.id,
+        applicantId: currentUser.studentID, // Use studentID for clarity
         fullName: currentUser.fullName,
+        email: currentUser.email,
         course: currentUser.course,
-        subject: formData.subject || "General", // Default if empty
+        year: currentUser.year,
+        subject: formData.subject || "General",
         isScholar: isScholar,
-        gpaStatus: isScholar ? "Scholar (Mandatory)" : "4.5+ GPA required",
         gradesProofUrl: gradesUrl,
       };
 
-      console.log("Submitting PLC Application:", applicationPayload);
+      // 3. Send Application to Secure API Route (NEW)
+      const response = await fetch("/api/tutor-application", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(applicationPayload),
+      });
 
-      alert("Application submitted! We will review your request shortly.");
+      if (!response.ok) {
+        // If the API call fails (e.g., internal server error)
+        const errorData = await response.json();
+        throw new Error(
+          errorData.message ||
+            "Failed to submit application. Please contact support."
+        );
+      }
+
+      alert(
+        "Application submitted! An admin will review your request shortly."
+      );
       onClose();
     } catch (err: unknown) {
-      // 1. Change 'any' to 'unknown'
       console.error("Application submission failed:", err);
-
-      // In a failure scenario, use the UploadButton handle to clean up storage
+      // Fallback cleanup if upload failed mid-process
       const removedUrls = uploadRef.current?.getRemovedUrls() || [];
       if (removedUrls.length > 0) {
         console.log("Cleanup initiated for partially uploaded files.");
       }
 
-      // 2. Safely extract the error message
       let errorMessage = "An unexpected error occurred during submission.";
 
       if (err instanceof Error) {
@@ -223,7 +234,6 @@ const PLCTutorApplicationModal: React.FC<PLCTutorApplicationModalProps> = ({
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 50 }}
       transition={{ duration: 0.3 }}
-      // REMOVED rigid overflow/height classes here; parent wrapper handles scrolling now
       className="p-6 flex flex-col gap-5 pb-8"
     >
       {error && (
@@ -258,7 +268,6 @@ const PLCTutorApplicationModal: React.FC<PLCTutorApplicationModalProps> = ({
           name="subject"
           value={formData.subject}
           onChange={handleChange}
-          // REMOVED required attribute
           className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 font-ptsans focus:outline-none focus:ring-2 focus:ring-[#8B0E0E]/20 focus:border-[#8B0E0E]/50 transition-all"
           placeholder="e.g., Calculus, Python, Thermodynamics"
         />

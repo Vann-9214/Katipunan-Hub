@@ -92,53 +92,52 @@ export const VISIBILITY = {
 
 // ----------------------
 // Program -> College map
-// keys are the program slugs you provided (e.g. "bs-computer-science")
+// keys are the program slugs (user.course is usually lowercased before check)
 // values are the college codes used in your Combobox (e.g. "ccs", "cea", "cba")
 export const programToCollege: Record<string, string> = {
   // Business / Accountancy
-  "bs-accountancy": "cba",
-  bsba: "cba",
-  bsoa: "cba",
+  "accountancy": "cba",
+  "business administration": "cba",
+  "office administration": "cba",
 
   // Arts & Sciences
-  "ba-english": "cas",
-  "ba-political-science": "cas",
-  "bs-psychology": "cas",
-  "bs-biology": "cas",
-  "bs-mathematics": "cas",
+  "english": "cas",
+  "political science": "cas",
+  "psychology": "cas",
+  "biology": "cas",
+  "mathematics": "cas",
 
   // Computer / IT / CCS
-  "bs-computer-science": "ccs",
-  "bs-information-technology": "ccs",
+  "computer science": "ccs",
+  "information technology": "ccs",
 
   // Engineering (CEA)
-  "bs-computer-engineering": "cea",
-  bsee: "cea",
-  bsie: "cea",
-  bsce: "cea",
-  bsme: "cea",
-  bsmining: "cea",
-  "bs-chemeng": "cea",
-  bsece: "cea",
-  "bs-architecture": "cea",
+  "computer engineering": "cea",
+  "electrical engineering": "cea",
+  "industrial engineering": "cea",
+  "civil engineering": "cea",
+  "mechanical engineering": "cea",
+  "mining engineering": "cea",
+  "chemical engineering": "cea",
+  "electronics engineering": "cea",
+  "architecture": "cea",
 
   // Education
-  beed: "coed",
-  bsed: "coed",
+  "elementary education": "coed",
+  "secondary education": "coed",
 
   // Nursing / Allied
-  bsn: "con",
-  midwifery: "con",
+  "nursing": "con",
+  "midwifery": "con",
 
   // Hospitality & Tourism
-  "bs-hrm": "chtm",
-  bstm: "chtm",
+  "hotel and restaurant management": "chtm",
+  "tourism management": "chtm",
 
-  // Industrial Technology
-  cit: "cit",
+  // Industrial Technology (General catch-all if needed)
+  "cit": "cit",
 
   // Agriculture
-  "bs-agriculture": "cagr",
-  // add more if needed
+  "agriculture": "cagr",
 };
 // ----------------------
