@@ -14,23 +14,18 @@ interface PopupConversationItemProps {
 
 export default function PopupConversationItem({
   conversation,
-  variants,
 }: PopupConversationItemProps) {
   const isActive = conversation.unreadCount > 0;
   const router = useRouter();
 
-  // --- ADDED for dropdown menu ---
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Handle main item click (navigation)
   const handleClick = () => {
     if (isMenuOpen) {
       return;
     }
-
     const navPath = `/Message/${conversation.id}`;
-    // Using the safer timeout navigation to prevent race conditions with the popup closing
     setTimeout(() => {
       router.push(navPath);
     }, 50);
@@ -71,22 +66,29 @@ export default function PopupConversationItem({
   return (
     <motion.div
       onClick={handleClick}
-      variants={variants}
-      // --- EDITED: Added border, shadow, and specific active state styling ---
+      // --- FIX: Self-contained animation ---
+      // We removed 'variants={variants}' because the parent wasn't triggering it.
+      // Now the item controls its own entrance.
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.2 }}
+      // -------------------------------------
       className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200 w-full relative group border
         ${
           isActive
-            ? "bg-[#FFFdf0] border-[#EFBF04] shadow-md" // Active: Gold tint & border
-            : "bg-white border-gray-100 hover:border-[#EFBF04]/50 hover:shadow-lg hover:bg-gray-50" // Default: White & hover effects
+            ? "bg-[#FFFdf0] border-[#EFBF04] shadow-md"
+            : "bg-white border-gray-100 hover:border-[#EFBF04]/50 hover:shadow-lg hover:bg-gray-50"
         }`}
     >
       <Avatar
         avatarURL={conversation.avatarURL}
         altText={conversation.otherUserName}
-        className="w-10 h-10 shadow-sm"
+        className="w-10 h-10"
       />
 
-      <div className="flex-1 overflow-hidden">
+      {/* Kept the min-w-0 fix from before just in case */}
+      <div className="flex-1 overflow-hidden min-w-0">
         <h3
           className={`font-montserrat font-bold text-sm truncate ${
             isActive ? "text-[#8B0E0E]" : "text-gray-800"
@@ -103,14 +105,12 @@ export default function PopupConversationItem({
         </p>
       </div>
 
-      {/* Right-side logic */}
       <div className="flex flex-col items-end justify-start h-full pt-1 min-w-[40px]">
         {isActive ? (
           <>
             <span className="text-[10px] text-[#B48E00] font-medium mb-1">
               {conversation.timestamp}
             </span>
-            {/* SHOWS EXACT UNREAD COUNT FOR THIS PERSON (e.g., 4) */}
             <AnimatePresence>
               <motion.span
                 initial={{ scale: 0 }}
