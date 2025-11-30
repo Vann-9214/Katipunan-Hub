@@ -9,7 +9,7 @@ import TextBox from "@/app/component/ReusableComponent/Textbox";
 import { Combobox } from "@/app/component/ReusableComponent/Combobox";
 import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
 import Image from "next/image";
-import { ArrowRight, CheckCircle } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 interface SignUpFormProps {
   onClose?: () => void;

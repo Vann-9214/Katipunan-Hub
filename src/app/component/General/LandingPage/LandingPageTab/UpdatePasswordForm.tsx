@@ -4,7 +4,7 @@ import { useState } from "react";
 import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { Loader2, Lock, CheckCircle2, X } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 
 import Button from "@/app/component/ReusableComponent/Buttons";
 import Logo from "@/app/component/ReusableComponent/Logo";
