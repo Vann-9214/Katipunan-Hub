@@ -8,22 +8,23 @@ import { useState, useEffect } from "react";
 import { AnimatePresence } from "framer-motion";
 import ForgotPasswordForm from "./ForgotPasswordForm";
 import EmailVerificationMessage from "./EmailVerificationMessage";
+import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
 
+// Cleaned up AuthMode: 'updatepassword' is removed as it's now internal to ForgotPasswordForm
 type AuthMode = "signin" | "signup" | "forgotpassword" | "verify" | null;
 
 export default function LandingPageTab() {
   const [authMode, setAuthMode] = useState<AuthMode>(null);
   const [signupEmail, setSignupEmail] = useState("");
 
-  // --- NEW: Check URL for redirect params ---
+  // 1. Check URL params (Only for general cleanup now)
   useEffect(() => {
-    // Safe to use window here since we are in useEffect (client-side only)
     const params = new URLSearchParams(window.location.search);
     if (params.get("auth") === "signin") {
       setAuthMode("signin");
-      // Clean up the URL without refreshing
       window.history.replaceState({}, "", "/");
     }
+    // No need to check for 'recovery' params anymore since we use OTP
   }, []);
 
   const handleClose = () => setAuthMode(null);
