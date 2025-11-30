@@ -12,35 +12,46 @@ const montserrat = Montserrat({
 
 // --- CORRECTED PROGRAMS LIST ---
 const programs = [
-  { value: "Accountancy", label: "BS Accountancy" },
-  { value: "Business Administration", label: "BS Business Administration" },
-  { value: "Office Administration", label: "BS Office Administration" },
-  { value: "English", label: "BA English" },
-  { value: "Political Science", label: "BA Political Science" },
-  { value: "Psychology", label: "BS Psychology" },
-  { value: "Biology", label: "BS Biology" },
-  { value: "Mathematics", label: "BS Mathematics" },
-  { value: "Computer Science", label: "BS Computer Science" },
-  { value: "Information Technology", label: "BS Information Technology" },
-  { value: "Computer Engineering", label: "BS Computer Engineering" },
-  { value: "Elementary Education", label: "Bachelor of Elementary Education" },
-  { value: "Secondary Education", label: "Bachelor of Secondary Education" },
-  { value: "Electrical Engineering", label: "BS Electrical Engineering" },
-  { value: "Industrial Engineering", label: "BS Industrial Engineering" },
-  { value: "Civil Engineering", label: "BS Civil Engineering" },
-  { value: "Mechanical Engineering", label: "BS Mechanical Engineering" },
-  { value: "Mining Engineering", label: "BS Mining Engineering" },
-  { value: "Chemical Engineering", label: "BS Chemical Engineering" },
-  { value: "Electronics Engineering", label: "BS Electronics Engineering" },
-  { value: "Nursing", label: "BS Nursing" },
-  { value: "Midwifery", label: "Diploma in Midwifery" },
-  { value: "Architecture", label: "BS Architecture" },
+  { value: "bs-accountancy", label: "Bachelor of Science in Accountancy" },
+  { value: "bsba", label: "Bachelor of Science in Business Administration" },
+  { value: "bsoa", label: "Bachelor of Science in Office Administration" },
+  { value: "ba-english", label: "Bachelor of Arts in English" },
   {
-    value: "Hotel and Restaurant Management",
-    label: "BS Hotel and Restaurant Management",
+    value: "ba-political-science",
+    label: "Bachelor of Arts in Political Science",
   },
-  { value: "Tourism Management", label: "BS Tourism Management" },
-  { value: "Agriculture", label: "BS Agriculture" },
+  { value: "bs-psychology", label: "Bachelor of Science in Psychology" },
+  { value: "bs-biology", label: "Bachelor of Science in Biology" },
+  { value: "bs-mathematics", label: "Bachelor of Science in Mathematics" },
+  {
+    value: "bs-computer-science",
+    label: "Bachelor of Science in Computer Science",
+  },
+  {
+    value: "bs-information-technology",
+    label: "Bachelor of Science in Information Technology",
+  },
+  {
+    value: "bs-computer-engineering",
+    label: "Bachelor of Science in Computer Engineering",
+  },
+  { value: "beed", label: "Bachelor of Elementary Education" },
+  { value: "bsed", label: "Bachelor of Secondary Education" },
+  { value: "bsee", label: "Bachelor of Science in Electrical Engineering" },
+  { value: "bsie", label: "Bachelor of Science in Industrial Engineering" },
+  { value: "bsce", label: "Bachelor of Science in Civil Engineering" },
+  { value: "bsme", label: "Bachelor of Science in Mechanical Engineering" },
+  { value: "bsmining", label: "Bachelor of Science in Mining Engineering" },
+  { value: "bs-chemeng", label: "Bachelor of Science in Chemical Engineering" },
+  { value: "bsece", label: "Bachelor of Science in Electronics Engineering" },
+  { value: "bsn", label: "Bachelor of Science in Nursing" },
+  { value: "midwifery", label: "Diploma in Midwifery" },
+  { value: "bs-architecture", label: "Bachelor of Science in Architecture" },
+  {
+    value: "bs-hrm",
+    label: "Bachelor of Science in Hotel and Restaurant Management",
+  },
+  { value: "bstm", label: "Bachelor of Science in Tourism Management" },
 ];
 
 interface EventModalProps {
@@ -62,7 +73,6 @@ export default function EventModal({
   const [eventTitle, setEventTitle] = useState("");
   const [audience, setAudience] = useState("Personal");
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
-  const [showCourseDropdown, setShowCourseDropdown] = useState(false);
 
   // Local state for events being created in this modal session
   const [pendingEvents, setPendingEvents] = useState<PostedEvent[]>([]);
@@ -108,38 +118,21 @@ export default function EventModal({
   // Check if user is admin based on "contains" logic
   const isAdmin = userRole.includes("Platform Administrator");
 
-  // Define audience options - now three options for admins
-  const audienceOptions = isAdmin
-    ? ["Personal", "Global", "Course"]
-    : ["Personal"];
+  // Define audience options - now only two options for admins
+  const audienceOptions = isAdmin ? ["Personal", "Global"] : ["Personal"];
 
   // Handle audience change - automatically set courses based on selection
   const handleAudienceChange = (type: string) => {
     setAudience(type);
-
+    
     // If Global is selected, automatically select all courses
     if (type === "Global") {
       setSelectedCourses(programs.map((p) => p.value));
     }
-    // If Personal or Course is selected, clear courses
+    // If Personal is selected, clear courses
     else if (type === "Personal") {
       setSelectedCourses([]);
     }
-    // If Course is selected, clear courses so user can select specific ones
-    else if (type === "Course") {
-      setSelectedCourses([]);
-    }
-  };
-
-  // Toggle based on the VALUE (e.g., "bs-computer-science")
-  const toggleCourse = (courseValue: string) => {
-    setSelectedCourses((prev) => {
-      if (prev.includes(courseValue)) {
-        return prev.filter((c) => c !== courseValue);
-      } else {
-        return [...prev, courseValue];
-      }
-    });
   };
 
   const createAndAddPostedEvent = () => {
@@ -152,12 +145,6 @@ export default function EventModal({
     // Validate date
     if (!selectedDate) {
       alert("Please select a date");
-      return;
-    }
-
-    // Validate course selection for Course audience
-    if (audience === "Course" && selectedCourses.length === 0) {
-      alert("Please select at least one course");
       return;
     }
 
@@ -197,7 +184,7 @@ export default function EventModal({
         // Convert the comma-separated string back to an array of values
         let coursesArray: string[] | null = null;
 
-        if (evt.audience === "Global" || evt.audience === "Course") {
+        if (evt.audience === "Global") {
           // If courses are selected, split the string back to array
           if (evt.course) {
             coursesArray = evt.course.split(", ");
@@ -293,7 +280,7 @@ export default function EventModal({
           />
         </div>
 
-        {/* AUDIENCE SELECTOR - THREE BUTTONS */}
+        {/* AUDIENCE SELECTOR - TWO BUTTONS */}
         <div className="flex gap-4 mb-4">
           {audienceOptions.map((type) => (
             <button
@@ -309,49 +296,6 @@ export default function EventModal({
             </button>
           ))}
         </div>
-
-        {/* Course Selector - Only show for "Course" audience */}
-        {isAdmin && audience === "Course" && (
-          <div className="mb-4 relative">
-            <label className="block text-lg font-semibold mb-2">
-              Select Courses
-            </label>
-            <div
-              onClick={() => setShowCourseDropdown(!showCourseDropdown)}
-              className="w-full border rounded-lg p-3 text-base min-h-[48px] flex items-center justify-between cursor-pointer border-gray-300 hover:border-yellow-400"
-            >
-              <span
-                className={selectedCourses.length === 0 ? "text-gray-400" : ""}
-              >
-                {selectedCourses.length === 0
-                  ? "Click to select courses..."
-                  : `${selectedCourses.length} course(s) selected`}
-              </span>
-              <span className="text-gray-500">▼</span>
-            </div>
-
-            {/* Dropdown with checkboxes - NO "Select All" option */}
-            {showCourseDropdown && (
-              <div className="absolute bg-white border border-gray-300 rounded-lg mt-1 w-full max-h-60 overflow-y-auto z-[999] shadow-lg">
-                {programs.map((prog) => (
-                  <div
-                    key={prog.value}
-                    className="p-3 hover:bg-yellow-50 cursor-pointer flex items-center gap-2"
-                    onClick={() => toggleCourse(prog.value)}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedCourses.includes(prog.value)}
-                      readOnly
-                      className="w-4 h-4 cursor-pointer"
-                    />
-                    <span className="text-sm">{prog.label}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
 
         {/* EVENT TITLE */}
         <div className="mb-4 relative">
@@ -399,14 +343,11 @@ export default function EventModal({
                   <p className="font-semibold">{evt.title}</p>
                   <p className="text-sm text-gray-600">
                     {evt.audience} | {evt.date}
-                    {(evt.audience === "Global" || evt.audience === "Course") &&
-                      evt.course && (
-                        <span className="block text-xs text-gray-500 mt-1 max-w-md truncate">
-                          {evt.audience === "Global"
-                            ? "All courses"
-                            : `${evt.course.split(", ").length} course(s)`}
-                        </span>
-                      )}
+                    {evt.audience === "Global" && evt.course && (
+                      <span className="block text-xs text-gray-500 mt-1 max-w-md truncate">
+                        All courses
+                      </span>
+                    )}
                   </p>
                 </div>
                 <button
