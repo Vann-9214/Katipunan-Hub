@@ -9,7 +9,7 @@ import TextBox from "@/app/component/ReusableComponent/Textbox";
 import { Combobox } from "@/app/component/ReusableComponent/Combobox";
 import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
 import Image from "next/image";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, CheckCircle } from "lucide-react";
 
 interface SignUpFormProps {
   onClose?: () => void;
@@ -144,7 +144,7 @@ export default function SignUpForm({
         options: {
           // --- THIS LINE HANDLES THE REDIRECT ---
           // We append ?auth=signin so the LandingPageTab knows what to do
-          emailRedirectTo: `${window.location.origin}/?auth=signin`,
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
           data: {
             fullName: firstName,
             studentID,

@@ -84,8 +84,7 @@ export default function SignInForm({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      // 5. FIX: Changed z-50 to z-[100] so it sits on top of the LandingPageTab
-      className="flex justify-center items-center fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] p-4"
+      className="flex justify-center items-center fixed inset-0 bg-black/60 backdrop-blur-sm z-50 p-4"
     >
       <motion.div
         initial={{ opacity: 0, y: 10 }}

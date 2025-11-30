@@ -39,9 +39,10 @@ export const config = {
      * - favicon.ico (favicon file)
      * - signin (your sign-in page)
      * - signup (your sign-up page)
-     * - / (your public landing page - THIS IS THE FIX)
+     * - / (your public landing page)
      * - .svg (all svg image files)
+     * - auth/callback (The verification route - ADDED THIS)
      */
-    "/((?!api|_next/static|_next/image|favicon.ico|signin|signup|AboutUs|Features|.*\\.svg$|$).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|signin|signup|auth/callback|AboutUs|Features|.*\\.svg$|$).*)",
   ],
 };
