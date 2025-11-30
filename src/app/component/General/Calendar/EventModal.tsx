@@ -72,7 +72,7 @@ export default function EventModal({
   const [selectedDate, setSelectedDate] = useState("");
   const [eventTitle, setEventTitle] = useState("");
   const [audience, setAudience] = useState("Personal");
-  const [selectedCourses, setSelectedCourses] = useState<string[]>([]); // Stores 'value' strings
+  const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
   const [showCourseDropdown, setShowCourseDropdown] = useState(false);
 
   // Local state for events being created in this modal session
@@ -105,7 +105,6 @@ export default function EventModal({
         if (isMounted && account) {
           setUserRole(account.role || "");
           setUserName(account.fullName || "");
-          // Default to Personal
           setAudience("Personal");
         }
       } catch (err) {
@@ -120,8 +119,26 @@ export default function EventModal({
   // Check if user is admin based on "contains" logic
   const isAdmin = userRole.includes("Platform Administrator");
 
-  // Define audience options
-  const audienceOptions = isAdmin ? ["Personal", "Global"] : ["Personal"];
+  // Define audience options - now three options for admins
+  const audienceOptions = isAdmin ? ["Personal", "Global", "Course"] : ["Personal"];
+
+  // Handle audience change - automatically set courses based on selection
+  const handleAudienceChange = (type: string) => {
+    setAudience(type);
+    
+    // If Global is selected, automatically select all courses
+    if (type === "Global") {
+      setSelectedCourses(programs.map((p) => p.value));
+    }
+    // If Personal or Course is selected, clear courses
+    else if (type === "Personal") {
+      setSelectedCourses([]);
+    }
+    // If Course is selected, clear courses so user can select specific ones
+    else if (type === "Course") {
+      setSelectedCourses([]);
+    }
+  };
 
   // Toggle based on the VALUE (e.g., "bs-computer-science")
   const toggleCourse = (courseValue: string) => {
@@ -134,14 +151,6 @@ export default function EventModal({
     });
   };
 
-  const selectAllCourses = () => {
-    if (selectedCourses.length === programs.length) {
-      setSelectedCourses([]);
-    } else {
-      setSelectedCourses(programs.map((p) => p.value));
-    }
-  };
-
   const createAndAddPostedEvent = () => {
     // Validate event title
     if (!eventTitle.trim()) {
@@ -152,6 +161,12 @@ export default function EventModal({
     // Validate date
     if (!selectedDate) {
       alert("Please select a date");
+      return;
+    }
+
+    // Validate course selection for Course audience
+    if (audience === "Course" && selectedCourses.length === 0) {
+      alert("Please select at least one course");
       return;
     }
 
@@ -191,14 +206,11 @@ export default function EventModal({
         // Convert the comma-separated string back to an array of values
         let coursesArray: string[] | null = null;
 
-        if (evt.audience === "Global") {
+        if (evt.audience === "Global" || evt.audience === "Course") {
           // If courses are selected, split the string back to array
           if (evt.course) {
             coursesArray = evt.course.split(", ");
           } else {
-            // If empty string but Global, it usually means 'All' or 'None' depending on logic.
-            // Based on 'selectAll', it populates the array, so empty likely means none selected.
-            // If you want empty to mean "All", change logic here.
             coursesArray = [];
           }
         }
@@ -211,7 +223,7 @@ export default function EventModal({
           month: evt.month,
           day: evt.day,
           audience: evt.audience,
-          courses: coursesArray, // This now contains ["bs-computer-science", "bs-it", etc.]
+          courses: coursesArray,
           created_by_name: userName,
           created_by_role: userRole,
         };
@@ -290,12 +302,12 @@ export default function EventModal({
           />
         </div>
 
-        {/* AUDIENCE SELECTOR */}
+        {/* AUDIENCE SELECTOR - THREE BUTTONS */}
         <div className="flex gap-4 mb-4">
           {audienceOptions.map((type) => (
             <button
               key={type}
-              onClick={() => setAudience(type)}
+              onClick={() => handleAudienceChange(type)}
               className={`px-6 py-2 rounded-full border font-medium transition-all ${
                 audience === type
                   ? "bg-yellow-400 text-black border-yellow-400"
@@ -307,8 +319,8 @@ export default function EventModal({
           ))}
         </div>
 
-        {/* Course Selector */}
-        {isAdmin && audience === "Global" && (
+        {/* Course Selector - Only show for "Course" audience */}
+        {isAdmin && audience === "Course" && (
           <div className="mb-4 relative">
             <label className="block text-lg font-semibold mb-2">
               Select Courses
@@ -322,23 +334,14 @@ export default function EventModal({
               >
                 {selectedCourses.length === 0
                   ? "Click to select courses..."
-                  : selectedCourses.length === programs.length
-                  ? "All Courses Selected"
                   : `${selectedCourses.length} course(s) selected`}
               </span>
               <span className="text-gray-500">▼</span>
             </div>
 
-            {/* Dropdown with checkboxes */}
+            {/* Dropdown with checkboxes - NO "Select All" option */}
             {showCourseDropdown && (
               <div className="absolute bg-white border border-gray-300 rounded-lg mt-1 w-full max-h-60 overflow-y-auto z-[999] shadow-lg">
-                <div
-                  className="p-3 hover:bg-yellow-50 cursor-pointer border-b border-gray-200 font-semibold flex items-center gap-2"
-                  onClick={selectAllCourses}
-                >
-                  <span>Select All</span>
-                </div>
-
                 {programs.map((prog) => (
                   <div
                     key={prog.value}
@@ -358,6 +361,8 @@ export default function EventModal({
             )}
           </div>
         )}
+
+
 
         {/* EVENT TITLE */}
         <div className="mb-4 relative">
@@ -405,10 +410,11 @@ export default function EventModal({
                   <p className="font-semibold">{evt.title}</p>
                   <p className="text-sm text-gray-600">
                     {evt.audience} | {evt.date}
-                    {evt.audience === "Global" && evt.course && (
+                    {(evt.audience === "Global" || evt.audience === "Course") && evt.course && (
                       <span className="block text-xs text-gray-500 mt-1 max-w-md truncate">
-                        {/* Show raw values, or you could map back to labels if you want */}
-                        {evt.course}
+                        {evt.audience === "Global" 
+                          ? "All courses" 
+                          : `${evt.course.split(", ").length} course(s)`}
                       </span>
                     )}
                   </p>
