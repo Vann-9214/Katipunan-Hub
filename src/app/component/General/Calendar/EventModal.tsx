@@ -12,46 +12,35 @@ const montserrat = Montserrat({
 
 // --- CORRECTED PROGRAMS LIST ---
 const programs = [
-  { value: "bs-accountancy", label: "Bachelor of Science in Accountancy" },
-  { value: "bsba", label: "Bachelor of Science in Business Administration" },
-  { value: "bsoa", label: "Bachelor of Science in Office Administration" },
-  { value: "ba-english", label: "Bachelor of Arts in English" },
+  { value: "Accountancy", label: "BS Accountancy" },
+  { value: "Business Administration", label: "BS Business Administration" },
+  { value: "Office Administration", label: "BS Office Administration" },
+  { value: "English", label: "BA English" },
+  { value: "Political Science", label: "BA Political Science" },
+  { value: "Psychology", label: "BS Psychology" },
+  { value: "Biology", label: "BS Biology" },
+  { value: "Mathematics", label: "BS Mathematics" },
+  { value: "Computer Science", label: "BS Computer Science" },
+  { value: "Information Technology", label: "BS Information Technology" },
+  { value: "Computer Engineering", label: "BS Computer Engineering" },
+  { value: "Elementary Education", label: "Bachelor of Elementary Education" },
+  { value: "Secondary Education", label: "Bachelor of Secondary Education" },
+  { value: "Electrical Engineering", label: "BS Electrical Engineering" },
+  { value: "Industrial Engineering", label: "BS Industrial Engineering" },
+  { value: "Civil Engineering", label: "BS Civil Engineering" },
+  { value: "Mechanical Engineering", label: "BS Mechanical Engineering" },
+  { value: "Mining Engineering", label: "BS Mining Engineering" },
+  { value: "Chemical Engineering", label: "BS Chemical Engineering" },
+  { value: "Electronics Engineering", label: "BS Electronics Engineering" },
+  { value: "Nursing", label: "BS Nursing" },
+  { value: "Midwifery", label: "Diploma in Midwifery" },
+  { value: "Architecture", label: "BS Architecture" },
   {
-    value: "ba-political-science",
-    label: "Bachelor of Arts in Political Science",
+    value: "Hotel and Restaurant Management",
+    label: "BS Hotel and Restaurant Management",
   },
-  { value: "bs-psychology", label: "Bachelor of Science in Psychology" },
-  { value: "bs-biology", label: "Bachelor of Science in Biology" },
-  { value: "bs-mathematics", label: "Bachelor of Science in Mathematics" },
-  {
-    value: "bs-computer-science",
-    label: "Bachelor of Science in Computer Science",
-  },
-  {
-    value: "bs-information-technology",
-    label: "Bachelor of Science in Information Technology",
-  },
-  {
-    value: "bs-computer-engineering",
-    label: "Bachelor of Science in Computer Engineering",
-  },
-  { value: "beed", label: "Bachelor of Elementary Education" },
-  { value: "bsed", label: "Bachelor of Secondary Education" },
-  { value: "bsee", label: "Bachelor of Science in Electrical Engineering" },
-  { value: "bsie", label: "Bachelor of Science in Industrial Engineering" },
-  { value: "bsce", label: "Bachelor of Science in Civil Engineering" },
-  { value: "bsme", label: "Bachelor of Science in Mechanical Engineering" },
-  { value: "bsmining", label: "Bachelor of Science in Mining Engineering" },
-  { value: "bs-chemeng", label: "Bachelor of Science in Chemical Engineering" },
-  { value: "bsece", label: "Bachelor of Science in Electronics Engineering" },
-  { value: "bsn", label: "Bachelor of Science in Nursing" },
-  { value: "midwifery", label: "Diploma in Midwifery" },
-  { value: "bs-architecture", label: "Bachelor of Science in Architecture" },
-  {
-    value: "bs-hrm",
-    label: "Bachelor of Science in Hotel and Restaurant Management",
-  },
-  { value: "bstm", label: "Bachelor of Science in Tourism Management" },
+  { value: "Tourism Management", label: "BS Tourism Management" },
+  { value: "Agriculture", label: "BS Agriculture" },
 ];
 
 interface EventModalProps {
@@ -120,12 +109,14 @@ export default function EventModal({
   const isAdmin = userRole.includes("Platform Administrator");
 
   // Define audience options - now three options for admins
-  const audienceOptions = isAdmin ? ["Personal", "Global", "Course"] : ["Personal"];
+  const audienceOptions = isAdmin
+    ? ["Personal", "Global", "Course"]
+    : ["Personal"];
 
   // Handle audience change - automatically set courses based on selection
   const handleAudienceChange = (type: string) => {
     setAudience(type);
-    
+
     // If Global is selected, automatically select all courses
     if (type === "Global") {
       setSelectedCourses(programs.map((p) => p.value));
@@ -362,8 +353,6 @@ export default function EventModal({
           </div>
         )}
 
-
-
         {/* EVENT TITLE */}
         <div className="mb-4 relative">
           <label className="block text-lg font-semibold mb-2">
@@ -410,13 +399,14 @@ export default function EventModal({
                   <p className="font-semibold">{evt.title}</p>
                   <p className="text-sm text-gray-600">
                     {evt.audience} | {evt.date}
-                    {(evt.audience === "Global" || evt.audience === "Course") && evt.course && (
-                      <span className="block text-xs text-gray-500 mt-1 max-w-md truncate">
-                        {evt.audience === "Global" 
-                          ? "All courses" 
-                          : `${evt.course.split(", ").length} course(s)`}
-                      </span>
-                    )}
+                    {(evt.audience === "Global" || evt.audience === "Course") &&
+                      evt.course && (
+                        <span className="block text-xs text-gray-500 mt-1 max-w-md truncate">
+                          {evt.audience === "Global"
+                            ? "All courses"
+                            : `${evt.course.split(", ").length} course(s)`}
+                        </span>
+                      )}
                   </p>
                 </div>
                 <button

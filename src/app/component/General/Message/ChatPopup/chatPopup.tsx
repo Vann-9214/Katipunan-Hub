@@ -161,82 +161,86 @@ export default function ChatPopup() {
   };
 
   return (
-    <div className="w-80 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden transform transition-all duration-300 z-40">
-      {/* Header */}
-      <div className="px-4 py-2 border-b border-gray-200 flex justify-between items-center bg-gray-50">
-        <h2 className="text-[32px] font-montserrat font-bold text-gray-800">
-          Chats
-        </h2>
-        <div
-          onClick={handleSeeAllChats}
-          title="See all chats"
-          className="cursor-pointer"
-        >
-          <Maximize2 className="w-5 h-5 text-black hover:text-black/70" />
-        </div>
-      </div>
-
-      {/* Search Bar */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.2, delay: 0.05 }}
-        className="p-4 border-b border-gray-200"
-      >
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search User..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-3 py-2 text-sm rounded-full bg-gray-100 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-black"
-          />
-          <Search
-            size={24}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-black/70"
-          />
-        </div>
-      </motion.div>
-
-      {/* Conversation List */}
-      <motion.div
-        variants={listVariants}
-        initial="hidden"
-        animate="visible"
-        className="p-2 space-y-1 max-h-[350px] overflow-y-auto"
-      >
-        {loading ? (
-          <div className="flex justify-center items-center py-4 space-x-2 text-gray-500">
-            <Loader2 className="h-5 w-5 animate-spin text-[#8B0E0E]" />
-            <span className="text-sm font-medium">Loading recent chats...</span>
-          </div>
-        ) : filteredConversations.length === 0 ? (
-          <motion.div
-            variants={itemVariants}
-            className="text-center py-4 text-sm text-gray-500"
+    // --- EDITED: OUTER WRAPPER (Gold Gradient) ---
+    <div className="w-80 p-[2px] rounded-[20px] bg-gradient-to-br from-[#EFBF04] via-[#FFD700] to-[#D4AF37] shadow-2xl border-none overflow-hidden transform transition-all duration-300 z-40">
+      {/* --- EDITED: INNER WRAPPER (White) --- */}
+      <div className="bg-white w-full h-full rounded-[18px] flex flex-col overflow-hidden">
+        {/* --- EDITED: HEADER (Maroon Gradient) --- */}
+        <div className="px-6 py-4 border-b border-[#EFBF04]/30 flex justify-between items-center bg-gradient-to-b from-[#4e0505] to-[#3a0000]">
+          <h2 className="text-[20px] font-montserrat font-bold text-white tracking-wide">
+            Chats
+          </h2>
+          <div
+            onClick={handleSeeAllChats}
+            title="See all chats"
+            className="cursor-pointer p-1.5 rounded-full hover:bg-white/10 transition-colors group"
           >
-            {search.length > 0
-              ? `No results for "${search}"`
-              : "No chats found."}
-          </motion.div>
-        ) : (
-          filteredConversations.map((item) => (
-            <PopupConversationItem
-              key={item.id}
-              conversation={item}
-              variants={itemVariants}
-            />
-          ))
-        )}
-      </motion.div>
+            <Maximize2 className="w-4 h-4 text-white/80 group-hover:text-[#EFBF04]" />
+          </div>
+        </div>
 
-      {/* Footer Link */}
-      <button
-        onClick={handleSeeAllChats}
-        className="cursor-pointer block w-full text-center py-2 text-[16px] font-montserrat font-medium text-gray-600 hover:text-[#8B0E0E] bg-gray-100 hover:bg-gray-200 transition-colors border-t border-gray-200"
-      >
-        See all in chats
-      </button>
+        {/* Search Bar */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2, delay: 0.05 }}
+          className="p-4 border-b border-gray-100"
+        >
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search User..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-3 py-2.5 text-sm rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#EFBF04]/50 focus:border-[#EFBF04] transition-all"
+            />
+            <Search
+              size={18}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            />
+          </div>
+        </motion.div>
+
+        {/* Conversation List */}
+        <motion.div
+          variants={listVariants}
+          initial="hidden"
+          animate="visible"
+          className="p-2 space-y-1 max-h-[350px] overflow-y-auto custom-scrollbar"
+        >
+          {loading ? (
+            <div className="flex flex-col justify-center items-center py-8 space-y-2 text-gray-400">
+              <Loader2 className="h-6 w-6 animate-spin text-[#EFBF04]" />
+              <span className="text-xs font-medium">Loading chats...</span>
+            </div>
+          ) : filteredConversations.length === 0 ? (
+            <motion.div
+              variants={itemVariants}
+              className="text-center py-8 text-sm text-gray-400 italic"
+            >
+              {search.length > 0
+                ? `No results for "${search}"`
+                : "No chats found."}
+            </motion.div>
+          ) : (
+            filteredConversations.map((item) => (
+              <PopupConversationItem
+                key={item.id}
+                conversation={item}
+                variants={itemVariants}
+              />
+            ))
+          )}
+        </motion.div>
+
+        {/* Footer Link */}
+        <button
+          onClick={handleSeeAllChats}
+          className="cursor-pointer block w-full text-center py-3 text-[14px] font-montserrat font-bold text-gray-600 hover:text-[#8B0E0E] bg-gray-50 hover:bg-gray-100 transition-colors border-t border-gray-100"
+        >
+          See all in chats
+        </button>
+      </div>
     </div>
   );
 }
