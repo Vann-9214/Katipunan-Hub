@@ -8,7 +8,6 @@ import { useState, useEffect } from "react";
 import { AnimatePresence } from "framer-motion";
 import ForgotPasswordForm from "./ForgotPasswordForm";
 import EmailVerificationMessage from "./EmailVerificationMessage";
-import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
 
 // Cleaned up AuthMode: 'updatepassword' is removed as it's now internal to ForgotPasswordForm
 type AuthMode = "signin" | "signup" | "forgotpassword" | "verify" | null;

@@ -1,18 +1,11 @@
 "use client";
 
 import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
-import { useState } from "react";
+// 1. Added useEffect and useRef here
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-import {
-  Loader2,
-  Mail,
-  KeyRound,
-  Lock,
-  CheckCircle2,
-  X,
-  ArrowLeft,
-} from "lucide-react";
+import { Loader2, X, ArrowLeft } from "lucide-react";
 
 import Button from "@/app/component/ReusableComponent/Buttons";
 import Logo from "@/app/component/ReusableComponent/Logo";
@@ -35,9 +28,70 @@ export default function ForgotPasswordForm({
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
+  // --- NEW: State for the 6-box UI ---
+  const [otp, setOtp] = useState<string[]>(new Array(6).fill(""));
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
+
+  // --- NEW: Sync the 6 boxes to your existing 'token' state ---
+  useEffect(() => {
+    setToken(otp.join(""));
+  }, [otp]);
+
+  useEffect(() => {
+    if (step === "code") {
+      // Small timeout ensures the inputs are rendered before we try to focus
+      const timer = setTimeout(() => {
+        inputRefs.current[0]?.focus();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [step]);
+
+  // --- NEW: Handle typing in boxes ---
+  const handleOtpChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    index: number
+  ) => {
+    const value = e.target.value;
+    if (isNaN(Number(value))) return; // Only allow numbers
+
+    const newOtp = [...otp];
+    // Take the last character typed (in case user types fast)
+    newOtp[index] = value.substring(value.length - 1);
+    setOtp(newOtp);
+
+    // Move focus to next input if value is entered
+    if (value && index < 5 && inputRefs.current[index + 1]) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  // --- NEW: Handle Backspace to move back ---
+  const handleOtpKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    index: number
+  ) => {
+    if (e.key === "Backspace" && !otp[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  // --- NEW: Handle Paste (e.g., "123456") ---
+  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData("text").slice(0, 6).split("");
+    const newOtp = [...otp];
+    pastedData.forEach((char, i) => {
+      if (i < 6 && !isNaN(Number(char))) newOtp[i] = char;
+    });
+    setOtp(newOtp);
+    inputRefs.current[Math.min(pastedData.length, 5)]?.focus();
+  };
+  // ---------------------------------------------------------
 
   // --- STEP 1: SEND CODE ---
   const handleSendCode = async (e: React.FormEvent) => {
@@ -144,8 +198,8 @@ export default function ForgotPasswordForm({
         setMessage(error.message);
         setIsError(true);
       } else {
-        alert("Password updated successfully! You can now log in.");
-        window.location.href = "/"; // Refresh to clear auth state/redirect to home
+        alert("Password updated successfully!");
+        window.location.href = "/";
       }
     } catch (err) {
       console.error("Update password error:", err);
@@ -311,24 +365,27 @@ export default function ForgotPasswordForm({
               </form>
             )}
 
-            {/* === STEP 2: CODE === */}
+            {/* === STEP 2: CODE (Updated to 6 Boxes) === */}
             {step === "code" && (
               <form onSubmit={handleVerifyCode} className="flex flex-col gap-6">
-                <div className="relative">
-                  <TextBox
-                    autoFocus={true}
-                    type="text"
-                    placeholder="6-Digit Code"
-                    value={token}
-                    onChange={(e) => setToken(e.target.value)}
-                    // Icon for code
-                    rightImageSrc="/Id Card.svg"
-                    rightImageAlt="code icon"
-                    width="w-full"
-                    height="h-[45px]"
-                    textSize="text-[15px]"
-                    className={`${inputClasses} tracking-widest font-bold`}
-                  />
+                {/* The 6-Box Container */}
+                <div className="flex justify-between gap-2 px-2">
+                  {otp.map((digit, index) => (
+                    <input
+                      key={index}
+                      ref={(el) => {
+                        inputRefs.current[index] = el;
+                      }}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => handleOtpChange(e, index)}
+                      onKeyDown={(e) => handleOtpKeyDown(e, index)}
+                      onPaste={handleOtpPaste}
+                      className="w-12 h-14 text-center text-2xl font-bold font-montserrat rounded-xl bg-gray-50 border border-gray-300 focus:border-[#8B0E0E] focus:ring-2 focus:ring-[#8B0E0E]/20 outline-none transition-all caret-[#8B0E0E]"
+                    />
+                  ))}
                 </div>
 
                 <Button
