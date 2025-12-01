@@ -9,7 +9,7 @@ import { OtherUser, Message } from "../Utils/types";
 import ConversationHeader from "./conversationHeader";
 import MessageBubble from "./messageBubble";
 import MessageInput from "./messageInput";
-import { motion, AnimatePresence, Variants } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 /* --- Helper: Date Formatter --- */
 const getDateLabel = (dateStr: string) => {
@@ -49,15 +49,13 @@ const getDateLabel = (dateStr: string) => {
 /* --- Helper Component: Date Separator --- */
 const DateSeparator = ({ date }: { date: string }) => (
   <motion.div
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    className="flex items-center py-6 my-2 opacity-80"
+    initial={{ opacity: 0, scale: 0.9 }}
+    animate={{ opacity: 1, scale: 1 }}
+    className="flex items-center justify-center py-6 my-2"
   >
-    <div className="flex-grow h-[1px] bg-gray-300/70" />
-    <span className="px-4 text-[11px] font-bold text-gray-400 font-montserrat uppercase tracking-widest">
+    <span className="px-4 py-1 bg-gray-100 text-[10px] font-bold text-gray-500 font-montserrat uppercase tracking-widest rounded-full shadow-sm border border-gray-200">
       {date}
     </span>
-    <div className="flex-grow h-[1px] bg-gray-300/70" />
   </motion.div>
 );
 
@@ -73,20 +71,9 @@ export default function ConversationWindow() {
   const [otherUser, setOtherUser] = useState<OtherUser | null>(null);
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
 
-  // Animation Variants
-  const loadingContainerVariants: Variants = {
-    animate: {
-      transition: { staggerChildren: 0.1 },
-    },
-  };
-
-  const loadingLetterVariants: Variants = {
-    initial: { y: 0 },
-    animate: {
-      y: [0, -10, 0],
-      transition: { duration: 1, repeat: Infinity, ease: "easeInOut" },
-    },
-  };
+  // --- ADDED: File State ---
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   /* User Fetcher */
   useEffect(() => {
@@ -111,7 +98,6 @@ export default function ConversationWindow() {
 
     const fetchConversationData = async () => {
       try {
-        // 1. Get Conversation
         const { data: convoData, error: convoError } = await supabase
           .from("Conversations")
           .select("user_a_id, user_b_id")
@@ -126,7 +112,6 @@ export default function ConversationWindow() {
             ? convoData.user_b_id
             : convoData.user_a_id;
 
-        // 2. Fetch Messages & Other User Details
         const [accountResult, messagesResult] = await Promise.all([
           supabase
             .from("Accounts")
@@ -155,12 +140,11 @@ export default function ConversationWindow() {
     fetchConversationData();
   }, [conversationId, currentUser?.id]);
 
-  /* --- ADDED: Mark Messages as Read Logic --- */
+  /* Mark Messages as Read Logic */
   useEffect(() => {
     if (!conversationId || !currentUser?.id) return;
 
     const markAsRead = async () => {
-      // CALL THE NEW DATABASE FUNCTION
       const { error } = await supabase.rpc("mark_messages_read", {
         p_conversation_id: conversationId,
       });
@@ -170,13 +154,10 @@ export default function ConversationWindow() {
       }
     };
 
-    // Run immediately
     markAsRead();
-
-    // Depend on messages.length so it runs when new messages arrive
   }, [conversationId, currentUser?.id, messages.length]);
 
-  /* --- NEW: Realtime Subscription for Messages --- */
+  /* Realtime Subscription */
   useEffect(() => {
     if (!conversationId) return;
 
@@ -193,7 +174,6 @@ export default function ConversationWindow() {
         (payload) => {
           const newMsg = payload.new as Message;
           setMessages((current) => {
-            // Prevent duplicates (e.g., if we just sent this message ourselves)
             if (current.some((msg) => msg.id === newMsg.id)) {
               return current;
             }
@@ -208,25 +188,75 @@ export default function ConversationWindow() {
     };
   }, [conversationId]);
 
-  /* Send Handler */
+  /* --- ADDED: Upload Helper --- */
+  const uploadFile = async (file: File) => {
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${Date.now()}_${Math.random()
+        .toString(36)
+        .substring(7)}.${fileExt}`;
+      const filePath = `attachments/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("chat_attachments")
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from("chat_attachments")
+        .getPublicUrl(filePath);
+
+      return data.publicUrl;
+    } catch (error) {
+      console.error("Upload error:", error);
+      return null;
+    }
+  };
+
+  /* Send Handler (Updated) */
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !currentUser?.id || !conversationId) return;
+    if (
+      (!newMessage.trim() && !selectedFile) ||
+      !currentUser?.id ||
+      !conversationId
+    )
+      return;
+
+    setIsUploading(true);
+
+    let imageUrl = null;
+    if (selectedFile) {
+      imageUrl = await uploadFile(selectedFile);
+      if (!imageUrl) {
+        setIsUploading(false);
+        alert("Failed to upload file. Please try again.");
+        return;
+      }
+    }
 
     const messagePayload = {
       content: newMessage.trim(),
       sender_id: currentUser.id,
       conversation_id: conversationId,
+      image_url: imageUrl,
+      file_name: selectedFile ? selectedFile.name : null,
     };
 
+    // Optimistically clear input
     setNewMessage("");
+    setSelectedFile(null);
 
     const { data: newMessageData, error } = await supabase
       .from("Messages")
       .insert(messagePayload)
       .select();
 
+    setIsUploading(false);
+
     if (error || !newMessageData || newMessageData.length === 0) {
+      // Revert state on error (simple implementation)
       setNewMessage(messagePayload.content);
       return;
     }
@@ -235,99 +265,102 @@ export default function ConversationWindow() {
     setMessages((currentMessages) => [...currentMessages, theMessage]);
   };
 
-  /* Render Loading State */
-  if (loading) {
-    const loadingText = "LOADING CONVERSATION...";
-    return (
-      <div className="h-full flex flex-col items-center justify-center bg-white space-y-6">
-        <motion.div className="flex gap-2">
-          {[0, 1, 2].map((i) => (
+  return (
+    <div className="w-full h-full p-[2px] rounded-[24px] bg-gradient-to-br from-[#EFBF04] via-[#FFD700] to-[#D4AF37] shadow-2xl">
+      <div className="w-full h-full bg-white rounded-[22px] flex flex-col overflow-hidden shadow-inner relative">
+        <ConversationHeader otherUser={otherUser} />
+
+        {loading ? (
+          <div className="flex-1 flex flex-col items-center justify-center bg-white gap-6 relative overflow-hidden">
             <motion.div
-              key={i}
-              className="w-4 h-4 bg-[#8B0E0E] rounded-full"
-              animate={{
-                y: [0, -15, 0],
-                scale: [1, 1.2, 1],
-                opacity: [0.7, 1, 0.7],
-              }}
-              transition={{
-                duration: 0.8,
-                repeat: Infinity,
-                delay: i * 0.15,
-                ease: "easeInOut",
+              animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute w-64 h-64 bg-red-500/5 rounded-full blur-3xl"
+            />
+            <div className="relative">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                className="w-16 h-16 rounded-full border-[3px] border-[#EFBF04]/30 border-t-[#8B0E0E]"
+              />
+              <motion.div
+                animate={{ scale: [0.8, 1.2, 0.8] }}
+                transition={{ duration: 1, repeat: Infinity }}
+                className="absolute inset-0 m-auto w-3 h-3 bg-[#EFBF04] rounded-full shadow-[0_0_10px_#EFBF04]"
+              />
+            </div>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex flex-col items-center gap-1 z-10"
+            >
+              <h3 className="font-montserrat font-bold text-[#8B0E0E] tracking-widest text-sm">
+                INITIALIZING CHAT
+              </h3>
+              <p className="font-ptsans text-xs text-gray-400">
+                Fetching your messages...
+              </p>
+            </motion.div>
+          </div>
+        ) : (
+          <motion.div
+            key={conversationId}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4 }}
+            className="flex-1 p-4 md:p-6 space-y-1 overflow-y-auto custom-scrollbar bg-gray-50/30"
+          >
+            <div
+              className="fixed inset-0 opacity-[0.02] pointer-events-none"
+              style={{
+                backgroundImage:
+                  "radial-gradient(#8B0E0E 1px, transparent 1px)",
+                backgroundSize: "30px 30px",
               }}
             />
-          ))}
-        </motion.div>
 
-        <motion.div
-          className="flex gap-[2px] overflow-hidden"
-          variants={loadingContainerVariants}
-          initial="initial"
-          animate="animate"
-        >
-          {loadingText.split("").map((char, index) => (
-            <motion.span
-              key={index}
-              variants={loadingLetterVariants}
-              className="text-[#8B0E0E] font-montserrat font-bold text-sm tracking-widest"
-            >
-              {char === " " ? "\u00A0" : char}
-            </motion.span>
-          ))}
-        </motion.div>
+            <AnimatePresence initial={false} mode="popLayout">
+              {messages.map((msg, index) => {
+                const showDateSeparator =
+                  index === 0 ||
+                  getDateLabel(messages[index - 1].created_at) !==
+                    getDateLabel(msg.created_at);
+
+                return (
+                  <motion.div
+                    key={msg.id}
+                    layout
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex flex-col w-full relative z-10"
+                  >
+                    {showDateSeparator && (
+                      <DateSeparator date={getDateLabel(msg.created_at)} />
+                    )}
+
+                    <MessageBubble
+                      message={msg}
+                      isCurrentUser={msg.sender_id === currentUser?.id}
+                    />
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+            <div ref={messagesEndRef} />
+          </motion.div>
+        )}
+
+        <MessageInput
+          newMessage={newMessage}
+          setNewMessage={setNewMessage}
+          onSubmit={handleSendMessage}
+          // --- ADDED: Pass new props ---
+          selectedFile={selectedFile}
+          setSelectedFile={setSelectedFile}
+          isUploading={isUploading}
+        />
       </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col h-full bg-white">
-      <ConversationHeader otherUser={otherUser} />
-
-      {/* Message List */}
-      <motion.div
-        key={conversationId}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.4 }}
-        className="flex-1 p-4 space-y-1 overflow-y-auto"
-      >
-        <AnimatePresence initial={false} mode="popLayout">
-          {messages.map((msg, index) => {
-            const showDateSeparator =
-              index === 0 ||
-              getDateLabel(messages[index - 1].created_at) !==
-                getDateLabel(msg.created_at);
-
-            return (
-              <motion.div
-                key={msg.id}
-                layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                className="flex flex-col w-full"
-              >
-                {showDateSeparator && (
-                  <DateSeparator date={getDateLabel(msg.created_at)} />
-                )}
-
-                <MessageBubble
-                  message={msg}
-                  isCurrentUser={msg.sender_id === currentUser?.id}
-                />
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
-        <div ref={messagesEndRef} />
-      </motion.div>
-
-      <MessageInput
-        newMessage={newMessage}
-        setNewMessage={setNewMessage}
-        onSubmit={handleSendMessage}
-      />
     </div>
   );
 }

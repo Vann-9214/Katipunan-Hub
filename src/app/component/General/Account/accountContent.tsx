@@ -26,6 +26,9 @@ import { updateFeedPost } from "../../../../../supabase/Lib/Feeds/feeds";
 import type { User } from "../../../../../supabase/Lib/General/user";
 import type { PostUI, UpdatePostPayload } from "../Announcement/Utils/types";
 
+/* --- NEW: Import Lightbox Hook --- */
+import { useImageLightbox } from "../Announcement/ImageAttachment/imageLightboxContent";
+
 // 2. Accept an optional prop for specific profile viewing
 interface AccountContentProps {
   targetUserId?: string;
@@ -54,6 +57,9 @@ export default function AccountContent({ targetUserId }: AccountContentProps) {
     refetch,
   } = useUserPosts(viewedUser?.id);
   const router = useRouter();
+
+  /* --- NEW: Lightbox Control --- */
+  const { openLightbox } = useImageLightbox();
 
   // 3. Determine Ownership
   // If targetUserId is missing, we are on /Account, so we are the owner.
@@ -204,12 +210,14 @@ export default function AccountContent({ targetUserId }: AccountContentProps) {
               {/* Cover Photo */}
               <div className="relative w-full h-[200px] md:h-[350px] bg-gray-800 overflow-hidden group">
                 {viewedUser.coverURL ? (
+                  /* --- UPDATED: Cover Photo with Click Handler --- */
                   <Image
                     src={viewedUser.coverURL}
                     alt="Cover"
                     fill
-                    className="object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                    className="object-cover opacity-90 group-hover:opacity-100 transition-opacity cursor-pointer"
                     priority
+                    onClick={() => openLightbox([viewedUser.coverURL!], 0)}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gradient-to-r from-[#2a0303] to-[#4e0505]">
@@ -225,7 +233,16 @@ export default function AccountContent({ targetUserId }: AccountContentProps) {
                 <div className="flex flex-col md:flex-row items-center md:items-end relative -mt-[80px] md:-mt-[50px] gap-4 md:gap-6">
                   {/* Avatar */}
                   <div className="relative z-10">
-                    <div className="w-[168px] h-[168px] relative rounded-full overflow-hidden border-[5px] border-[#EFBF04] shadow-2xl bg-[#3a0000]">
+                    {/* --- UPDATED: Avatar Container with Click Handler --- */}
+                    <div
+                      className="w-[168px] h-[168px] relative rounded-full overflow-hidden border-[5px] border-[#EFBF04] shadow-2xl bg-[#3a0000] cursor-pointer"
+                      onClick={() =>
+                        openLightbox(
+                          [viewedUser.avatarURL || "/DefaultAvatar.svg"],
+                          0
+                        )
+                      }
+                    >
                       <Avatar
                         avatarURL={viewedUser.avatarURL}
                         altText={viewedUser.fullName}

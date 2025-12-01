@@ -188,21 +188,24 @@ export default function ChatPopup() {
   };
 
   return (
-    // --- EDITED: OUTER WRAPPER (Gold Gradient) ---
-    <div className="w-80 p-[2px] rounded-[20px] bg-gradient-to-br from-[#EFBF04] via-[#FFD700] to-[#D4AF37] shadow-2xl border-none overflow-hidden transform transition-all duration-300 z-40">
-      {/* --- EDITED: INNER WRAPPER (White) --- */}
-      <div className="bg-white w-full h-full rounded-[18px] flex flex-col overflow-hidden">
-        {/* --- EDITED: HEADER (Maroon Gradient) --- */}
-        <div className="px-6 py-4 border-b border-[#EFBF04]/30 flex justify-between items-center bg-gradient-to-b from-[#4e0505] to-[#3a0000]">
-          <h2 className="text-[20px] font-montserrat font-bold text-white tracking-wide">
-            Chats
+    // --- WRAPPER (Gold Gradient) ---
+    <div className="w-[340px] p-[2px] rounded-[24px] bg-gradient-to-br from-[#EFBF04] via-[#FFD700] to-[#D4AF37] shadow-2xl transform transition-all duration-300 z-50">
+      {/* --- INNER WRAPPER (White) --- */}
+      <div className="bg-white w-full h-full rounded-[22px] flex flex-col overflow-hidden shadow-inner">
+        {/* --- HEADER (Maroon Gradient) --- */}
+        <div className="relative px-6 py-4 border-b border-[#EFBF04]/30 flex justify-between items-center bg-gradient-to-b from-[#4e0505] to-[#3a0000] overflow-hidden">
+          {/* Decorative Glow */}
+          <div className="absolute -top-6 -right-6 w-24 h-24 bg-[#EFBF04]/20 blur-2xl rounded-full pointer-events-none" />
+
+          <h2 className="relative z-10 text-[18px] font-montserrat font-bold text-white tracking-wide">
+            Messages
           </h2>
           <div
             onClick={handleSeeAllChats}
             title="See all chats"
-            className="cursor-pointer p-1.5 rounded-full hover:bg-white/10 transition-colors group"
+            className="relative z-10 cursor-pointer p-2 rounded-full hover:bg-white/10 transition-colors group"
           >
-            <Maximize2 className="w-4 h-4 text-white/80 group-hover:text-[#EFBF04]" />
+            <Maximize2 className="w-4 h-4 text-white/80 group-hover:text-[#EFBF04] transition-colors" />
           </div>
         </div>
 
@@ -211,19 +214,19 @@ export default function ChatPopup() {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2, delay: 0.05 }}
-          className="p-4 border-b border-gray-100"
+          className="p-3 border-b border-gray-100 bg-gray-50/50"
         >
-          <div className="relative">
+          <div className="relative group">
             <input
               type="text"
-              placeholder="Search User..."
+              placeholder="Search conversations..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-3 py-2.5 text-sm rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#EFBF04]/50 focus:border-[#EFBF04] transition-all"
+              className="w-full pl-10 pr-4 py-2 text-[13px] rounded-xl bg-white border border-gray-200 text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#EFBF04]/20 focus:border-[#EFBF04] transition-all shadow-sm group-hover:border-[#EFBF04]/50"
             />
             <Search
-              size={18}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              size={16}
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-[#EFBF04] transition-colors"
             />
           </div>
         </motion.div>
@@ -233,21 +236,31 @@ export default function ChatPopup() {
           variants={listVariants}
           initial="hidden"
           animate="visible"
-          className="p-2 space-y-1 max-h-[350px] overflow-y-auto custom-scrollbar"
+          className="p-2 space-y-1 max-h-[360px] min-h-[150px] overflow-y-auto custom-scrollbar"
         >
           {loading ? (
-            <div className="flex flex-col justify-center items-center py-8 space-y-2 text-gray-400">
+            <div className="flex flex-col justify-center items-center py-10 space-y-3 text-gray-400">
               <Loader2 className="h-6 w-6 animate-spin text-[#EFBF04]" />
-              <span className="text-xs font-medium">Loading chats...</span>
+              <span className="text-xs font-medium tracking-wide">
+                Syncing chats...
+              </span>
             </div>
           ) : filteredConversations.length === 0 ? (
             <motion.div
-              variants={itemVariants}
-              className="text-center py-8 text-sm text-gray-400 italic"
+              // FIX: Use explicit initial/animate instead of variants to ensure it shows up
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="flex flex-col items-center justify-center py-10 text-gray-400"
             >
-              {search.length > 0
-                ? `No results for "${search}"`
-                : "No chats found."}
+              <div className="p-3 bg-gray-50 rounded-full mb-2">
+                <Search size={20} className="opacity-50" />
+              </div>
+              <span className="text-sm font-medium italic">
+                {search.length > 0
+                  ? `No results for "${search}"`
+                  : "No chats yet."}
+              </span>
             </motion.div>
           ) : (
             filteredConversations.map((item) => (
@@ -261,12 +274,18 @@ export default function ChatPopup() {
         </motion.div>
 
         {/* Footer Link */}
-        <button
+        <div
           onClick={handleSeeAllChats}
-          className="cursor-pointer block w-full text-center py-3 text-[14px] font-montserrat font-bold text-gray-600 hover:text-[#8B0E0E] bg-gray-50 hover:bg-gray-100 transition-colors border-t border-gray-100"
+          className="cursor-pointer group relative p-3 text-center border-t border-gray-100 hover:bg-gray-50 transition-colors bg-white"
         >
-          See all in chats
-        </button>
+          <span className="text-[12px] font-bold text-gray-500 uppercase tracking-wider group-hover:text-[#8B0E0E] transition-colors flex items-center justify-center gap-2">
+            View All Messages
+            <Maximize2
+              size={12}
+              className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300"
+            />
+          </span>
+        </div>
       </div>
     </div>
   );

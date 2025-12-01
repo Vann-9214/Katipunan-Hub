@@ -267,7 +267,7 @@ export default function ChatSidebar() {
       <motion.aside
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
-        className="w-[350px] h-full bg-white border-r border-gray-200 flex flex-col p-4 justify-center items-center shadow-xl"
+        className="w-[380px] h-full bg-white rounded-[20px] flex flex-col p-4 justify-center items-center shadow-xl border border-gray-200"
       >
         <h1 className="text-xl font-bold text-red-500">
           Authentication Required
@@ -280,160 +280,159 @@ export default function ChatSidebar() {
   }
 
   return (
+    // --- EDITED: Gold Gradient Wrapper ---
     <motion.aside
       animate="visible"
       variants={sidebarVariants}
-      className="w-[350px] h-full bg-white border-r border-gray-200 flex flex-col p-4 space-y-4 shadow-xl"
+      className="w-[380px] h-full p-[2px] rounded-[24px] bg-gradient-to-br from-[#EFBF04] via-[#FFD700] to-[#D4AF37] shadow-2xl"
     >
-      {/* Header */}
-      <motion.div variants={itemVariants} className="flex items-center gap-5">
-        <h1 className="text-[36px] font-montserrat font-bold text-black">
-          Chats
-        </h1>
+      {/* --- EDITED: Inner White Container --- */}
+      <div className="w-full h-full bg-white rounded-[22px] flex flex-col overflow-hidden">
+        {/* --- EDITED: Header (Maroon Gradient) --- */}
         <motion.div
-          whileHover={{ scale: 1.1, rotate: 10 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={handleHeaderClick}
-          className="text-black transition-colors hover:text-gray-700 cursor-pointer"
+          variants={itemVariants}
+          className="flex items-center gap-5 px-6 py-5 bg-gradient-to-b from-[#4e0505] to-[#3a0000] border-b border-[#EFBF04]/30 shrink-0 relative"
         >
-          <MessagesSquare size={36} />
-        </motion.div>
-      </motion.div>
+          {/* Glow Effect */}
+          <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/20 blur-2xl rounded-full pointer-events-none" />
 
-      {/* Search Bar */}
-      <motion.div
-        variants={itemVariants}
-        className="relative flex items-center gap-2"
-      >
-        <AnimatePresence>
-          {search.length > 0 && (
-            <motion.button
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0, opacity: 0 }}
-              onClick={() => setSearch("")}
-              className="p-2 rounded-full hover:bg-gray-200 text-gray-600 flex-shrink-0"
-            >
-              <ArrowLeft size={18} />
-            </motion.button>
-          )}
-        </AnimatePresence>
-        <div className="relative flex-1">
-          <input
-            type="text"
-            placeholder="Search chats or users..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 rounded-full bg-gray-100 border border-gray-200 focus:outline-none focus:ring-1 focus:ring-black"
-          />
-          <Search
-            size={24}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-black/70 pointer-events-none"
-          />
-        </div>
-      </motion.div>
-
-      {/* Content Area */}
-      <motion.div
-        className="flex-1 overflow-y-auto space-y-4 pr-1 custom-scrollbar"
-        variants={listContainerVariants} // Staggers the children inside
-      >
-        {isSearching ? (
+          <h1 className="text-[28px] font-montserrat font-bold text-white tracking-wide flex-1">
+            Chats
+          </h1>
           <motion.div
-            variants={itemVariants}
-            className="text-center py-8 text-gray-500 flex flex-col items-center gap-2"
+            whileHover={{ scale: 1.1, rotate: 10 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={handleHeaderClick}
+            className="text-white/90 hover:text-[#EFBF04] transition-colors cursor-pointer relative z-10"
           >
-            <Loader2 className="animate-spin" />
-            <span>Searching...</span>
+            <MessagesSquare size={28} />
           </motion.div>
-        ) : search.length > 0 && searchResults.length > 0 ? (
-          <div className="space-y-1">
-            {searchResults.map((account) => (
-              <motion.div key={account.id} variants={itemVariants}>
-                <SearchResultItem account={account} onClick={handleUserClick} />
-              </motion.div>
-            ))}
+        </motion.div>
+
+        {/* Search Bar */}
+        <motion.div variants={itemVariants} className="p-4 relative">
+          <div className="relative flex items-center gap-2">
+            <AnimatePresence>
+              {search.length > 0 && (
+                <motion.button
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  onClick={() => setSearch("")}
+                  className="p-2 rounded-full hover:bg-gray-100 text-gray-500 flex-shrink-0 transition-colors"
+                >
+                  <ArrowLeft size={18} />
+                </motion.button>
+              )}
+            </AnimatePresence>
+            <div className="relative flex-1">
+              <input
+                type="text"
+                placeholder="Search chats or users..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#EFBF04] focus:border-transparent font-montserrat text-sm transition-all shadow-sm"
+              />
+              <Search
+                size={18}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+              />
+            </div>
           </div>
-        ) : (
-          <>
-            {loading ? (
-              <motion.div
-                variants={itemVariants}
-                className="text-center py-8 text-gray-500"
-              >
-                Loading chats...
-              </motion.div>
-            ) : (
-              <div className="space-y-4">
-                <motion.div variants={itemVariants}>
-                  <ConversationList
-                    title="Favorites (Most Recent)"
-                    conversations={favorites}
+        </motion.div>
+
+        {/* Content Area */}
+        <motion.div
+          className="flex-1 overflow-y-auto px-3 space-y-4 custom-scrollbar"
+          variants={listContainerVariants}
+        >
+          {isSearching ? (
+            <motion.div
+              variants={itemVariants}
+              className="text-center py-8 text-gray-500 flex flex-col items-center gap-2 font-montserrat text-sm"
+            >
+              <Loader2 className="animate-spin text-[#EFBF04]" />
+              <span>Searching...</span>
+            </motion.div>
+          ) : search.length > 0 && searchResults.length > 0 ? (
+            <div className="space-y-1">
+              {searchResults.map((account) => (
+                <motion.div key={account.id} variants={itemVariants}>
+                  <SearchResultItem
+                    account={account}
+                    onClick={handleUserClick}
                   />
                 </motion.div>
-                <motion.div variants={itemVariants}>
-                  <ConversationList
-                    title="Chats (Most Recent)"
-                    conversations={chats}
-                  />
+              ))}
+            </div>
+          ) : (
+            <>
+              {loading ? (
+                <motion.div
+                  variants={itemVariants}
+                  className="text-center py-8 text-gray-400 text-sm font-montserrat"
+                >
+                  Loading conversations...
                 </motion.div>
-
-                {filteredConversations.length === 0 && search.length > 0 && (
-                  <motion.div
-                    variants={itemVariants}
-                    className="text-center py-8 text-gray-500 text-sm"
-                  >
-                    No chats found for &quot;{search}&quot;.
+              ) : (
+                <div className="space-y-4 pb-4">
+                  <motion.div variants={itemVariants}>
+                    <ConversationList
+                      title="Favorites"
+                      conversations={favorites}
+                    />
                   </motion.div>
-                )}
-                {conversations.length === 0 && search.length === 0 && (
-                  <motion.div
-                    variants={itemVariants}
-                    className="text-center py-8 text-gray-500 text-sm"
-                  >
-                    No conversations found.
+                  <motion.div variants={itemVariants}>
+                    <ConversationList title="All Chats" conversations={chats} />
                   </motion.div>
-                )}
-              </div>
-            )}
-          </>
-        )}
-      </motion.div>
 
-      {/* Footer */}
-      <motion.div
-        variants={itemVariants}
-        className="flex-shrink-0 flex items-center gap-3 p-3 rounded-xl bg-white border border-gray-200 shadow-lg"
-      >
-        <Avatar
-          avatarURL={currentUser?.avatarURL}
-          altText={currentUser?.fullName || "User"}
-          className="w-12 h-12"
-        />
+                  {filteredConversations.length === 0 && search.length > 0 && (
+                    <motion.div
+                      variants={itemVariants}
+                      className="text-center py-8 text-gray-500 text-sm font-medium"
+                    >
+                      No chats found for &quot;{search}&quot;.
+                    </motion.div>
+                  )}
+                  {conversations.length === 0 && search.length === 0 && (
+                    <motion.div
+                      variants={itemVariants}
+                      className="flex flex-col items-center justify-center py-10 text-gray-400 text-sm gap-2 opacity-70"
+                    >
+                      <MessagesSquare size={32} />
+                      <span>No conversations yet.</span>
+                    </motion.div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </motion.div>
 
-        <div className="flex-1 overflow-hidden">
-          <h3 className="font-semibold text-gray-800 truncate">
-            {currentUser?.fullName || "Your Name"}
-          </h3>
-          <p className="text-sm text-gray-600 truncate">
-            {currentUser ? "Online" : "Offline"}
-          </p>
-        </div>
-      </motion.div>
+        {/* Footer: User Profile */}
+        <motion.div
+          variants={itemVariants}
+          className="flex-shrink-0 flex items-center gap-3 p-4 bg-gray-50 border-t border-gray-100"
+        >
+          <Avatar
+            avatarURL={currentUser?.avatarURL}
+            altText={currentUser?.fullName || "User"}
+            className="w-10 h-10 border border-white shadow-sm"
+          />
 
-      {/* Styles */}
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background-color: #d1d5db;
-          border-radius: 3px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background-color: #f3f4f6;
-        }
-      `}</style>
+          <div className="flex-1 overflow-hidden">
+            <h3 className="font-bold text-[14px] text-gray-800 truncate font-montserrat">
+              {currentUser?.fullName || "Your Name"}
+            </h3>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <p className="text-xs text-gray-500 truncate font-medium">
+                Online
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      </div>
     </motion.aside>
   );
 }
