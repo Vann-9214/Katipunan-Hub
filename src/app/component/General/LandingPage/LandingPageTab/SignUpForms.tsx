@@ -1,3 +1,4 @@
+//
 "use client";
 
 import ToggleButton from "@/app/component/ReusableComponent/ToggleButton";
@@ -149,7 +150,9 @@ export default function SignUpForm({
           signUpError.message.includes("already registered") ||
           signUpError.message.includes("User already exists")
         ) {
-          setShowVerifyPrompt(true);
+          // --- UPDATED: Direct to Sign In immediately ---
+          alert("This account is already registered. Please sign in.");
+          onSwitch?.();
           return;
         }
         setErrorMessage(signUpError.message);
