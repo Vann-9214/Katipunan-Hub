@@ -284,9 +284,6 @@ export default function AccountContent({ targetUserId }: AccountContentProps) {
                   <button className="px-2 py-3 text-[#EFBF04] font-bold border-b-[3px] border-[#EFBF04] transition-all">
                     Posts
                   </button>
-                  <button className="px-2 py-3 text-white/70 font-semibold hover:text-white transition-colors">
-                    Friends
-                  </button>
                 </div>
               </div>
             </div>

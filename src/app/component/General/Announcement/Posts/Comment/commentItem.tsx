@@ -167,18 +167,36 @@ export default function CommentItem({
         </div>
       </motion.div>
 
+      {/* UPDATED: Nested Replies with Curved Thread Lines */}
       {replies.length > 0 && (
-        <div className="ml-12 mt-2 flex flex-col gap-3 border-l-2 border-gray-200 pl-3">
-          {replies.map((reply) => (
-            <CommentItem
-              key={reply.id}
-              comment={reply}
-              onReact={onReact}
-              isReacting={isReacting}
-              isFeed={isFeed}
-              replies={[]}
-            />
-          ))}
+        <div className="ml-12 mt-2 flex flex-col">
+          {replies.map((reply, index) => {
+            // Determine if this is the last reply to handle the vertical line length
+            const isLast = index === replies.length - 1;
+
+            return (
+              <div key={reply.id} className="relative pl-0 pb-2">
+                {/* Visual Thread Lines */}
+                <div className="absolute left-[-35px] top-0 h-full w-4">
+                  {/* The Curve (L shape): Connects from top to the avatar */}
+                  <div className="absolute left-0 top-0 h-6 w-4 rounded-bl-xl border-b-2 border-l-2 border-gray-300/50" />
+
+                  {/* Vertical Extension: Continues line to next sibling if this isn't the last one */}
+                  {!isLast && (
+                    <div className="absolute left-0 top-6 bottom-0 w-[2px] bg-gray-300/50" />
+                  )}
+                </div>
+
+                <CommentItem
+                  comment={reply}
+                  onReact={onReact}
+                  isReacting={isReacting}
+                  isFeed={isFeed}
+                  replies={[]}
+                />
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
