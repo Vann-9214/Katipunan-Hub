@@ -88,7 +88,7 @@ export function useComments(postId: string, isFeed: boolean = false) {
             FeedCommentReactions ( user_id, reaction )
           `)
           .eq("feed_id", postId)
-          .order("created_at", { ascending: true });
+          .order("created_at", { ascending: false }); // UPDATED: Changed to false for latest on top
 
         if (error) throw error;
         rawData = data || [];
@@ -106,7 +106,7 @@ export function useComments(postId: string, isFeed: boolean = false) {
             PostCommentReactions ( user_id, reaction )
           `)
           .eq("post_id", postId)
-          .order("created_at", { ascending: true });
+          .order("created_at", { ascending: false }); // UPDATED: Changed to false for latest on top
 
         if (error) throw error;
         rawData = data || [];
@@ -242,7 +242,10 @@ export function useComments(postId: string, isFeed: boolean = false) {
         // Structural Parent (DB Requirement)
         parentId = replyTo.parent_comment_id || replyTo.id;
         // Who we are specifically replying to (For Notification Logic)
-        replyToUserId = replyTo.author.id;
+        // UPDATED: Only allow reply notifications if it is a Feed. Disable for Announcements.
+        if (isFeed) {
+          replyToUserId = replyTo.author.id;
+        }
     }
 
     if (isFeed) {
@@ -294,7 +297,7 @@ export function useComments(postId: string, isFeed: boolean = false) {
         userReactionId: null,
       };
 
-      setComments((prev) => [...prev, newComment]);
+      setComments((prev) => [newComment, ...prev]); // UPDATED: Prepend new comment to top
       setCommentCount((prev) => prev + 1);
     }
   }, [currentUser, postId, isFeed]);
