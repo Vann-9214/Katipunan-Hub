@@ -1,3 +1,4 @@
+//
 "use client";
 
 import * as React from "react";
@@ -207,7 +208,17 @@ export function Combobox({
             dropdownBorderColor
           )}
         >
-          <Command>
+          <Command
+            // --- ADDED: Custom Filter Function ---
+            // This function strips spaces from both the item value and the search term
+            // allowing "BSAccountancy" to match "BS Accountancy"
+            filter={(value, search) => {
+              if (!value) return 0;
+              const normalizedValue = value.toLowerCase().replace(/\s+/g, "");
+              const normalizedSearch = search.toLowerCase().replace(/\s+/g, "");
+              return normalizedValue.includes(normalizedSearch) ? 1 : 0;
+            }}
+          >
             <CommandInput placeholder={placeholder} className="h-9 pl-4 pr-3" />
             <CommandList>
               <CommandEmpty>{emptyText}</CommandEmpty>
@@ -215,18 +226,24 @@ export function Combobox({
                 {items.map((item) => (
                   <CommandItem
                     key={item.value}
-                    value={item.value}
+                    // We use item.label as the value here so the filter function receives the visible text
+                    value={item.label}
                     onSelect={(currentValue) => {
+                      // Find the original item by matching the label (case-insensitive)
+                      const foundItem = items.find(
+                        (i) =>
+                          i.label.toLowerCase() === currentValue.toLowerCase()
+                      );
+                      if (!foundItem) return;
+
                       const newValue =
-                        currentValue === value ? "" : currentValue;
+                        foundItem.value === value ? "" : foundItem.value;
                       setValue(newValue);
                       setOpen(false);
                       onChange?.(newValue);
                     }}
-                    /* Added whitespace-nowrap to prevent text wrapping on short widths */
                     className={cn(
                       "cursor-pointer px-4 whitespace-nowrap",
-                      // Apply the same text size and font to items
                       font,
                       textSize,
                       dropdownTextColor,

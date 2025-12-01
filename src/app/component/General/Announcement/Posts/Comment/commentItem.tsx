@@ -5,7 +5,7 @@ import ReactionSummary from "../../Posts/reactionSummary";
 import { ReactionCount } from "../../../../../../../supabase/Lib/Announcement/Posts/usePostReaction";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { usePostComment } from "./postCommentContext"; // 1. Import the context hook
+import { usePostComment } from "./postCommentContext";
 
 type Author = {
   id: string;
@@ -28,17 +28,18 @@ export type CommentWithAuthor = {
 
 export default function CommentItem({
   comment,
+  replies = [],
   onReact,
   isReacting,
   isFeed = false,
 }: {
   comment: CommentWithAuthor;
+  replies?: CommentWithAuthor[];
   onReact: (commentId: string, reactionId: string | null) => void;
   isReacting: boolean;
   isFeed?: boolean;
 }) {
-  // 2. Get the close function from the context
-  const { closePostModal } = usePostComment();
+  const { closePostModal, setReplyingTo } = usePostComment();
 
   const onMainClick = () => {
     const newReactionId = comment.userReactionId ? null : "like";
@@ -47,6 +48,10 @@ export default function CommentItem({
 
   const onPickerSelect = (reactionId: string) => {
     onReact(comment.id, reactionId);
+  };
+
+  const handleReplyClick = () => {
+    setReplyingTo(comment);
   };
 
   const formatTimeAgo = (dateString: string) => {
@@ -65,73 +70,117 @@ export default function CommentItem({
     return `${weeks}w`;
   };
 
+  // --- UPDATED: Fix to only bold the @Name ---
+  const renderCommentContent = (text: string) => {
+    // Split by @ followed by word characters (alphanumeric + underscore)
+    // This stops at the first space, punctuation, etc.
+    const parts = text.split(/(@\w+)/g);
+
+    return parts.map((part, index) => {
+      // Check if this specific part is the mention
+      if (part.startsWith("@")) {
+        return (
+          <span key={index} className="font-bold text-black">
+            {part}
+          </span>
+        );
+      }
+      // Return the rest of the text normally
+      return <span key={index}>{part}</span>;
+    });
+  };
+
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 20, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-      transition={{ type: "spring", stiffness: 500, damping: 30 }}
-      className="flex w-full gap-3"
-    >
-      {/* 3. Add onClick={closePostModal} to the Avatar Link */}
-      <Link
-        href={`/Profile/${comment.author.id}`}
-        className="shrink-0"
-        onClick={closePostModal}
+    <div className="flex flex-col w-full">
+      <motion.div
+        layout
+        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
+        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+        className="flex w-full gap-3"
       >
-        <Image
-          src={comment.author.avatarURL || "/DefaultAvatar.svg"}
-          alt={comment.author.fullName || "User"}
-          width={40}
-          height={40}
-          className="mt-1 h-10 w-10 rounded-full object-cover hover:brightness-90 transition-all"
-        />
-      </Link>
+        <Link
+          href={`/Profile/${comment.author.id}`}
+          className="shrink-0"
+          onClick={closePostModal}
+        >
+          <Image
+            src={comment.author.avatarURL || "/DefaultAvatar.svg"}
+            alt={comment.author.fullName || "User"}
+            width={40}
+            height={40}
+            className="mt-1 h-10 w-10 rounded-full object-cover hover:brightness-90 transition-all"
+          />
+        </Link>
 
-      <div className="flex-1 min-w-0">
-        <div className="relative rounded-2xl bg-gray-200/50 px-4 py-2">
-          {/* 4. Add onClick={closePostModal} to the Name Link */}
-          <Link
-            href={`/Profile/${comment.author.id}`}
-            className="font-montserrat text-sm font-semibold text-black hover:text-[#8B0E0E] hover:underline transition-colors w-fit block"
-            onClick={closePostModal}
-          >
-            {comment.author.fullName || "Anonymous User"}
-          </Link>
-          <p className="font-montserrat text-sm text-black break-words whitespace-pre-wrap">
-            {comment.comment}
-          </p>
-        </div>
+        <div className="flex-1 min-w-0">
+          <div className="relative rounded-2xl bg-gray-200/50 px-4 py-2">
+            <Link
+              href={`/Profile/${comment.author.id}`}
+              className="font-montserrat text-sm font-semibold text-black hover:text-[#8B0E0E] hover:underline transition-colors w-fit block"
+              onClick={closePostModal}
+            >
+              {comment.author.fullName || "Anonymous User"}
+            </Link>
 
-        <div className="flex items-center justify-between px-3 pt-1">
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-medium text-gray-700">
-              {formatTimeAgo(comment.created_at)}
-            </span>
-
-            <ReactionButton
-              selectedReactionId={comment.userReactionId}
-              isLoading={isReacting}
-              onReactionSelect={onPickerSelect}
-              onMainButtonClick={onMainClick}
-              height={24}
-              textSize={12}
-              width="auto"
-            />
+            {/* Render the content with mixed bold/normal text */}
+            <p className="font-montserrat text-sm text-black break-words whitespace-pre-wrap">
+              {renderCommentContent(comment.comment)}
+            </p>
           </div>
 
-          <div className="flex items-center">
-            <ReactionSummary
-              topReactions={comment.reactionSummary?.topReactions || []}
-              totalCount={comment.reactionSummary?.totalCount || 0}
-              isLoading={isReacting}
-              referenceId={comment.id}
-              sourceType={isFeed ? "feed_comment" : "post_comment"}
-            />
+          <div className="flex items-center justify-between px-3 pt-1">
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-medium text-gray-700">
+                {formatTimeAgo(comment.created_at)}
+              </span>
+
+              <button
+                onClick={handleReplyClick}
+                className="text-xs font-bold text-gray-600 hover:text-black transition-colors cursor-pointer"
+              >
+                Reply
+              </button>
+
+              <ReactionButton
+                selectedReactionId={comment.userReactionId}
+                isLoading={isReacting}
+                onReactionSelect={onPickerSelect}
+                onMainButtonClick={onMainClick}
+                height={24}
+                textSize={12}
+                width="auto"
+              />
+            </div>
+
+            <div className="flex items-center">
+              <ReactionSummary
+                topReactions={comment.reactionSummary?.topReactions || []}
+                totalCount={comment.reactionSummary?.totalCount || 0}
+                isLoading={isReacting}
+                referenceId={comment.id}
+                sourceType={isFeed ? "feed_comment" : "post_comment"}
+              />
+            </div>
           </div>
         </div>
-      </div>
-    </motion.div>
+      </motion.div>
+
+      {replies.length > 0 && (
+        <div className="ml-12 mt-2 flex flex-col gap-3 border-l-2 border-gray-200 pl-3">
+          {replies.map((reply) => (
+            <CommentItem
+              key={reply.id}
+              comment={reply}
+              onReact={onReact}
+              isReacting={isReacting}
+              isFeed={isFeed}
+              replies={[]}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

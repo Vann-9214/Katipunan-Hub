@@ -1,3 +1,4 @@
+//
 "use client";
 
 import { useState, useCallback, useRef } from "react";
@@ -8,11 +9,13 @@ import { X } from "lucide-react";
 interface AvatarUploadModalProps {
   onClose: () => void;
   onSave: (croppedBlob: Blob) => void;
+  isCoverPhoto?: boolean; // Default is false
 }
 
 export default function AvatarUploadModal({
   onClose,
   onSave,
+  isCoverPhoto = false,
 }: AvatarUploadModalProps) {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -60,13 +63,23 @@ export default function AvatarUploadModal({
     }
   };
 
+  const modalTitle = isCoverPhoto
+    ? "Change Cover Photo"
+    : "Change Profile Picture";
+  const recommendText = isCoverPhoto
+    ? "We recommend a landscape image."
+    : "We recommend a square image.";
+
+  const cropShape = isCoverPhoto ? "rect" : "round";
+  const aspect = isCoverPhoto ? 16 / 9 : 1;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 backdrop-blur-sm">
       <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-lg mx-4">
         {/* Modal Header */}
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-[25px] font-montserrat font-bold text-black">
-            Change Profile Picture
+            {modalTitle}
           </h2>
           <button
             onClick={onClose}
@@ -87,30 +100,42 @@ export default function AvatarUploadModal({
         />
 
         {/* Cropper/Upload Area */}
-        <div className="relative w-full h-80 bg-gray-100 rounded-lg overflow-hidden">
+        {/* UPDATED: Explicitly control styling based on isCoverPhoto.
+            If isCoverPhoto is true, we remove ALL rounded classes from this container.
+        */}
+        <div
+          className={`relative w-full h-80 bg-gray-100 overflow-hidden ${
+            isCoverPhoto ? "" : "rounded-lg"
+          }`}
+          style={{
+            borderRadius: isCoverPhoto ? "0px" : undefined,
+            // Ensure mask doesn't get clipped by parent if needed
+            clipPath: isCoverPhoto ? "none" : undefined,
+          }}
+        >
           {!imageSrc ? (
             <div className="w-full h-full flex flex-col items-center justify-center p-4">
               <button
                 type="button"
                 onClick={handleChangeClick}
-                className="px-4  py-2 text-[18px] bg-maroon text-white font-semibold rounded-lg hover:bg-red-800 transition-colors cursor-pointer"
+                className="px-4 py-2 text-[18px] bg-maroon text-white font-semibold rounded-lg hover:bg-red-800 transition-colors cursor-pointer"
               >
                 Choose an image
               </button>
-              <p className="text-gray-500 text-[15px] mt-3">
-                We recommend a square image.
-              </p>
+              <p className="text-gray-500 text-[15px] mt-3">{recommendText}</p>
             </div>
           ) : (
             <Cropper
               image={imageSrc}
               crop={crop}
               zoom={zoom}
-              aspect={1}
-              cropShape="round"
+              aspect={aspect}
+              cropShape={cropShape}
               onCropChange={setCrop}
               onZoomChange={setZoom}
               onCropComplete={onCropComplete}
+              // OPTIONAL: You can customize the style of the container/media directly if needed
+              // style={{ containerStyle: { borderRadius: 0 } }}
             />
           )}
         </div>
@@ -141,7 +166,7 @@ export default function AvatarUploadModal({
               type="button"
               onClick={handleChangeClick}
               disabled={isSaving}
-              className="px-6 py-2  bg-black/50 text-white font-medium cursor-pointer rounded-lg hover:brightness-110 transition-colors"
+              className="px-6 py-2 bg-black/50 text-white font-medium cursor-pointer rounded-lg hover:brightness-110 transition-colors"
             >
               Change Image
             </button>
@@ -151,8 +176,7 @@ export default function AvatarUploadModal({
             type="button"
             onClick={handleSave}
             disabled={!imageSrc || isSaving}
-            className="px-6 py-2 bg-maroon text-white cursor-pointer font-medium rounded-lg hover:bg-red-800 transition-colors
-                         disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="px-6 py-2 bg-maroon text-white cursor-pointer font-medium rounded-lg hover:bg-red-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {isSaving ? "Saving..." : "Save Photo"}
           </button>

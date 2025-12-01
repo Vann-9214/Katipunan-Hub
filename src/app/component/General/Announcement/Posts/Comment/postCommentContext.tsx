@@ -9,6 +9,10 @@ import {
 } from "react";
 // Make sure this import path is correct
 import { PostsProps } from "@/app/component/General/Announcement/Posts/Posts";
+/* -------------------------------------------------------------------------- */
+/* UPDATED: Import Comment Type                        */
+/* -------------------------------------------------------------------------- */
+import type { CommentWithAuthor } from "./commentItem";
 
 // 1. Define the type for the onClose callback
 type OnCloseCallback = () => void;
@@ -18,6 +22,12 @@ interface PostModalContextType {
   // 2. Update openPostModal signature to accept the callback
   openPostModal: (post: PostsProps, onClose?: OnCloseCallback) => void;
   closePostModal: () => void;
+
+  /* -------------------------------------------------------------------------- */
+  /* UPDATED: Reply State Interface                      */
+  /* -------------------------------------------------------------------------- */
+  replyingTo: CommentWithAuthor | null;
+  setReplyingTo: (comment: CommentWithAuthor | null) => void;
 }
 
 // Provide a default value for the context
@@ -31,6 +41,11 @@ export const PostModalProvider = ({ children }: { children: ReactNode }) => {
   // 3. Add state to hold the callback
   const [onCloseCallback, setOnCloseCallback] =
     useState<OnCloseCallback | null>(null);
+
+  /* -------------------------------------------------------------------------- */
+  /* UPDATED: Reply State Implementation                 */
+  /* -------------------------------------------------------------------------- */
+  const [replyingTo, setReplyingTo] = useState<CommentWithAuthor | null>(null);
 
   // 4. Update openPostModal implementation
   const openPostModal = useCallback(
@@ -51,11 +66,21 @@ export const PostModalProvider = ({ children }: { children: ReactNode }) => {
     }
     setSpotlightPost(null);
     setOnCloseCallback(null); // Clear the callback
+    setReplyingTo(null); // Clear reply state
   }, [onCloseCallback]);
 
   return (
     <PostModalContext.Provider
-      value={{ spotlightPost, openPostModal, closePostModal }}
+      value={{
+        spotlightPost,
+        openPostModal,
+        closePostModal,
+        /* -------------------------------------------------------------------------- */
+        /* UPDATED: Export Reply State                         */
+        /* -------------------------------------------------------------------------- */
+        replyingTo,
+        setReplyingTo,
+      }}
     >
       {children}
     </PostModalContext.Provider>

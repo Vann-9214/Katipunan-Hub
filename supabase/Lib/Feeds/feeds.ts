@@ -70,7 +70,7 @@ export async function getPLCHighlights(): Promise<PLCHighlight[]> {
       review,
       created_at,
       booking_id,
-      Tutor:Accounts!TutorRatings_tutor_id_fkey (fullName, avatarURL),
+      Tutor:Accounts!TutorRatings_tutor_id_fkey (id, fullName, avatarURL),
       Student:Accounts!TutorRatings_student_id_fkey (fullName)
     `)
     .order("rating", { ascending: false }) 
@@ -81,7 +81,7 @@ export async function getPLCHighlights(): Promise<PLCHighlight[]> {
     return [];
   }
 
-  // Manually fetch subject from Booking table (since there is no FK on booking_id in your provided schema)
+  // Manually fetch subject from Booking table
   const enrichedData = await Promise.all(
     data.map(async (item: any) => {
       // Try to find the subject in History or Active bookings
@@ -104,6 +104,7 @@ export async function getPLCHighlights(): Promise<PLCHighlight[]> {
 
       return {
         id: item.id,
+        tutorId: item.Tutor?.id || "", // Map the ID
         tutorName: item.Tutor?.fullName || "Unknown Tutor",
         tutorAvatar: item.Tutor?.avatarURL,
         studentName: item.Student?.fullName || "Anonymous",

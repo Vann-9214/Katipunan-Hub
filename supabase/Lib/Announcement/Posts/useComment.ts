@@ -6,7 +6,6 @@ import { CommentWithAuthor } from "@/app/component/General/Announcement/Posts/Co
 import { usePostComment } from "@/app/component/General/Announcement/Posts/Comment/postCommentContext";
 import { ReactionCount } from "./usePostReaction";
 
-// --- HELPER: Optimistic Update Logic ---
 const simpleOptimisticUpdate = (
   comments: CommentWithAuthor[],
   commentId: string,
@@ -49,7 +48,6 @@ export function useComments(postId: string, isFeed: boolean = false) {
   const [reactingCommentId, setReactingCommentId] = useState<string | null>(null);
   const { closePostModal } = usePostComment();
 
-  // 1. Fetch User Details
   useEffect(() => {
     const fetchUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -70,7 +68,6 @@ export function useComments(postId: string, isFeed: boolean = false) {
     fetchUser();
   }, []);
 
-  // 2. Main Data Fetching Function
   const fetchCommentsWithReactions = useCallback(async () => {
     if (!postId) return;
     if (comments.length === 0) setIsLoading(true);
@@ -79,7 +76,6 @@ export function useComments(postId: string, isFeed: boolean = false) {
       let rawData: any[] = [];
 
       if (isFeed) {
-        // --- FEED COMMENTS (Uses 'content') ---
         const { data, error } = await supabase
           .from("FeedComments")
           .select(`
@@ -87,6 +83,7 @@ export function useComments(postId: string, isFeed: boolean = false) {
             content,
             created_at,
             user_id,
+            parent_comment_id,
             Accounts:user_id ( id, fullName, avatarURL ),
             FeedCommentReactions ( user_id, reaction )
           `)
@@ -97,8 +94,6 @@ export function useComments(postId: string, isFeed: boolean = false) {
         rawData = data || [];
 
       } else {
-        // --- POST COMMENTS (Uses 'comment') ---
-        // FIX: Changed 'content' to 'comment' to match your table definition
         const { data, error } = await supabase
           .from("PostComments")
           .select(`
@@ -117,7 +112,6 @@ export function useComments(postId: string, isFeed: boolean = false) {
         rawData = data || [];
       }
 
-      // --- PROCESS DATA ---
       const processedComments: CommentWithAuthor[] = rawData.map((c) => {
         const reactions = c.FeedCommentReactions || c.PostCommentReactions || [];
         
@@ -136,7 +130,6 @@ export function useComments(postId: string, isFeed: boolean = false) {
 
         return {
           id: c.id,
-          // FIX: Check for both 'comment' (Posts) and 'content' (Feeds)
           comment: c.comment || c.content, 
           created_at: c.created_at,
           parent_comment_id: c.parent_comment_id || null,
@@ -163,12 +156,10 @@ export function useComments(postId: string, isFeed: boolean = false) {
     }
   }, [postId, isFeed, currentUser]);
 
-  // 3. Initial Load
   useEffect(() => {
     fetchCommentsWithReactions();
   }, [fetchCommentsWithReactions]);
 
-  // 4. Realtime Subscription
   useEffect(() => {
     if (!postId) return;
 
@@ -194,7 +185,6 @@ export function useComments(postId: string, isFeed: boolean = false) {
     };
   }, [postId, isFeed, fetchCommentsWithReactions]);
 
-  // 5. Handle Reaction
   const handleCommentReaction = useCallback(async (commentId: string, newReactionId: string | null) => {
     if (!currentUser) return;
     
@@ -238,28 +228,40 @@ export function useComments(postId: string, isFeed: boolean = false) {
     }
   }, [currentUser, isFeed, fetchCommentsWithReactions]);
 
-  // 6. Post Comment
-  const postComment = useCallback(async (commentText: string) => {
+  const postComment = useCallback(async (commentText: string, replyTo: CommentWithAuthor | null) => {
     if (!currentUser || !postId || !commentText.trim()) return;
 
-    // Define payload based on type
     let payload: any = {};
     let table = "";
+    
+    // Determine the structural parent (Always the root comment)
+    let parentId = null;
+    let replyToUserId = null; // New Variable
+
+    if (replyTo) {
+        // Structural Parent (DB Requirement)
+        parentId = replyTo.parent_comment_id || replyTo.id;
+        // Who we are specifically replying to (For Notification Logic)
+        replyToUserId = replyTo.author.id;
+    }
 
     if (isFeed) {
       table = "FeedComments";
       payload = {
         feed_id: postId,
         user_id: currentUser.id,
-        content: commentText.trim(), // Feed uses 'content'
+        content: commentText.trim(),
+        parent_comment_id: parentId,
+        reply_to_user_id: replyToUserId // Pass this to SQL
       };
     } else {
       table = "PostComments";
       payload = {
         post_id: postId,
         user_id: currentUser.id,
-        comment: commentText.trim(), // Post uses 'comment'
-        parent_comment_id: null
+        comment: commentText.trim(),
+        parent_comment_id: parentId,
+        reply_to_user_id: replyToUserId // Pass this to SQL
       };
     }
 
@@ -275,9 +277,11 @@ export function useComments(postId: string, isFeed: boolean = false) {
     }
 
     if (data) {
+      // --- MANUAL NOTIFICATION BLOCK REMOVED --- 
+      // The SQL Trigger now handles this safely without duplicates.
+
       const newComment: CommentWithAuthor = {
         id: data.id,
-        // FIX: Handle response data mapping
         comment: data.comment || data.content, 
         created_at: data.created_at,
         parent_comment_id: data.parent_comment_id || null,
@@ -294,7 +298,6 @@ export function useComments(postId: string, isFeed: boolean = false) {
       setCommentCount((prev) => prev + 1);
     }
   }, [currentUser, postId, isFeed]);
-
   return {
     comments,
     isLoading,
