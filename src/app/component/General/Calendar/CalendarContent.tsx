@@ -4,7 +4,6 @@ import React, { useMemo, useState, useEffect } from "react";
 import Image from "next/image";
 import { Montserrat } from "next/font/google";
 import {
-  Holiday,
   PostedEvent,
   PersonalEvent,
   MenuType,
@@ -38,7 +37,9 @@ export default function CalendarContent() {
   // But we track the panel separately to keep it visible
   const [selectedMenu, setSelectedMenu] = useState<MenuType>("Reminder");
   // Track which panel should be displayed (Reminder or Schedule)
-  const [activePanel, setActivePanel] = useState<"Reminder" | "Schedule">("Reminder");
+  const [activePanel, setActivePanel] = useState<"Reminder" | "Schedule">(
+    "Reminder"
+  );
   const [showAddEvent, setShowAddEvent] = useState(false);
   // This controls the calendar view (month/year)
   const [viewMode, setViewMode] = useState<"month" | "year">("month");
@@ -225,7 +226,7 @@ export default function CalendarContent() {
               height={65}
             />
           </div>
-          
+
           {/* Text Content */}
           <div className="flex flex-col">
             <h1
