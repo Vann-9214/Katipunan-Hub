@@ -609,6 +609,9 @@ export default function FullDetails({
           onSubmit={async (rating, review) => {
             if (onRateTutor && booking.Tutor?.id) {
               await onRateTutor(booking.id, booking.Tutor.id, rating, review);
+
+              setIsRateModalOpen(false);
+              onClose();
             }
           }}
         />

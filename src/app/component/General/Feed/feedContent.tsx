@@ -218,6 +218,7 @@ export default function FeedsContent() {
                   // --- USE FORMAT HELPER ---
                   date={formatPostDate(post.created_at)}
                   author={{
+                    id: post.author.id, // <--- ADDED ID HERE
                     fullName: post.author.fullName,
                     avatarURL: post.author.avatarURL,
                     role: post.author.role,
