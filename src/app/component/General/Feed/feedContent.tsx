@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "../../../../../supabase/Lib/General/supabaseClient";
 import { getCurrentUserDetails } from "../../../../../supabase/Lib/General/getUser";
 import {
@@ -33,6 +33,18 @@ const DEFAULT_FILTERS: FilterState = {
   visibility: "Global",
 };
 
+// --- OPTIMIZATION CONSTANTS: Define posts per page for pagination ---
+const POSTS_PER_PAGE = 10;
+
+// --- FIX: Define the shape of the database row for Realtime events ---
+type FeedTableRow = {
+  id: string;
+  content: string;
+  images: string[] | null;
+  created_at: string;
+  author_id: string;
+};
+
 export default function FeedsContent() {
   const [user, setUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<"feed" | "plc">("feed");
@@ -43,35 +55,148 @@ export default function FeedsContent() {
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [searchTerm, setSearchTerm] = useState("");
 
+  // --- NEW: PAGINATION STATE ---
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+
   const searchParams = useSearchParams();
 
   useEffect(() => {
     getCurrentUserDetails().then(setUser);
   }, []);
 
-  const fetchPosts = async () => {
-    setIsLoading(true);
-    const data = await getFeeds();
-    setPosts(data);
-    setIsLoading(false);
+  // --- OPTIMIZED: fetchPosts now handles initial load and loading more, and returns if more data exists ---
+  const fetchPosts = useCallback(
+    async (reset = false) => {
+      const currentPage = reset ? 0 : page;
+
+      // Do not set global loading state on subsequent fetches
+      if (reset) {
+        setIsLoading(true);
+      } else if (currentPage > 0) {
+        setIsFetchingMore(true);
+      }
+
+      try {
+        // Fetch data using the new paginated function
+        const { posts: newPosts, count } = await getFeeds(
+          currentPage,
+          POSTS_PER_PAGE
+        );
+
+        const newHasMore =
+          count !== null
+            ? (currentPage + 1) * POSTS_PER_PAGE < count
+            : newPosts.length === POSTS_PER_PAGE;
+
+        if (reset) {
+          setPosts(newPosts);
+          setPage(0); // Ensure page resets for filtering/sorting
+        } else {
+          // Append new posts to existing list
+          setPosts((prev) => [...prev, ...newPosts]);
+        }
+
+        setHasMore(newHasMore);
+      } catch (e) {
+        console.error("Failed to fetch posts:", e);
+      } finally {
+        setIsLoading(false);
+        setIsFetchingMore(false);
+      }
+    },
+    [page]
+  );
+
+  // --- NEW: Load More Handler ---
+  const handleLoadMore = () => {
+    if (!hasMore || isLoading || isFetchingMore) return;
+    setPage((prev) => prev + 1);
   };
 
+  // --- EXISTING: Initial fetch on component mount and when page changes for loading more ---
   useEffect(() => {
-    fetchPosts();
+    // Only reset (full fetch) if page is 0, otherwise it's a "load more" fetch
+    fetchPosts(page === 0);
+  }, [page, fetchPosts]);
+
+  // --- OPTIMIZED: Realtime listener no longer calls fetchPosts (Fixes Refetch Storm) ---
+  useEffect(() => {
     const channel = supabase
       .channel("realtime-feeds")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "Feeds" },
-        fetchPosts
+        { event: "INSERT", schema: "public", table: "Feeds" },
+        // --- PERFORMANCE FIX: Prepend the new post to state instead of re-fetching everything ---
+        async (payload) => {
+          // FIX 1: Cast to explicit type instead of any
+          const newFeed = payload.new as FeedTableRow;
+
+          // Fetch author details for the new post only (minimal database impact)
+          const { data: authorData } = await supabase
+            .from("Accounts")
+            .select("id, fullName, avatarURL, role")
+            .eq("id", newFeed.author_id)
+            .maybeSingle();
+
+          if (authorData) {
+            const newPostWithAuthor: FeedPost = {
+              id: newFeed.id,
+              content: newFeed.content,
+              images: newFeed.images || [],
+              created_at: newFeed.created_at,
+              author: authorData,
+            };
+            // Prepend the new post to the posts array
+            setPosts((prevPosts) => [newPostWithAuthor, ...prevPosts]);
+            // Reset page counter so next scroll starts from the top.
+            setPage(0);
+          }
+        }
+      )
+      .on(
+        // Handle UPDATES via Realtime to keep the existing list fresh
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "Feeds" },
+        (payload) => {
+          // FIX 2: Cast to explicit type instead of any
+          const updatedFeed = payload.new as FeedTableRow;
+
+          setPosts((prevPosts) =>
+            prevPosts.map((post) =>
+              post.id === updatedFeed.id
+                ? {
+                    ...post,
+                    content: updatedFeed.content,
+                    images: updatedFeed.images || [], // Added fallback for safety
+                  }
+                : post
+            )
+          );
+        }
+      )
+      .on(
+        // Handle DELETES via Realtime
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "Feeds" },
+        (payload) => {
+          // FIX 3: Cast to explicit type instead of any
+          const deletedFeed = payload.old as FeedTableRow;
+
+          setPosts((prevPosts) =>
+            prevPosts.filter((post) => post.id !== deletedFeed.id)
+          );
+        }
       )
       .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
     };
   }, []);
 
-  // --- NEW: SCROLL TO POST LOGIC ---
+  // --- EXISTING: SCROLL TO POST LOGIC (Unchanged) ---
   useEffect(() => {
     const targetId = searchParams.get("id");
     if (targetId && posts.length > 0 && activeTab === "feed") {
@@ -197,44 +322,57 @@ export default function FeedsContent() {
               onUpdatePost={handleUpdatePost}
             />
 
-            {isLoading ? (
+            {isLoading && page === 0 ? ( // Only show full loading on initial fetch
               <div className="mt-10 text-gray-400 font-montserrat">
                 Loading feeds...
               </div>
             ) : filteredPosts.length > 0 ? (
-              filteredPosts.map((post) => (
-                <Posts
-                  key={post.id}
-                  postId={post.id}
-                  userId={user.id}
-                  type="feed"
-                  isFeed={true}
-                  title=""
-                  description={post.content}
-                  images={post.images}
-                  date={formatPostDate(post.created_at)}
-                  author={{
-                    id: post.author.id,
-                    fullName: post.author.fullName,
-                    avatarURL: post.author.avatarURL,
-                    role: post.author.role,
-                  }}
-                  onEdit={() => handleEdit(post.id)}
-                  onDelete={
-                    post.author.id === user.id
-                      ? async () => {
-                          if (confirm("Delete this post?")) {
-                            await supabase
-                              .from("Feeds")
-                              .delete()
-                              .eq("id", post.id);
+              <>
+                {filteredPosts.map((post) => (
+                  <Posts
+                    key={post.id}
+                    postId={post.id}
+                    userId={user.id}
+                    type="feed"
+                    isFeed={true}
+                    title=""
+                    description={post.content}
+                    images={post.images}
+                    date={formatPostDate(post.created_at)}
+                    author={{
+                      id: post.author.id,
+                      fullName: post.author.fullName,
+                      avatarURL: post.author.avatarURL,
+                      role: post.author.role,
+                    }}
+                    onEdit={() => handleEdit(post.id)}
+                    onDelete={
+                      post.author.id === user.id
+                        ? async () => {
+                            if (confirm("Delete this post?")) {
+                              await supabase
+                                .from("Feeds")
+                                .delete()
+                                .eq("id", post.id);
+                            }
                           }
-                        }
-                      : undefined
-                  }
-                  canEdit={post.author.id === user.id}
-                />
-              ))
+                        : undefined
+                    }
+                    canEdit={post.author.id === user.id}
+                  />
+                ))}
+
+                {/* --- NEW: Load More Button for Pagination --- */}
+                {hasMore && (
+                  <button
+                    onClick={handleLoadMore}
+                    disabled={isFetchingMore}
+                    className="mt-4 px-6 py-2 rounded-full font-bold text-sm text-white bg-[#8B0E0E] hover:bg-[#A81212] transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  >
+                    {isFetchingMore ? "Loading more..." : "Load More Feeds"}
+                  </button>
+                )}
+              </>
             ) : (
               <div className="w-[590px] p-[2px] rounded-[20px] bg-gradient-to-br from-[#EFBF04] via-[#FFD700] to-[#D4AF37] shadow-xl">
                 <div className="bg-white w-full h-full rounded-[18px] flex flex-col overflow-hidden">

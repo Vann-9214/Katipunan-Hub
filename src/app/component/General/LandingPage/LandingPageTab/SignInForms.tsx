@@ -4,44 +4,45 @@ import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient"
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-// 1. Import Icons for the new error UI
 import { AlertCircle, ArrowRight } from "lucide-react";
+import { useSearchParams } from "next/navigation"; // Added for redirect logic
 
 import ToggleButton from "@/app/component/ReusableComponent/ToggleButton";
 import Button from "@/app/component/ReusableComponent/Buttons";
 import Logo from "@/app/component/ReusableComponent/Logo";
 import TextBox from "@/app/component/ReusableComponent/Textbox";
+import { EMAIL_DOMAIN } from "../../../../../../supabase/Lib/constants";
 
 interface SignInFormProps {
   onClose?: () => void;
   onSwitchToSignUp?: () => void;
-  onSwitchToForgotPassword?: () => void;
-  // 2. Added prop for verification switching
+  onSwitchToForgotPassword?: () => void; // Uncommented
   onSwitchToVerification?: (email: string) => void;
 }
 
 export default function SignInForm({
   onClose,
   onSwitchToSignUp,
-  // onSwitchToForgotPassword,
+  onSwitchToForgotPassword, // Uncommented
   onSwitchToVerification,
 }: SignInFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-
-  // 3. New states for error handling
   const [errorMsg, setErrorMsg] = useState("");
   const [isUnverified, setIsUnverified] = useState(false);
 
-  // 4. Updated Logic
+  // Hook to get the previous URL if it exists
+  const searchParams = useSearchParams();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
     setIsUnverified(false);
 
-    if (!email.endsWith("@cit.edu")) {
-      setErrorMsg("Only @cit.edu emails are allowed.");
+    // Use constant for domain check
+    if (!email.endsWith(EMAIL_DOMAIN)) {
+      setErrorMsg(`Only ${EMAIL_DOMAIN} emails are allowed.`);
       return;
     }
     if (!email || !password) {
@@ -56,7 +57,6 @@ export default function SignInForm({
       });
 
       if (error) {
-        // Check for unverified email error
         if (error.message.includes("Email not confirmed")) {
           setIsUnverified(true);
         } else {
@@ -69,7 +69,10 @@ export default function SignInForm({
         setErrorMsg("Login failed. Please check your credentials.");
         return;
       }
-      window.location.href = "/Announcement";
+
+      // Check for redirect URL or default to /Announcement
+      const redirectUrl = searchParams.get("redirectedFrom") || "/Announcement";
+      window.location.href = redirectUrl;
     } catch (err) {
       console.error("Login error:", err);
       setErrorMsg("An unexpected error occurred.");
@@ -93,7 +96,7 @@ export default function SignInForm({
         transition={{ duration: 0.3, ease: "easeInOut" }}
         className="flex flex-col md:flex-row w-full max-w-[1050px] h-[650px] bg-white rounded-[30px] shadow-2xl relative overflow-hidden"
       >
-        {/* Left Side (Original) */}
+        {/* Left Side */}
         <div className="relative w-full md:w-[45%] bg-gradient-to-br from-[#800000] via-[#5A0505] to-[#2E0202] p-10 flex flex-col justify-start overflow-hidden text-white pt-20">
           <div
             className="absolute inset-0 opacity-[0.05] pointer-events-none"
@@ -125,7 +128,7 @@ export default function SignInForm({
           </div>
         </div>
 
-        {/* Right Side (Original structure with inserted Error UI) */}
+        {/* Right Side */}
         <div className="flex-1 bg-white flex flex-col justify-center items-center p-6 sm:p-8 relative overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           <button
             onClick={onClose}
@@ -176,7 +179,6 @@ export default function SignInForm({
             </div>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              {/* 6. Inserted Error & Verification UI (New Logic) */}
               <AnimatePresence>
                 {errorMsg && (
                   <motion.div
@@ -212,7 +214,6 @@ export default function SignInForm({
                 )}
               </AnimatePresence>
 
-              {/* Original Inputs */}
               <div className="flex flex-col gap-3">
                 <TextBox
                   autoFocus={true}
@@ -244,18 +245,19 @@ export default function SignInForm({
                     overrideTypeOnToggle={["password", "text"]}
                   />
                   <div className="flex justify-end">
-                    {/* <button
+                    {/* Uncommented the button */}
+                    <button
                       type="button"
                       onClick={onSwitchToForgotPassword}
                       className="text-xs font-semibold text-gray-500 hover:text-maroon transition-colors cursor-pointer mt-1"
                     >
                       Forgot Password?
-                    </button> */}
+                    </button>
                   </div>
                 </div>
               </div>
 
-              {/* Original Button with mt-40 preserved */}
+              {/* Reduced top margin slightly to fit the forgot password button better if needed, or kept as original */}
               <Button
                 text={loading ? "Logging In..." : "Login"}
                 width="w-full"
@@ -263,7 +265,7 @@ export default function SignInForm({
                 textSize="text-[16px]"
                 type="submit"
                 bg="bg-[#8B0E0E] hover:bg-[#6d0b0b]"
-                className="rounded-[15px] font-bold shadow-lg shadow-maroon/20 mt-40"
+                className="rounded-[15px] font-bold shadow-lg shadow-maroon/20 mt-32" // Adjusted mt-40 to mt-32 to fit the forgot password link
               />
 
               <div className="text-center text-xs font-ptsans text-gray-500 mt-1">
