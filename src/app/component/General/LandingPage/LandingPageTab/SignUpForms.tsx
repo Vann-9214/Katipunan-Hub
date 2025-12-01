@@ -156,7 +156,9 @@ export default function SignUpForm({
         return;
       }
 
-      onSuccessfulSignUp?.(email);
+      // --- MODIFIED: Direct to Sign In instead of Verification ---
+      alert("Sign up successful! Please sign in.");
+      onSwitch?.();
     } catch (err: unknown) {
       console.error("Sign up error:", err);
       setErrorMessage("Unexpected error during sign-up.");

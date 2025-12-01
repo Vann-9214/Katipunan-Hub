@@ -1,27 +1,27 @@
-// src/app/api/tutor-application/route.ts
-
 import { NextResponse } from 'next/server';
 // 1. Import nodemailer (make sure to install it with npm install nodemailer)
 import nodemailer from 'nodemailer';
 
-// 2. Configure the transporter to use your Gmail account and App Password
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: 'caneteivan9214@gmail.com', // Your Gmail address
-    pass: process.env.GMAIL_APP_PASSWORD, // The secure App Password from .env.local
-  },
-});
-
 export async function POST(request: Request) {
   try {
     const applicationPayload = await request.json();
-    
-    /* --- START: EMAIL CONFIGURATION --- */
-    
-    const ADMIN_EMAIL = "caneteivan9214@gmail.com"; 
 
-    // 2. Format the email content
+    /* --- START: EMAIL CONFIGURATION --- */
+
+    // 2. Configure the transporter to use your Gmail account and App Password
+    // We strictly use the environment variables here for security
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.GMAIL_USER,        // Reads 'caneteivan9214@gmail.com' from .env
+        pass: process.env.GMAIL_APP_PASSWORD, // Reads the 16-char code (no spaces) from .env
+      },
+    });
+    
+    // The admin email where notifications will be sent
+    const ADMIN_EMAIL = process.env.GMAIL_USER || "caneteivan9214@gmail.com"; 
+
+    // 3. Format the email content (Preserving your exact original logic)
     const isScholar = applicationPayload.isScholar;
     const gradesAttachment = applicationPayload.gradesProofUrl 
       ? `Link to Grades Proof: ${applicationPayload.gradesProofUrl}`
@@ -49,9 +49,9 @@ ${gradesAttachment}
 Please log in to the admin panel to review and process this application.
     `;
     
-    // 3. --- ACTUAL EMAIL SENDING CODE ---
+    // 4. --- ACTUAL EMAIL SENDING CODE ---
     await transporter.sendMail({
-      from: '"Katipunan Hub PLC" <caneteivan9214@gmail.com>',
+      from: `"Katipunan Hub PLC" <${process.env.GMAIL_USER}>`, // Sender Name + Address
       to: ADMIN_EMAIL, // Sends to your configured Gmail
       subject: emailSubject,
       text: emailBody,

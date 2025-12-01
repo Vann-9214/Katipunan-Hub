@@ -23,7 +23,7 @@ interface SignInFormProps {
 export default function SignInForm({
   onClose,
   onSwitchToSignUp,
-  onSwitchToForgotPassword,
+  // onSwitchToForgotPassword,
   onSwitchToVerification,
 }: SignInFormProps) {
   const [email, setEmail] = useState("");
@@ -146,9 +146,9 @@ export default function SignInForm({
             </svg>
           </button>
 
-          <div className="w-full max-w-[420px] flex flex-col gap-4 h-full justify-center py-6">
-            <div className="flex flex-col gap-1 flex-shrink-0">
-              <div className="transform scale-90 origin-left mt-1">
+          <div className="w-full max-w-[420px] flex flex-col gap-5 h-full justify-center py-6">
+            <div className="flex flex-col gap-1 shrink-0">
+              <div className="transform scale-90 origin-left">
                 <Logo unclickable={true} width={45} height={55} />
               </div>
               <div>
@@ -161,7 +161,7 @@ export default function SignInForm({
               </div>
             </div>
 
-            <div className="w-full flex-shrink-0">
+            <div className="w-full shrink-0 mb-5">
               <ToggleButton
                 width="w-full"
                 height="h-[40px]"
@@ -244,13 +244,13 @@ export default function SignInForm({
                     overrideTypeOnToggle={["password", "text"]}
                   />
                   <div className="flex justify-end">
-                    <button
+                    {/* <button
                       type="button"
                       onClick={onSwitchToForgotPassword}
                       className="text-xs font-semibold text-gray-500 hover:text-maroon transition-colors cursor-pointer mt-1"
                     >
                       Forgot Password?
-                    </button>
+                    </button> */}
                   </div>
                 </div>
               </div>
