@@ -281,7 +281,6 @@ export default function ChatSidebar() {
 
   return (
     <motion.aside
-      initial="hidden"
       animate="visible"
       variants={sidebarVariants}
       className="w-[350px] h-full bg-white border-r border-gray-200 flex flex-col p-4 space-y-4 shadow-xl"

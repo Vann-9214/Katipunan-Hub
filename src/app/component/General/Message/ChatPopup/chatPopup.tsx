@@ -1,7 +1,7 @@
 "use client";
 
 import { Search, Maximize2, Loader2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
 import { getCurrentUserDetails } from "../../../../../../supabase/Lib/General/getUser";
@@ -55,34 +55,35 @@ export default function ChatPopup() {
 
   const currentUserId = currentUser?.id;
 
-  // 2. Fetch conversations, last message, and unread count
-  useEffect(() => {
-    if (!currentUserId) {
-      setLoading(false);
-      return;
-    }
+  // 2. Reusable Data Fetching Function (Refactored for Realtime)
+  const fetchConversationsData = useCallback(
+    async (isBackgroundUpdate = false) => {
+      if (!currentUserId) {
+        if (!isBackgroundUpdate) setLoading(false);
+        return;
+      }
 
-    const fetchConversationsData = async (userId: string) => {
-      setLoading(true);
+      // Only show loading spinner on initial load, not on realtime updates
+      if (!isBackgroundUpdate) setLoading(true);
 
       try {
         // 1. Fetch conversations (top 5)
         const { data: convoData, error: convoError } = await supabase
           .from("Conversations")
           .select(`id, user_a_id, user_b_id, last_message_at`)
-          .or(`user_a_id.eq.${userId},user_b_id.eq.${userId}`)
+          .or(`user_a_id.eq.${currentUserId},user_b_id.eq.${currentUserId}`)
           .order("last_message_at", { ascending: false })
           .limit(5);
 
         if (convoError) {
           console.error("Error fetching popup conversations:", convoError);
-          setLoading(false);
+          if (!isBackgroundUpdate) setLoading(false);
           return;
         }
 
         // 2. Extract other user IDs and fetch accounts
         const otherUserIds = convoData.map((convo) =>
-          convo.user_a_id === userId ? convo.user_b_id : convo.user_a_id
+          convo.user_a_id === currentUserId ? convo.user_b_id : convo.user_a_id
         );
         const { data: accountsData } = await supabase
           .from("Accounts")
@@ -95,7 +96,9 @@ export default function ChatPopup() {
         // 3. Fetch last message content and unread count
         const conversationPromises = convoData.map(async (convo) => {
           const otherUserId =
-            convo.user_a_id === userId ? convo.user_b_id : convo.user_a_id;
+            convo.user_a_id === currentUserId
+              ? convo.user_b_id
+              : convo.user_a_id;
           const otherUser = accountsMap.get(otherUserId) || {
             id: otherUserId,
             fullName: "Unknown User",
@@ -132,7 +135,7 @@ export default function ChatPopup() {
             lastMessagePreview: lastMessage,
             avatarURL: otherUser.avatarURL,
             timestamp: timestamp,
-            unreadCount: unreadCount || 0, // This will be 4 if there are 4 messages
+            unreadCount: unreadCount || 0,
           } as ConversationItem;
         });
 
@@ -141,19 +144,43 @@ export default function ChatPopup() {
       } catch (err) {
         console.error("Error processing conversation data:", err);
       } finally {
-        setLoading(false);
+        if (!isBackgroundUpdate) setLoading(false);
       }
-    };
+    },
+    [currentUserId]
+  );
 
-    fetchConversationsData(currentUserId);
-  }, [currentUserId]);
+  // 3. Initial Load Effect
+  useEffect(() => {
+    fetchConversationsData();
+  }, [fetchConversationsData]);
+
+  // 4. Realtime Subscription Effect (NEW)
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    const channel = supabase
+      .channel("chat_popup_realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "Messages" },
+        () => {
+          // Call fetch with true to suppress the loading spinner
+          fetchConversationsData(true);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentUserId, fetchConversationsData]);
 
   const filteredConversations = conversations.filter((convo) =>
     convo.otherUserName.toLowerCase().includes(search.toLowerCase())
   );
 
   const handleSeeAllChats = () => {
-    // Using the logic from your preferred previous fix:
     const navPath = "/Message";
     setTimeout(() => {
       router.push(navPath);

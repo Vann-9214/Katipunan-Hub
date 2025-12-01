@@ -76,6 +76,7 @@ export default function AddFeedModal({
             value={content}
             onChange={(e) => setContent(e.target.value)}
             disabled={isSubmitting}
+            autoFocus={true}
           />
 
           <div className="mt-4">

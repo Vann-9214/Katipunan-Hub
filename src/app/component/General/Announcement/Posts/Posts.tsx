@@ -13,6 +13,7 @@ import { useFeedReaction } from "../../../../../../supabase/Lib/Feeds/useFeedRea
 import ReactionSummary from "./reactionSummary";
 import { collegeitems } from "../Utils/constants";
 import Avatar from "@/app/component/ReusableComponent/Avatar";
+import Link from "next/link"; // 1. Import Link
 
 // Component Interface
 export interface PostsProps {
@@ -30,6 +31,7 @@ export interface PostsProps {
   visibility?: string | null;
   isFeed?: boolean;
   author?: {
+    id: string; // 2. Add ID to author interface
     fullName: string;
     avatarURL: string | null;
     role?: string;
@@ -134,11 +136,14 @@ export default function Posts(props: PostsProps) {
               <div className="flex items-center">
                 <div className="select-none shrink-0">
                   {isFeed && author ? (
-                    <Avatar
-                      avatarURL={author.avatarURL}
-                      altText={author.fullName}
-                      className="w-[55px] h-[55px]"
-                    />
+                    // 3. Wrap Avatar in Link if feed
+                    <Link href={`/Profile/${author.id}`}>
+                      <Avatar
+                        avatarURL={author.avatarURL}
+                        altText={author.fullName}
+                        className="w-[55px] h-[55px] cursor-pointer transition-opacity hover:opacity-90"
+                      />
+                    </Link>
                   ) : (
                     <Image
                       src="/Cit Logo.svg"
@@ -156,9 +161,17 @@ export default function Posts(props: PostsProps) {
                       isFeed ? "font-bold" : ""
                     }`}
                   >
-                    {isFeed && author
-                      ? author.fullName
-                      : "Cebu Institute of Technology - University"}
+                    {isFeed && author ? (
+                      // 4. Wrap Name in Link if feed
+                      <Link
+                        href={`/Profile/${author.id}`}
+                        className="hover:underline cursor-pointer"
+                      >
+                        {author.fullName}
+                      </Link>
+                    ) : (
+                      "Cebu Institute of Technology - University"
+                    )}
                   </h1>
                   <div className="flex items-center gap-2 mt-1">
                     <p className="font-ptsans text-[14px] text-white/80">

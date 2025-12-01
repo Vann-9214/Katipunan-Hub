@@ -384,6 +384,7 @@ export default function AccountContent({ targetUserId }: AccountContentProps) {
                   visibility={post.visibility}
                   isFeed={true}
                   author={{
+                    id: viewedUser.id, // <--- ADDED THIS LINE
                     fullName: viewedUser.fullName,
                     avatarURL: viewedUser.avatarURL,
                     role: viewedUser.role,

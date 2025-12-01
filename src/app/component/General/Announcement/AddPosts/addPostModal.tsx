@@ -244,6 +244,7 @@ export function AddPostModal(props: AddPostModalProps) {
                       </label>
                       <input
                         type="text"
+                        autoFocus={true}
                         id="title"
                         value={title}
                         onChange={(e) => handlers.setTitle(e.target.value)}

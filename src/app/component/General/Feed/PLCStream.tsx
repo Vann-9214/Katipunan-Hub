@@ -6,16 +6,38 @@ import { PLCHighlight } from "../../../../../supabase/Lib/Feeds/types";
 import Avatar from "@/app/component/ReusableComponent/Avatar";
 import { Star, Quote, Award } from "lucide-react";
 import LoadingScreen from "@/app/component/ReusableComponent/LoadingScreen";
+// Import supabase for realtime
+import { supabase } from "../../../../../supabase/Lib/General/supabaseClient";
 
 export default function PLCStream() {
   const [items, setItems] = useState<PLCHighlight[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const fetchHighlights = async () => {
+    const data = await getPLCHighlights();
+    setItems(data);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    getPLCHighlights().then((data) => {
-      setItems(data);
-      setLoading(false);
-    });
+    // Initial fetch
+    fetchHighlights();
+
+    // Realtime Subscription to TutorRatings
+    const channel = supabase
+      .channel("plc-highlights-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "TutorRatings" },
+        () => {
+          fetchHighlights();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   if (loading)

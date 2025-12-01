@@ -1,4 +1,4 @@
-// src/app/component/General/Announcement/AnnouncementPageContent.tsx
+// src/app/component/General/Announcement/AnnouncementContent/AnnouncementContent.tsx
 "use client";
 
 import {
@@ -184,8 +184,28 @@ export default function AnnouncementPageContent() {
     []
   );
 
+  // --- Initial Fetch ---
   useEffect(() => {
     fetchPosts(filters, userCollegeCode);
+  }, [filters, userCollegeCode, fetchPosts]);
+
+  // --- NEW: Realtime Subscription for Announcements ---
+  useEffect(() => {
+    const channel = supabase
+      .channel("realtime-announcements")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "Posts" },
+        () => {
+          // When any post changes, re-fetch with current filters
+          fetchPosts(filters, userCollegeCode);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [filters, userCollegeCode, fetchPosts]);
 
   // --- Handlers ---
@@ -214,6 +234,9 @@ export default function AnnouncementPageContent() {
         .select()
         .single();
       if (error) throw error;
+      // We don't necessarily need to manually update state here anymore
+      // because the realtime subscription will trigger a fetch.
+      // However, keeping it for instant UI feedback is fine.
       const newlyAddedPost = shapePostForUI(data);
       if (newlyAddedPost) {
         setPosts((prev) =>

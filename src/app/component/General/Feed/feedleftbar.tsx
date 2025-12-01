@@ -138,7 +138,7 @@ export default function FeedsLeftBar({
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.95 }}
                   // --- EDITED: Button Theme (MATCHES Account Page Button) ---
-                  className="w-full bg-[#8B0E0E] cursor-pointer hover:bg-[#600a0a] border border-[#EFBF04]/50 text-white px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-xl hover:brightness-110"
+                  className="w-full bg-gradient-to-b from-[#4e0505] to-[#3a0000] cursor-pointer hover:bg-[#600a0a] border border-[#EFBF04]/50 text-white px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-xl hover:brightness-110"
                 >
                   <Pen size={18} className="text-[#EFBF04]" strokeWidth={2.5} />
                   <span className="font-montserrat">Profile</span>
