@@ -36,6 +36,15 @@ const DEFAULT_FILTERS: FilterState = {
 // --- OPTIMIZATION CONSTANTS: Define posts per page for pagination ---
 const POSTS_PER_PAGE = 10;
 
+// --- FIX: Define the shape of the database row for Realtime events ---
+type FeedTableRow = {
+  id: string;
+  content: string;
+  images: string[] | null;
+  created_at: string;
+  author_id: string;
+};
+
 export default function FeedsContent() {
   const [user, setUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<"feed" | "plc">("feed");
@@ -121,7 +130,8 @@ export default function FeedsContent() {
         { event: "INSERT", schema: "public", table: "Feeds" },
         // --- PERFORMANCE FIX: Prepend the new post to state instead of re-fetching everything ---
         async (payload) => {
-          const newFeed: any = payload.new;
+          // FIX 1: Cast to explicit type instead of any
+          const newFeed = payload.new as FeedTableRow;
 
           // Fetch author details for the new post only (minimal database impact)
           const { data: authorData } = await supabase
@@ -150,14 +160,16 @@ export default function FeedsContent() {
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "Feeds" },
         (payload) => {
-          const updatedFeed: any = payload.new;
+          // FIX 2: Cast to explicit type instead of any
+          const updatedFeed = payload.new as FeedTableRow;
+
           setPosts((prevPosts) =>
             prevPosts.map((post) =>
               post.id === updatedFeed.id
                 ? {
                     ...post,
                     content: updatedFeed.content,
-                    images: updatedFeed.images,
+                    images: updatedFeed.images || [], // Added fallback for safety
                   }
                 : post
             )
@@ -169,7 +181,9 @@ export default function FeedsContent() {
         "postgres_changes",
         { event: "DELETE", schema: "public", table: "Feeds" },
         (payload) => {
-          const deletedFeed: any = payload.old;
+          // FIX 3: Cast to explicit type instead of any
+          const deletedFeed = payload.old as FeedTableRow;
+
           setPosts((prevPosts) =>
             prevPosts.filter((post) => post.id !== deletedFeed.id)
           );
