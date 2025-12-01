@@ -6,7 +6,6 @@ import Avatar from "../../ReusableComponent/Avatar";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../../../../supabase/Lib/General/supabaseClient";
 import type { User as AppUser } from "../../../../../supabase/Lib/General/user";
-// 1. Import motion and Variants
 import { motion, Variants } from "framer-motion";
 
 // Component Interface
@@ -15,7 +14,7 @@ interface ProfileDropdownProps {
   onClose: () => void;
 }
 
-// 2. Define Variants with explicit types to fix the error
+// Define Variants with explicit types
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
   show: {
@@ -66,13 +65,11 @@ export default function AccountDropdown({
       initial="hidden"
       animate="show"
       variants={containerVariants}
-      // --- EDITED: Added Gold Gradient Border ---
       className="w-72 p-[2px] rounded-[20px] bg-gradient-to-br from-[#EFBF04] via-[#FFD700] to-[#D4AF37] shadow-xl"
       onClick={(e) => e.stopPropagation()}
     >
-      {/* --- EDITED: Added Inner White Content Wrapper --- */}
       <div className="bg-white w-full h-full rounded-[18px] overflow-hidden flex flex-col">
-        {/* --- EDITED: Maroon Header --- */}
+        {/* Header */}
         <motion.div
           variants={itemVariants}
           className="flex items-center gap-3 p-5 bg-gradient-to-b from-[#4e0505] to-[#3a0000] border-b border-[#EFBF04]/30 relative overflow-hidden"
@@ -101,8 +98,8 @@ export default function AccountDropdown({
         <nav className="p-2 flex flex-col gap-1">
           <motion.div variants={itemVariants}>
             <Link
-              href="/Account"
-              // --- EDITED: Beautified Account Item ---
+              // 1. UPDATED HREF: Points to Profile/[id] if user exists, else fallback to /Account
+              href={user?.id ? `/Profile/${user.id}` : "/Account"}
               className="relative group flex items-center justify-between px-4 py-3 rounded-[12px] text-[15px] font-medium text-gray-700 hover:text-[#8B0E0E] overflow-hidden transition-all duration-300"
               onClick={onClose}
             >
@@ -114,7 +111,7 @@ export default function AccountDropdown({
                   <User className="w-[20px] h-[20px] text-gray-500 group-hover:text-[#8B0E0E]" />
                 </div>
                 <span className="font-montserrat group-hover:translate-x-1 transition-transform duration-200">
-                  Account
+                  Profile
                 </span>
               </div>
               <ChevronRight
@@ -123,14 +120,6 @@ export default function AccountDropdown({
               />
             </Link>
           </motion.div>
-          {/* <Link
-          href="/settings"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-[16px] text-black hover:bg-maroon/5 hover:text-maroon transition-colors group"
-          onClick={onClose}
-        >
-          <Settings className="w-[24px] h-[24px] text-black group-hover:text-maroon" />
-          <span>Settings</span>
-        </Link> */}
         </nav>
 
         <div className="h-px bg-gray-100 mx-4 my-1" />
@@ -139,7 +128,6 @@ export default function AccountDropdown({
         <motion.div variants={itemVariants} className="p-2">
           <button
             onClick={handleLogout}
-            // --- EDITED: Beautified Logout Item ---
             className="relative w-full cursor-pointer group flex items-center gap-3 px-4 py-3 rounded-[12px] text-[15px] font-medium text-gray-700 hover:text-red-600 overflow-hidden transition-all duration-300"
           >
             {/* Hover Background Slide */}
