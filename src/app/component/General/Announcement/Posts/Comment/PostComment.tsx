@@ -58,7 +58,9 @@ export default function PostComment() {
   } = spotlightPost && isFeedPost ? feedReactions : postReactions;
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null); // 1. Create Ref for Input
 
+  // Scroll to bottom when comments change
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTo({
@@ -67,6 +69,16 @@ export default function PostComment() {
       });
     }
   }, [comments.length]);
+
+  // 2. Focus Input on Mount
+  useEffect(() => {
+    if (spotlightPost && inputRef.current) {
+      // Small timeout to ensure the animation/render is complete
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+    }
+  }, [spotlightPost]);
 
   if (!spotlightPost) {
     return null;
@@ -81,13 +93,15 @@ export default function PostComment() {
 
   return (
     <>
+      {/* 3. Increased Z-Index to 9990 */}
       <div
         onClick={closePostModal}
-        className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+        className="fixed inset-0 z-[9990] bg-black/50 backdrop-blur-sm"
         aria-hidden="true"
       />
 
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* 4. Increased Z-Index to 9999 */}
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
         <div className="relative flex flex-col w-full max-w-[615px] h-full max-h-[960px] overflow-hidden rounded-[15px] bg-gold p-[5px]">
           <div className="flex-shrink-0 flex items-center mb-[5px] justify-center relative bg-darkmaroon p-2 rounded-[10px]">
             <span className="text-white font-montserrat text-[22px] font-semibold text-center w-full">
@@ -147,13 +161,14 @@ export default function PostComment() {
                 isLoading={isCommentsLoading}
                 onReact={handleCommentReaction}
                 reactingCommentId={reactingCommentId}
-                isFeed={isFeedPost} // --- PASS PROP HERE ---
+                isFeed={isFeedPost}
               />
             </div>
           </div>
 
           <div className="flex-shrink-0 bg-gold p-4 border-t border-gray-400/50">
             <CommentInput
+              inputRef={inputRef} // 5. Pass Ref
               onSubmit={postComment}
               avatarUrl={currentUser?.avatarURL || "/DefaultAvatar.svg"}
               disabled={!currentUser}

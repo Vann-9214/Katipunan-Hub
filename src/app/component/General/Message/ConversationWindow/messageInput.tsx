@@ -1,9 +1,10 @@
 "use client";
 
-import { Send, Paperclip, X, FileText } from "lucide-react";
+import { Send, Paperclip, X, FileText, Reply } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useRef } from "react";
-import Image from "next/image"; // 1. Import Image
+import { useState, useRef, useEffect } from "react"; // Added useEffect
+import Image from "next/image";
+import { Message } from "../Utils/types";
 
 interface MessageInputProps {
   newMessage: string;
@@ -12,6 +13,8 @@ interface MessageInputProps {
   selectedFile: File | null;
   setSelectedFile: (file: File | null) => void;
   isUploading: boolean;
+  replyingTo: Message | null;
+  setReplyingTo: (message: Message | null) => void;
 }
 
 export default function MessageInput({
@@ -21,9 +24,19 @@ export default function MessageInput({
   selectedFile,
   setSelectedFile,
   isUploading,
+  replyingTo,
+  setReplyingTo,
 }: MessageInputProps) {
   const [isFocused, setIsFocused] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null); // Added Ref
+
+  // --- ADDED: Auto-focus when replying ---
+  useEffect(() => {
+    if (replyingTo && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [replyingTo]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -42,6 +55,39 @@ export default function MessageInput({
 
   return (
     <div className="z-20 relative bg-white">
+      {/* --- Reply Preview Area --- */}
+      <AnimatePresence>
+        {replyingTo && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="border-t border-gray-100 bg-[#8B0E0E]/5 px-5 overflow-hidden"
+          >
+            <div className="py-2 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 overflow-hidden">
+                <Reply size={16} className="text-[#8B0E0E] shrink-0" />
+                <div className="flex flex-col overflow-hidden">
+                  <span className="text-[10px] font-bold text-[#8B0E0E] uppercase">
+                    Replying to message
+                  </span>
+                  <p className="text-xs text-gray-600 truncate max-w-[300px]">
+                    {replyingTo.content ||
+                      (replyingTo.image_url ? "Sent a photo" : "Attachment")}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setReplyingTo(null)}
+                className="p-1 hover:bg-[#8B0E0E]/10 rounded-full transition-colors text-gray-500"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* --- File Preview Area --- */}
       <AnimatePresence>
         {selectedFile && (
@@ -55,13 +101,12 @@ export default function MessageInput({
               <div className="relative group">
                 {isImage ? (
                   <div className="w-16 h-16 rounded-xl overflow-hidden border border-gray-200 shadow-sm relative">
-                    {/* Updated Image Component */}
                     <Image
                       src={URL.createObjectURL(selectedFile)}
                       alt="Preview"
-                      fill // Fits parent w-16 h-16
+                      fill
                       className="object-cover"
-                      unoptimized // Required for blob URLs
+                      unoptimized
                     />
                   </div>
                 ) : (
@@ -122,6 +167,7 @@ export default function MessageInput({
 
           <div className="relative flex-1">
             <motion.textarea
+              ref={textareaRef} // Attached Ref
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onFocus={() => setIsFocused(true)}

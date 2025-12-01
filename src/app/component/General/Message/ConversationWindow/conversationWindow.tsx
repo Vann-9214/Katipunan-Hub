@@ -71,9 +71,12 @@ export default function ConversationWindow() {
   const [otherUser, setOtherUser] = useState<OtherUser | null>(null);
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
 
-  // --- ADDED: File State ---
+  // --- File State ---
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+
+  // --- Reply State ---
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
 
   /* User Fetcher */
   useEffect(() => {
@@ -157,7 +160,7 @@ export default function ConversationWindow() {
     markAsRead();
   }, [conversationId, currentUser?.id, messages.length]);
 
-  /* Realtime Subscription */
+  /* Realtime Subscription (Updated) */
   useEffect(() => {
     if (!conversationId) return;
 
@@ -166,17 +169,22 @@ export default function ConversationWindow() {
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
+          event: "*", // Listen to INSERT and UPDATE
           schema: "public",
           table: "Messages",
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
           const newMsg = payload.new as Message;
+
           setMessages((current) => {
+            // Check if message already exists (UPDATE case)
             if (current.some((msg) => msg.id === newMsg.id)) {
-              return current;
+              return current.map((msg) =>
+                msg.id === newMsg.id ? newMsg : msg
+              );
             }
+            // New message (INSERT case)
             return [...current, newMsg];
           });
         }
@@ -188,7 +196,7 @@ export default function ConversationWindow() {
     };
   }, [conversationId]);
 
-  /* --- ADDED: Upload Helper --- */
+  /* --- Upload Helper --- */
   const uploadFile = async (file: File) => {
     try {
       const fileExt = file.name.split(".").pop();
@@ -214,7 +222,7 @@ export default function ConversationWindow() {
     }
   };
 
-  /* Send Handler (Updated) */
+  /* Send Handler */
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (
@@ -236,17 +244,26 @@ export default function ConversationWindow() {
       }
     }
 
+    // Determine specific text for sidebar
+    let finalContent = newMessage.trim();
+    if (!finalContent && selectedFile) {
+      const isImage = selectedFile.type.startsWith("image/");
+      finalContent = isImage ? "Sent a photo" : "Sent an attachment";
+    }
+
     const messagePayload = {
-      content: newMessage.trim(),
+      content: finalContent,
       sender_id: currentUser.id,
       conversation_id: conversationId,
       image_url: imageUrl,
       file_name: selectedFile ? selectedFile.name : null,
+      reply_to_id: replyingTo?.id || null, // Include reply ID
     };
 
     // Optimistically clear input
     setNewMessage("");
     setSelectedFile(null);
+    setReplyingTo(null);
 
     const { data: newMessageData, error } = await supabase
       .from("Messages")
@@ -256,8 +273,8 @@ export default function ConversationWindow() {
     setIsUploading(false);
 
     if (error || !newMessageData || newMessageData.length === 0) {
-      // Revert state on error (simple implementation)
-      setNewMessage(messagePayload.content);
+      setNewMessage(newMessage.trim());
+      console.error("Failed to send message", error);
       return;
     }
 
@@ -326,6 +343,11 @@ export default function ConversationWindow() {
                   getDateLabel(messages[index - 1].created_at) !==
                     getDateLabel(msg.created_at);
 
+                // Find replied message if it exists
+                const replyMessage = msg.reply_to_id
+                  ? messages.find((m) => m.id === msg.reply_to_id)
+                  : undefined;
+
                 return (
                   <motion.div
                     key={msg.id}
@@ -342,6 +364,8 @@ export default function ConversationWindow() {
                     <MessageBubble
                       message={msg}
                       isCurrentUser={msg.sender_id === currentUser?.id}
+                      onReply={(m) => setReplyingTo(m)}
+                      replyMessage={replyMessage}
                     />
                   </motion.div>
                 );
@@ -355,10 +379,11 @@ export default function ConversationWindow() {
           newMessage={newMessage}
           setNewMessage={setNewMessage}
           onSubmit={handleSendMessage}
-          // --- ADDED: Pass new props ---
           selectedFile={selectedFile}
           setSelectedFile={setSelectedFile}
           isUploading={isUploading}
+          replyingTo={replyingTo}
+          setReplyingTo={setReplyingTo}
         />
       </div>
     </div>

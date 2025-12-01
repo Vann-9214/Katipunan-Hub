@@ -88,7 +88,7 @@ export default function PopupConversationItem({
         <Avatar
           avatarURL={conversation.avatarURL}
           altText={conversation.otherUserName}
-          className="w-[42px] h-[42px] border-2 border-white"
+          className="w-[42px] h-[42px]"
         />
       </div>
 
