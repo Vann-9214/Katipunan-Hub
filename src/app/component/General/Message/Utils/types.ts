@@ -7,6 +7,8 @@ export interface Message {
   read_at: string | null;
   image_url?: string | null;
   file_name?: string | null;
+  // Added reply_to_id
+  reply_to_id?: string | null;
 }
 
 export interface OtherUser {

@@ -1,18 +1,19 @@
 "use client";
-import { useState } from "react";
+import { useState, RefObject } from "react";
 import Image from "next/image";
 
 type CommentInputProps = {
   onSubmit?: (commentText: string) => Promise<void>;
   avatarUrl?: string;
   disabled?: boolean;
+  inputRef?: RefObject<HTMLInputElement | null>; // 1. Add ref prop
 };
 
 export default function CommentInput({
   onSubmit,
-
   avatarUrl = "/DefaultAvatar.svg",
   disabled = false,
+  inputRef, // 2. Destructure ref
 }: CommentInputProps) {
   const [commentText, setCommentText] = useState("");
 
@@ -40,13 +41,14 @@ export default function CommentInput({
       />
       <div className="relative flex-1">
         <input
+          ref={inputRef} // 3. Attach ref here
           type="text"
           placeholder={
             realDisabled ? "Log in to comment" : "Write a comment..."
           }
           value={commentText}
           onChange={(e) => setCommentText(e.target.value)}
-          disabled={realDisabled} // Use our new 'realDisabled' variable
+          disabled={realDisabled}
           className="w-full rounded-full font-montserrat bg-gray-200/50 py-2 pl-5 pr-12 text-[16px] text-black placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-black disabled:bg-gray-200"
         />
         <button

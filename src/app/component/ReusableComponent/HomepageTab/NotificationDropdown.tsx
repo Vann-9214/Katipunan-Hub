@@ -20,8 +20,13 @@ export default function NotificationDropdown({
   const handleItemClick = (notif: NotificationItem) => {
     // 1. Handle System/PLC Notifications
     if (notif.type === "system") {
-      // Just go to their PLC page as requested
-      router.push("/PLC");
+      if (notif.redirect_url) {
+        // If it has a specific link (like to a Feed post or Announcement)
+        router.push(notif.redirect_url);
+      } else {
+        // Fallback for generic PLC system notifications
+        router.push("/PLC");
+      }
       onClose();
       return;
     }
@@ -81,7 +86,7 @@ export default function NotificationDropdown({
                     </div>
 
                     <div className="flex-1">
-                      <p className="text-[14px] font-bold text-gray-800 mb-1 font-montserrat leading-snug group-hover:text-[#B48E00] transition-colors">
+                      <p className="text-[14px] font-bold text-gray-800 mb-1 font-montserrat leading-snug group-hover:text-[#B48E00] transition-colors line-clamp-3">
                         {notif.title}
                       </p>
                       <p className="text-[11px] text-gray-400 font-medium font-ptsans flex items-center gap-1">

@@ -10,7 +10,8 @@ export interface NotificationItem {
   title: string;
   created_at: string;
   visibility: string | null;
-  type: "announcement" | "system"; // Added 'system' for your new table
+  type: "announcement" | "system";
+  redirect_url?: string;
 }
 
 export function useNotifications(user: User | null) {
@@ -50,7 +51,10 @@ export function useNotifications(user: User | null) {
   const fetchNotifications = useCallback(async () => {
     if (!userId) return;
     
-    setIsLoading(true);
+    // Optional: Comment out setIsLoading(true) if you don't want the loading spinner 
+    // to flash on every single realtime update.
+    // setIsLoading(true); 
+
     try {
       // 1. Fetch Announcements
       let announcementQuery = supabase
@@ -69,7 +73,7 @@ export function useNotifications(user: User | null) {
       // 2. Fetch UserNotifications (New Table)
       const userNotifQuery = supabase
         .from("UserNotifications")
-        .select(`id, title, created_at, type, is_read`)
+        .select(`id, title, created_at, type, is_read, redirect_url`)
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(10);
@@ -93,7 +97,8 @@ export function useNotifications(user: User | null) {
         title: notif.title,
         created_at: notif.created_at,
         visibility: null,
-        type: "system", // Treat these as system notifications
+        type: "system", 
+        redirect_url: notif.redirect_url,
       }));
 
       // Combine and Sort by Date (Newest First)
@@ -186,12 +191,15 @@ export function useNotifications(user: User | null) {
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
+          event: "*", // --- FIXED: Changed from "INSERT" to "*" to catch UPDATEs ---
           schema: "public",
           table: "UserNotifications",
           filter: `user_id=eq.${userId}`, 
         },
-        () => fetchNotifications()
+        () => {
+          console.log("Realtime notification received!"); // Debug log
+          fetchNotifications();
+        }
       )
       .subscribe();
 
