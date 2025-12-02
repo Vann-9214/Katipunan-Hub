@@ -63,16 +63,19 @@ export default function CalendarViews({
   const [selectedEvent, setSelectedEvent] = useState<Holiday | PostedEvent | PersonalEvent | null>(null);
   const [popupPosition, setPopupPosition] = useState<{ x: number; y: number } | null>(null);
 
-  const handleEventClick = (event: Holiday | PostedEvent | PersonalEvent, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent day click event
+  const handleEventHover = (event: Holiday | PostedEvent | PersonalEvent, e: React.MouseEvent) => {
+    e.stopPropagation();
     
-    // Get click position and adjust to show popup near the click
     const rect = (e.target as HTMLElement).getBoundingClientRect();
     setPopupPosition({
-      x: rect.right + 10, // 10px to the right of the event
+      x: rect.right + 10,
       y: rect.top,
     });
     setSelectedEvent(event);
+  };
+
+  const handleEventLeave = () => {
+    // Don't close immediately, let the modal handle it
   };
 
   const handleClosePopup = () => {
@@ -82,12 +85,12 @@ export default function CalendarViews({
 
   return (
     <>
-      <div className={`relative mt-[20px] bg-white rounded-lg border-4 border-[#800000] shadow-xl transition-all duration-300 ${
-        viewMode === "year" ? "w-[1400px]" : "w-[922px]"
+      <div className={`relative mt-[20px] bg-white rounded-lg border-4 border-[#5C0000] shadow-xl transition-all duration-300 ${
+        viewMode === "year" ? "w-[1272px]" : "w-[922px]"
       }`}>
         {/* Calendar Header */}
         <div
-          className={`${montserrat.className} flex justify-between items-center px-10 py-3 bg-[#800000] text-white text-[24px] font-semibold rounded-t-md`}
+          className={`${montserrat.className} flex justify-between items-center px-10 py-3 bg-[#5C0000] text-white text-[24px] font-semibold rounded-t-md`}
         >
           <button
             onClick={onPrevMonth}
@@ -173,7 +176,7 @@ export default function CalendarViews({
                       className={`${
                         ptSans.className
                       } text-[14px] font-bold absolute top-[6px] left-1/2 -translate-x-1/2 ${
-                        selectedDay === day ? "text-[#FFD700]" : "text-[#800000]"
+                        selectedDay === day ? "text-[#FFD700]" : "text-[#5C0000]"
                       }`}
                     >
                       {day}
@@ -185,7 +188,8 @@ export default function CalendarViews({
                           key={i}
                           className="text-[10px] text-center rounded-md px-[2px] py-[1px] text-black truncate cursor-pointer hover:brightness-90 hover:scale-105 transition-all"
                           style={{ backgroundColor: getEventColor(event, i) }}
-                          onClick={(e) => handleEventClick(event, e)}
+                          onMouseEnter={(e) => handleEventHover(event, e)}
+                          onMouseLeave={handleEventLeave}
                         >
                           {getEventLabel(event)}
                         </div>
@@ -200,7 +204,7 @@ export default function CalendarViews({
 
         {/* Year View */}
         {viewMode === "year" && (
-          <div className="grid grid-cols-4 gap-6 p-8 pb-10">
+          <div className="grid grid-cols-3 gap-6 p-8 pb-10">
             {Array.from({ length: 12 }, (_, monthIndex) => {
               const monthDate = new Date(year, monthIndex, 1);
               const thisMonthName = monthDate.toLocaleString("default", {
@@ -233,14 +237,10 @@ export default function CalendarViews({
               return (
                 <div
                   key={monthIndex}
-                  className={`${
-                    ptSans.className
-                  } bg-white rounded-lg shadow-md p-4 cursor-pointer hover:shadow-xl transition-all hover:scale-105 border-2 ${
-                    hasEvents ? "border-[#FFD700]" : "border-gray-200"
-                  }`}
+                  className={`${ptSans.className} bg-white rounded-lg shadow-md p-4 cursor-pointer hover:shadow-xl transition-all hover:scale-105 border-2 border-[#FFD700]`}
                   onClick={() => onMonthClick(monthIndex)}
                 >
-                  <h3 className="text-center font-bold text-[#800000] mb-3 text-[16px]">
+                  <h3 className="text-center font-bold text-[#5C0000] mb-3 text-[16px]">
                     {thisMonthName}
                   </h3>
                   <div className="grid grid-cols-7 gap-[3px] mb-2">
@@ -275,7 +275,7 @@ export default function CalendarViews({
                             isToday
                               ? "bg-[#FFD700] font-bold text-black"
                               : dayHasHoliday || dayHasEvent
-                              ? "bg-[#800000] text-white font-semibold"
+                              ? "bg-[#5C0000] text-white font-semibold"
                               : "text-gray-700 hover:bg-gray-100"
                           }`}
                         >

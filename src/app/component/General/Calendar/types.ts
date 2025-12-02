@@ -7,6 +7,7 @@ export type Holiday = {
 };
 
 export type PostedEvent = {
+  id?: string;
   title: string;
   course: string;
   audience: string;
@@ -23,7 +24,7 @@ export type PersonalEvent = {
   day: number;
 };
 
-export type FilterType = "Global Events" | "Personal Events" | "All";
+export type FilterType = "Global" | "Personal" | "All";
 
 export type MenuType = "Reminder" | "Schedule" | "Year" | "Month";
 
