@@ -101,7 +101,6 @@ export default function LandingPageTab() {
   const handleSwitchToSignUp = () => setAuthMode("signup");
 
   const handleSwitchToSignIn = () => setAuthMode("signin");
-  const handleSwitchToForgotPassword = () => setAuthMode("forgotpassword");
 
   return (
     <>

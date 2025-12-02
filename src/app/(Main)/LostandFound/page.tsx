@@ -1,7 +1,7 @@
 "use client";
 
 import HomepageTab from "@/app/component/ReusableComponent/HomepageTab/HomepageTab";
-import LostAndFoundContent from "@/app/component/General/LostandFound/LostandFoundcontent"; 
+import LostAndFoundContent from "@/app/component/General/LostandFound/LostandFoundcontent";
 import { useState, useEffect } from "react";
 // Keep backend imports for your leader
 import { getCurrentUserDetails } from "../../../../supabase/Lib/General/getUser";
@@ -19,14 +19,20 @@ export default function LostandFoundPage() {
         } else {
           throw new Error("No user returned");
         }
-      } catch (error) {
-        console.warn("Backend not connected. Using Dummy User.");
-        // FIX: Added 'as any' to stop the Type Error
+      } catch (error: unknown) {
+        /**
+         * Error Handling Section
+         * Logs the error to console.
+         * Uses 'as unknown as User' to force the partial dummy object into the User type
+         * bypassing the missing property errors.
+         */
+        console.warn("Backend not connected. Using Dummy User.", error);
+
         setUser({
-          id: "123", 
+          id: "123",
           name: "Test User",
           email: "test@school.edu",
-        } as any); 
+        } as unknown as User);
       }
     };
     loadUser();
@@ -35,7 +41,6 @@ export default function LostandFoundPage() {
   return (
     <div className="w-full">
       <div className="fixed top-0 left-0 w-full z-50">
-        {/* @ts-ignore */}
         <HomepageTab user={user} />
       </div>
       <LostAndFoundContent user={user} />
