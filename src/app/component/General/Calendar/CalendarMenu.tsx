@@ -129,7 +129,14 @@ export default function CalendarMenu({
         {menuOpen && (
           <div className="flex gap-3 mt-3 justify-end">
             {menuItems.map((item, index) => {
-              const isSelected = selectedMenu === item.name;
+              // Check if this button should be selected
+              // If selectedMenu is "Year" or "Month", default to "Reminder" being selected
+              // Otherwise, match against selectedMenu
+              const isSelected = 
+                (selectedMenu === "Year" || selectedMenu === "Month")
+                  ? item.name === "Reminder"
+                  : selectedMenu === item.name;
+              
               return (
                 <button
                   key={item.name}
@@ -138,8 +145,8 @@ export default function CalendarMenu({
                     ptSans.className
                   } flex items-center gap-3 px-6 py-3 rounded-full font-medium text-[17px] transition-all duration-200 shadow-md ${
                     isSelected
-                      ? "bg-yellow-400 text-black scale-105 border-2 border-yellow-400"
-                      : "bg-white text-gray-700 border-2 border-[#800000] hover:scale-105 hover:shadow-lg"
+                      ? "bg-[#FFD700] text-black scale-105 border-2 border-[#FFD700]"
+                      : "bg-white text-gray-700 border-2 border-[#5C0000] hover:scale-105 hover:shadow-lg"
                   }`}
                   style={{
                     animationDelay: `${index * 50}ms`,
