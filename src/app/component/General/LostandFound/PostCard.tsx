@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import { Post } from "./LostandFoundcontent";
-import { motion } from "framer-motion"; // --- 1. IMPORT MOTION ---
+import { motion } from "framer-motion";
+import { CheckCircle2, User, MapPin, Calendar } from "lucide-react";
 
 type PostCardProps = {
   post: Post;
@@ -10,51 +11,106 @@ type PostCardProps = {
 };
 
 const PostCard = ({ post, onClick }: PostCardProps) => {
-  const { type, imageUrl, title, lostOn, postedBy } = post;
+  const { type, imageUrl, title, lostOn, postedBy, status, location } = post;
   
   const isLost = type === "Lost";
+  const isResolved = status === "Resolved";
 
-  const borderColor = isLost ? "border-[#8a0b0b]" : "border-[#eed23a]";
-  const bgColor = isLost ? "bg-[#8a0b0b]" : "bg-[#eed23a]";
-  const titleColor = isLost ? "text-[#ffd700]" : "text-[#800000]";
-  const cardTextColor = isLost ? "text-white" : "text-[#800000]";
-  
-  const glowStyle = isLost
-    ? {}
-    : { boxShadow: "0 20px 60px rgba(238,210,58,0.12)" };
+  // --- THEME COLORS ---
+  // Using variables makes it easier to manage
+  const theme = isLost
+    ? {
+        border: "border-[#8a0b0b]",
+        bg: "bg-[#8a0b0b]",
+        title: "text-[#ffd700]", // Gold for Lost title
+        text: "text-red-50",
+        badge: "/lost.svg",
+      }
+    : {
+        border: "border-[#eed23a]",
+        bg: "bg-[#eed23a]",
+        title: "text-[#5c0000]", // Dark Maroon for Found title (Better Contrast)
+        text: "text-yellow-900",
+        badge: "/found.svg",
+      };
 
   return (
-    // --- 2. CHANGE <button> TO <motion.button> AND ADD layoutId ---
     <motion.button
-      layoutId={`card-${post.id}`} // This is the magic key
+      layoutId={`post-card-${post.id}`}
       onClick={onClick}
-      className={`w-[270px] min-h-[330px] rounded-[20px] border-4 ${borderColor} box-border overflow-visible flex flex-col shadow-lg text-left transition-all duration-200 hover:scale-105`}
-      style={glowStyle}
+      // Hover Effect: Lift up slightly if active
+      whileHover={{ y: isResolved ? 0 : -8 }}
+      className={`
+        group relative w-[280px] min-h-[340px] rounded-[24px] border-[3px] 
+        ${theme.border} box-border flex flex-col shadow-xl text-left 
+        transition-all duration-300 overflow-hidden
+        ${isResolved ? "grayscale opacity-80 cursor-default" : "cursor-pointer hover:shadow-2xl"}
+      `}
     >
-      <div className="w-full h-[180px] relative rounded-t-[16px] overflow-hidden">
-        <Image src={imageUrl} alt={title} fill style={{ objectFit: "cover" }} />
+      {/* --- IMAGE SECTION --- */}
+      <div className="w-full h-[180px] relative overflow-hidden bg-gray-200">
+        
+        {/* Image with Zoom Effect on Hover */}
+        <Image 
+          src={imageUrl} 
+          alt={title} 
+          fill 
+          className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+        />
 
-        <div className="absolute top-3 right-3 w-[85px] h-[38px] flex items-center justify-center overflow-hidden rounded-md">
-          <Image
-            src={isLost ? "/lost.svg" : "/found.svg"}
-            alt={isLost ? "Lost item tag" : "Found item tag"}
-            fill
-            style={{ objectFit: "contain" }}
-          />
-        </div>
+        {/* Tag (Lost/Found) */}
+        {!isResolved && (
+          <div className="absolute top-3 right-3 w-[80px] h-[36px] z-10 drop-shadow-md">
+            <Image
+              src={theme.badge}
+              alt={`${type} tag`}
+              fill
+              style={{ objectFit: "contain" }}
+            />
+          </div>
+        )}
+
+        {/* --- RESOLVED OVERLAY (Glass Effect) --- */}
+        {isResolved && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+            <div className="bg-green-600/90 text-white px-5 py-2 rounded-full font-bold flex items-center gap-2 shadow-2xl transform -rotate-3 border border-white/20">
+              <CheckCircle2 size={18} strokeWidth={3} />
+              <span className="tracking-wide">RESOLVED</span>
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className={`p-4 pt-6 flex-1 ${bgColor} flex flex-col`}>
-        <h3 className={`font-bold text-xl truncate ${titleColor}`}>{title}</h3>
-        <p className={`font-medium text-[11px] mt-1 ${cardTextColor}`}>
-          Lost on: {lostOn}
-        </p>
+      {/* --- CONTENT SECTION --- */}
+      <div className={`flex-1 flex flex-col p-5 ${theme.bg}`}>
+        
+        {/* Title */}
+        <h3 className={`font-extrabold text-xl truncate mb-1 ${theme.title} drop-shadow-sm`}>
+          {title}
+        </h3>
 
-        <div className="mt-auto flex items-center justify-between pt-4">
-          <p className={`font-bold text-[10px] ${cardTextColor}`}>{postedBy}</p>
-          <div
-            className="w-[35px] h-[35px] bg-white rounded-full shadow-sm"
-          />
+        {/* Location & Date */}
+        <div className={`space-y-1 mb-4 ${theme.text} opacity-90`}>
+          <div className="flex items-center gap-1.5 text-xs font-medium">
+            <MapPin size={14} />
+            <p className="truncate">{location}</p>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs font-medium">
+            <Calendar size={14} />
+            <p>{lostOn}</p>
+          </div>
+        </div>
+
+        {/* Footer: User Info */}
+        <div className="mt-auto flex items-center justify-between pt-3 border-t border-black/10">
+          <p className={`font-bold text-[11px] uppercase tracking-wide ${theme.text} opacity-80 truncate max-w-[170px]`}>
+            {postedBy}
+          </p>
+          
+          {/* Avatar with Initials */}
+          <div className="w-9 h-9 bg-white rounded-full shadow-md flex items-center justify-center text-[#800000] font-bold text-xs shrink-0 border-2 border-white/30">
+            <User size={16} />
+          </div>
         </div>
       </div>
     </motion.button>
