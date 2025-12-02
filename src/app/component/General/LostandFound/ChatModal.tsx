@@ -1,117 +1,266 @@
-// app/component/General/LostandFound/ChatModal.tsx
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
-import { ArrowLeft, User, Plus } from "lucide-react";
-import { Post } from "./LostandFoundcontent"; // Import Post type
+import { motion } from "framer-motion";
+import Image from "next/image"; // Added Import
+import {
+  X,
+  MessageCircle,
+  CheckCircle2,
+  RefreshCcw,
+  Lock,
+  ChevronLeft,
+  User as UserIcon,
+} from "lucide-react";
+import { Post } from "./LostandFoundcontent";
 
-interface ChatModalProps {
+interface PostViewModalProps {
   post: Post;
+  isOwner: boolean;
   onClose: () => void;
+  onStatusChange: (postId: number, newStatus: "Open" | "Resolved") => void;
+  onChat: () => void; // This opens YOUR ChatModal
 }
 
-export default function ChatModal({ post, onClose }: ChatModalProps) {
-  const [message, setMessage] = useState("");
-
-  const handleMessageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setMessage(e.target.value);
-  };
-
-  const handleSendMessage = () => {
-    if (message.trim()) {
-      console.log("Message sent:", message);
-      setMessage(""); // Clear the input
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      handleSendMessage();
-    }
-  };
-
-  const handleSayHi = () => {
-    setMessage("Hi!");
-  };
+export default function PostViewModal({
+  post,
+  isOwner,
+  onClose,
+  onStatusChange,
+  onChat,
+}: PostViewModalProps) {
+  const [view, setView] = useState<"details" | "inquiries">("details");
 
   return (
-    // Backdrop
-    <div
-      className="fixed inset-0 flex items-center justify-center z-50 animate-fadeIn"
+    <motion.div
+      className="fixed inset-0 flex items-center justify-center z-[9000]"
       style={{
-        backgroundColor: "rgba(0, 0, 0, 0.6)",
-        backdropFilter: "blur(6px)",
-        WebkitBackdropFilter: "blur(6px)",
+        backgroundColor: "rgba(0, 0, 0, 0.3)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
       }}
       onClick={onClose}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0, transition: { duration: 0.2 } }}
     >
-      {/* Modal Panel (Wide, matches Figma) */}
-      <div
-        className="relative bg-white w-full max-w-3xl h-[674px] rounded-3xl border-2 border-[#800000] flex flex-col overflow-hidden shadow-2xl"
+      <motion.div
+        layoutId={`post-card-${post.id}`}
+        initial={{ opacity: 0, scale: 0.8, y: 50 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.8, y: 50 }}
+        transition={{ type: "spring", stiffness: 400, damping: 30, mass: 0.8 }}
+        className="w-full max-w-4xl h-[600px] rounded-[32px] shadow-2xl overflow-hidden flex relative"
+        style={{
+          backgroundColor: "rgba(255, 251, 242, 0.95)",
+          backdropFilter: "blur(20px)",
+          border: "1px solid rgba(255, 255, 255, 0.5)",
+          boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.15)",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="relative flex flex-col items-center justify-center p-4 border-b border-gray-200">
-          <button onClick={onClose} className="absolute top-4 left-4 p-2 text-[#800000] hover:bg-gray-100 rounded-full">
-            <ArrowLeft size={24} />
+        {/* Close Button - Only show in Details view */}
+        {view === "details" && (
+          <button
+            onClick={onClose}
+            className="absolute top-6 left-6 p-2 rounded-full bg-black/5 hover:bg-black/10 transition-colors z-20"
+          >
+            <X size={20} className="text-gray-700" />
           </button>
-          <div className="text-center">
-            <h3 className="font-bold text-2xl">Chat with Uploader</h3>
-            <div className="flex items-center text-sm text-gray-500">
-              <User size={14} className="mr-1" />
-              <span>{post.postedBy}</span> {/* Dynamic name */}
-            </div>
-          </div>
-        </div>
+        )}
 
-        {/* Chat Body */}
-        <div className="flex-1 p-6 flex flex-col items-center overflow-y-auto bg-white">
-          {/* Item Context Card (Outer Red Border) */}
-          <div className="relative w-full max-w-2xl p-1 bg-[#800000] rounded-2xl my-8">
-            {/* Tag (Grey, as per Figma) */}
-            <span className="absolute -top-3 left-8 bg-gray-200 text-[#800000] px-3 py-1 rounded-md text-sm font-semibold border border-gray-300">
-              Item Context
-            </span>
-            
-            {/* Inner Grey Card */}
-            <div className="bg-gray-200 rounded-xl p-4 flex items-center justify-between space-x-4">
-              <div className="flex items-center space-x-4">
-                <div className="w-16 h-16 relative rounded-md overflow-hidden flex-shrink-0">
-                  <Image src={post.imageUrl} alt={post.title} fill style={{ objectFit: "cover" }} />
-                </div>
-                <div className="flex-1 text-left">
-                  <h4 className="font-bold text-lg text-black">{post.type === "Lost" ? "Lost" : "Found"} {post.title}</h4>
-                  <p className="text-gray-700 text-sm">{post.location}</p>
+        {/* --- VIEW 1: DETAILS --- */}
+        {view === "details" && (
+          <div className="flex w-full h-full">
+            <div className="w-1/2 h-full bg-gray-100 relative overflow-hidden">
+              <div className="absolute top-6 right-6 z-10">
+                {post.status === "Resolved" ? (
+                  <span className="px-4 py-2 rounded-full bg-green-600 text-yellow-200 font-bold text-sm shadow-md flex items-center gap-2">
+                    <CheckCircle2 size={16} /> Resolved
+                  </span>
+                ) : (
+                  <span
+                    className={`px-4 py-2 rounded-full font-bold text-sm shadow-md ${
+                      post.type === "Found"
+                        ? "bg-[#E6C200] text-black"
+                        : "bg-[#800000] text-white"
+                    }`}
+                  >
+                    {post.type}
+                  </span>
+                )}
+              </div>
+
+              {/* REPLACED <img> WITH <Image /> */}
+              <Image
+                src={post.imageUrl}
+                alt={post.title}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 50vw"
+              />
+            </div>
+
+            <div className="w-1/2 h-full p-10 flex flex-col relative">
+              <div className="mb-8 mt-4">
+                <h2 className="text-4xl font-extrabold text-gray-900 leading-tight mb-4">
+                  {post.title}
+                </h2>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-xl shadow-inner">
+                    👤
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">
+                      Posted By
+                    </p>
+                    <p className="text-sm font-bold text-gray-800">
+                      {post.postedBy}
+                    </p>
+                  </div>
                 </div>
               </div>
-              <button className="px-4 py-2 bg-white text-[#800000] rounded-full text-sm font-semibold shadow-sm border border-gray-300 hover:bg-gray-50 flex-shrink-0">
-                View Item Details
-              </button>
+
+              <div className="space-y-6 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                <div>
+                  <p className="text-[#800000] font-bold text-sm mb-1">
+                    Category:
+                  </p>
+                  <p className="text-gray-700 text-lg">{post.category}</p>
+                </div>
+                <div>
+                  <p className="text-[#800000] font-bold text-sm mb-1">
+                    Location:
+                  </p>
+                  <p className="text-gray-700 text-lg">{post.location}</p>
+                </div>
+                <div>
+                  <p className="text-[#800000] font-bold text-sm mb-1">
+                    {post.type === "Lost" ? "Lost on:" : "Found on:"}
+                  </p>
+                  <p className="text-gray-700 text-lg">{post.lostOn}</p>
+                </div>
+                <div>
+                  <p className="text-[#800000] font-bold text-sm mb-1">
+                    Description:
+                  </p>
+                  <p className="text-gray-600 leading-relaxed whitespace-pre-line">
+                    {post.description}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 pt-6 border-t border-gray-200/60">
+                {isOwner ? (
+                  <div className="flex flex-col gap-3">
+                    <button
+                      onClick={() => setView("inquiries")}
+                      className="w-full py-3 bg-white border-2 border-[#800000] text-[#800000] rounded-xl font-bold transition-all hover:bg-red-50 flex items-center justify-center gap-2"
+                    >
+                      <MessageCircle size={20} />
+                      View Inquiries ({post.inquiries?.length || 0})
+                    </button>
+
+                    {post.status === "Open" ? (
+                      <button
+                        onClick={() => onStatusChange(post.id, "Resolved")}
+                        className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2"
+                      >
+                        <CheckCircle2 size={20} />
+                        Mark as Found / Resolved
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => onStatusChange(post.id, "Open")}
+                        className="w-full py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
+                      >
+                        <RefreshCcw size={20} />
+                        Re-open Post
+                      </button>
+                    )}
+                  </div>
+                ) : post.status === "Resolved" ? (
+                  <div className="w-full py-4 bg-gray-300 text-gray-500 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 cursor-not-allowed">
+                    <Lock size={24} />
+                    <span>Already Resolved / Found</span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={onChat}
+                    className="w-full py-4 bg-[#800000] hover:bg-[#660000] text-white rounded-2xl font-bold text-lg transition-all shadow-lg flex items-center justify-center gap-2"
+                  >
+                    <MessageCircle size={24} />
+                    Chat with the Uploader
+                  </button>
+                )}
+              </div>
             </div>
           </div>
+        )}
 
-          {/* "Say Hi!" Button */}
-          <button onClick={handleSayHi} className="px-6 py-2 bg-gray-200 text-gray-700 rounded-full font-semibold my-4">
-            Say Hi!
-          </button>
-        </div>
+        {/* --- VIEW 2: INQUIRIES LIST --- */}
+        {view === "inquiries" && (
+          <div className="w-full h-full p-8 flex flex-col bg-white">
+            <div className="flex items-center gap-4 mb-6 border-b pb-4 pt-2">
+              <button
+                onClick={() => setView("details")}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-700"
+              >
+                <ChevronLeft size={28} />
+              </button>
+              <div>
+                <h2 className="text-2xl font-bold text-[#800000]">Inquiries</h2>
+                <p className="text-sm text-gray-500">
+                  Messages for {post.title}
+                </p>
+              </div>
+            </div>
 
-        {/* Footer (Message Input) */}
-        <div className="flex items-center p-4 border-t border-gray-200 bg-white">
-          <input
-            type="text"
-            placeholder="Type a message..."
-            value={message}
-            onChange={handleMessageChange}
-            onKeyPress={handleKeyPress}
-            className="flex-1 bg-gray-100 border border-gray-300 rounded-full px-5 py-3 focus:outline-none focus:ring-2 focus:ring-[#800000]"
-          />
-          <button onClick={handleSendMessage} className="ml-3 bg-[#800000] text-white rounded-full p-3 w-12 h-12 flex items-center justify-center hover:bg-red-900 transition-all">
-            <Plus size={24} />
-          </button>
-        </div>
-      </div>
-    </div>
+            <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+              {post.inquiries && post.inquiries.length > 0 ? (
+                post.inquiries.map((inquiry) => (
+                  <div
+                    key={inquiry.id}
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 hover:shadow-md transition-all"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-[#800000]/10 rounded-full flex items-center justify-center text-[#800000]">
+                        <UserIcon size={20} />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-gray-800">
+                          {inquiry.userName}
+                        </h4>
+                        <p className="text-sm text-gray-500 truncate max-w-[200px]">
+                          {inquiry.messagePreview}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <span className="text-xs text-gray-400">
+                        {inquiry.time}
+                      </span>
+
+                      {/* --- THIS IS THE LINK TO YOUR CHAT MODAL --- */}
+                      <button
+                        onClick={onChat}
+                        className="px-4 py-2 bg-[#800000] text-white text-xs font-bold rounded-lg hover:bg-red-900 transition-colors"
+                      >
+                        Reply
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                  <MessageCircle size={48} className="mb-2 opacity-20" />
+                  <p>No inquiries yet.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </motion.div>
+    </motion.div>
   );
 }
