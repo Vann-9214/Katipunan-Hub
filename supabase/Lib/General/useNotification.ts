@@ -56,13 +56,13 @@ export function useNotifications(user: User | null) {
     // setIsLoading(true); 
 
     try {
-      // 1. Fetch Announcements
+      // 1. Fetch Announcements (Increased limit to 50 to prevent disappearing items)
       let announcementQuery = supabase
         .from("Posts")
         .select(`id, title, created_at, type, visibility`)
         .eq("type", "announcement")
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(50); // --- FIXED: Increased limit from 10 to 50 ---
 
       if (userCollegeCode) {
         announcementQuery = announcementQuery.or(`visibility.eq.global,visibility.eq.${userCollegeCode},visibility.is.null`);
@@ -70,13 +70,13 @@ export function useNotifications(user: User | null) {
         announcementQuery = announcementQuery.or(`visibility.eq.global,visibility.is.null`);
       }
 
-      // 2. Fetch UserNotifications (New Table)
+      // 2. Fetch UserNotifications (New Table) (Increased limit to 50)
       const userNotifQuery = supabase
         .from("UserNotifications")
         .select(`id, title, created_at, type, is_read, redirect_url`)
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(50); // --- FIXED: Increased limit from 10 to 50 ---
 
       const [announcementsRes, userNotifRes] = await Promise.all([announcementQuery, userNotifQuery]);
 
@@ -191,7 +191,7 @@ export function useNotifications(user: User | null) {
       .on(
         "postgres_changes",
         {
-          event: "*", // --- FIXED: Changed from "INSERT" to "*" to catch UPDATEs ---
+          event: "*", // --- FIXED: Changed from "INSERT" to "*" to catch UPDATEs and DELETEs ---
           schema: "public",
           table: "UserNotifications",
           filter: `user_id=eq.${userId}`, 

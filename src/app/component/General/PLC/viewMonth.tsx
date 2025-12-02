@@ -10,6 +10,7 @@ import {
   Clock,
   User,
   BookOpen,
+  Star, // <-- 1. IMPORT STAR
 } from "lucide-react";
 import { Montserrat, PT_Sans } from "next/font/google";
 import { WEEKDAYS, MONTHS, getDaysInMonth, getFirstDayOfMonth } from "./Utils";
@@ -467,6 +468,9 @@ export default function PLCViewMonth({
                         };
                       }
 
+                      // --- 2. GET RATING ---
+                      const rating = booking.TutorRatings?.[0]?.rating || 0;
+
                       return (
                         // 4. Animated Booking Cards (Beautified) - REPLACED SPRING WITH EASE
                         <motion.div
@@ -550,6 +554,26 @@ export default function PLCViewMonth({
                                     booking.startTime,
                                     booking.endTime
                                   )}
+                                </span>
+                              </div>
+                            )}
+
+                            {/* --- 3. SHOW RATING FOR TUTOR --- */}
+                            {isTutor && rating > 0 && (
+                              <div className="flex items-center gap-1 mt-1">
+                                {[...Array(5)].map((_, i) => (
+                                  <Star
+                                    key={i}
+                                    size={12}
+                                    className={`${
+                                      i < rating
+                                        ? "fill-[#EFBF04] text-[#EFBF04]"
+                                        : "text-gray-300"
+                                    }`}
+                                  />
+                                ))}
+                                <span className="text-[10px] text-gray-400 ml-1">
+                                  Rated
                                 </span>
                               </div>
                             )}
