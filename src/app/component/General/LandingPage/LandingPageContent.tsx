@@ -1,16 +1,25 @@
 "use client";
 
 import React, { useState } from "react";
-import { AnimatePresence, motion, Variants } from "framer-motion";
-import { createPortal } from "react-dom";
+import { motion, Variants } from "framer-motion";
 import Image from "next/image";
-import { ArrowLeft, ArrowRight, Instagram, Facebook, Twitter } from "lucide-react"; // Added icons for Team section
+import { 
+  Instagram, 
+  Facebook, 
+  Twitter, 
+  ArrowLeft, ArrowRight 
+} from "lucide-react";
+
+// --- SWIPER IMPORTS ---
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { EffectCoverflow, Navigation } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/effect-coverflow';
+import 'swiper/css/navigation';
 
 // Custom Components
 import LandingPageTab from "./LandingPageTab/LandingPageTab";
 import Button from "../../ReusableComponent/Buttons";
-import SignUpForm from "./LandingPageTab/SignUpForms";
-import SignInForm from "./LandingPageTab/SignInForms";
 import Logo from "../../ReusableComponent/Logo";
 
 // --- 1. Custom GlassCard Component ---
@@ -32,17 +41,11 @@ const GlassCard = ({ children, className }: { children: React.ReactNode; classNa
 );
 
 // --- ANIMATION VARIANTS ---
-
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.15,
-      delayChildren: 0.3,
-      duration: 0.8,
-      ease: "easeInOut"
-    },
+    transition: { staggerChildren: 0.15, delayChildren: 0.2 },
   },
 };
 
@@ -51,11 +54,7 @@ const itemVariants: Variants = {
   visible: {
     y: 0,
     opacity: 1,
-    transition: { 
-      type: "spring", 
-      stiffness: 50, 
-      damping: 20 
-    },
+    transition: { type: "spring", stiffness: 50, damping: 20 },
   },
 };
 
@@ -64,22 +63,13 @@ const floatingVariant: Variants = {
     y: [0, -20, 0],
     x: [0, 5, 0],
     rotate: [0, 3, -3, 0],
-    transition: {
-      duration: 8,
-      repeat: Infinity,
-      ease: "easeInOut",
-    },
+    transition: { duration: 8, repeat: Infinity, ease: "easeInOut" },
   },
   floatReverse: {
     y: [0, 20, 0],
     x: [0, -5, 0],
     rotate: [0, -3, 3, 0],
-    transition: {
-      duration: 9,
-      repeat: Infinity,
-      ease: "easeInOut",
-      delay: 1,
-    },
+    transition: { duration: 9, repeat: Infinity, ease: "easeInOut", delay: 1 },
   },
 };
 
@@ -88,482 +78,334 @@ const logoEntranceVariant: Variants = {
   visible: {
     opacity: 1, 
     scale: 1,
-    transition: {
-      duration: 1.2,
-      ease: [0.22, 1, 0.36, 1],
-    },
+    transition: { duration: 1.2, ease: [0.22, 1, 0.36, 1] },
   },
 };
 
-export default function LandingPageContent() {
-  const [mode, setMode] = useState<"none" | "signup" | "signin">("none");
+// --- TEAM DATA ---
+const TEAM_MEMBERS = [
+  { 
+    name: "Ivan Cañete", 
+    role: "Project Lead / Backend Developer", 
+    bio: "Focused on building secure and reliable systems for Katipunan Hub. Ensuring data integrity and smooth API integrations.",
+    skills: "Node.js, Supabase, API Integration, Database Design",
+    image: null 
+  }, 
+  { 
+    name: "Member Name 2", 
+    role: "Frontend Developer / UI/UX", 
+    bio: "Crafting intuitive user experiences and translating designs into responsive, interactive React components.",
+    skills: "React, Next.js, Tailwind CSS, Framer Motion",
+    image: null 
+  },
+  { 
+    name: "Member Name 3", 
+    role: "Full Stack Developer", 
+    bio: "Bridging the gap between front-end and back-end, ensuring seamless functionality across the entire platform.",
+    skills: "JavaScript, TypeScript, SQL, System Architecture",
+    image: null 
+  },
+];
 
-  const ModalWrapper = ({ children }: { children: React.ReactNode }) => {
-    if (typeof document === "undefined") return null;
-    return createPortal(children, document.body);
-  };
+export default function LandingPageContent() {
+  const [bgColor, setBgColor] = useState("#FFFFFF");
 
   return (
-    // Changed from h-screen to min-h-screen and flex-col to allow scrolling
-    <div className="bg-white min-h-screen w-full relative flex flex-col overflow-x-hidden">
+    <div className="min-h-screen w-full relative overflow-x-hidden font-sans">
       
-      {/* LandingPageTab is fixed at the top (z-50). */}
-      <LandingPageTab />
+      {/* --- INJECTED STYLES --- */}
+      <style jsx global>{`
+        .flip-container { height: 1.2em; overflow: hidden; }
+        .flip-inner { animation: text-flip 6s cubic-bezier(0.23, 1, 0.32, 1.2) infinite; }
+        @keyframes text-flip {
+            0% { margin-top: 0; }
+            25% { margin-top: -1.2em; } 
+            50% { margin-top: -1.2em; }
+            55% { margin-top: -2.4em; }
+            80% { margin-top: -2.4em; }
+            85% { margin-top: -3.6em; }
+            99.99% { margin-top: -3.6em; }
+            100% { margin-top: 0; }
+        }
+        
+        /* Holographic styles */
+        .holographic-card { transition: all 0.3s ease; cursor: pointer; z-index: 10; }
+        .holographic-card:hover {
+            background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255, 183, 197, 0.4) 25%, rgba(173, 216, 230, 0.4) 50%, rgba(238, 130, 238, 0.4) 75%, rgba(255,255,255,0.2) 100%);
+            background-size: 200% 200%; animation: holo-shimmer 2s infinite linear;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.6), inset 0 0 15px rgba(255, 255, 255, 0.4);
+            border-color: rgba(255, 255, 255, 0.9); backdrop-filter: blur(20px);
+        }
+        @keyframes holo-shimmer {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
 
-      {/* ========================================= */}
-      {/* SECTION 1: HERO (Original Redesigned)     */}
-      {/* ========================================= */}
-      <div className="relative min-h-screen w-full bg-[#EFBF04] overflow-hidden flex flex-col">
-        {/* Background Texture */}
-        <div className="absolute inset-0 opacity-10 pointer-events-none" 
-             style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
-        </div>
+        /* Swiper overrides */
+        .swiper { width: 100%; padding-top: 40px; padding-bottom: 50px; }
+        .swiper-slide { background-position: center; background-size: cover; width: 290px; height: auto; }
+        
+        /* --- VISIBILITY FIX: STRICTLY 3 CARDS --- */
+        .swiper-slide { 
+            opacity: 0; 
+            filter: blur(2px) grayscale(100%); 
+            transition: all 0.3s ease; 
+        }
 
-        {/* Layer 1: Lighter Maroon Shadow */}
-        <motion.div
-          initial={{ scale: 1.2, x: -150, y: -150, opacity: 0 }}
-          animate={{ scale: 1, x: -20, y: -20, opacity: 1 }}
-          transition={{ duration: 2, ease: "easeOut" }}
-          className="absolute top-0 left-0 w-[145%] h-[145%] lg:w-[78vw] lg:h-screen bg-[#A52A2A] z-0 opacity-50"
-          style={{
-            borderBottomRightRadius: "100%",
-            borderTopRightRadius: "25%", 
-          }}
-        />
+        .swiper-slide-active { 
+            opacity: 1; 
+            filter: none; 
+            z-index: 10; 
+        }
 
-        {/* Layer 2: Main Maroon Shape */}
-        <motion.div
-          initial={{ scale: 1.2, x: -100, y: -100, opacity: 0 }}
-          animate={{ scale: 1, x: 0, y: 0, opacity: 1 }}
-          transition={{ duration: 1.8, ease: "easeOut" }}
-          className="absolute top-0 left-0 w-[140%] h-[140%] lg:w-[75vw] lg:h-screen bg-[#8B0E0E] z-0 shadow-2xl"
-          style={{
-            borderBottomRightRadius: "100%",
-            borderTopRightRadius: "20%", 
-          }}
-        />
+        .swiper-slide-prev, .swiper-slide-next { 
+            opacity: 0.5; 
+            filter: blur(1px) grayscale(50%); 
+            z-index: 5; 
+        }
 
-        {/* Decorative Blob */}
-        <motion.div 
-           className="absolute top-[20%] left-[10%] w-64 h-64 bg-white opacity-5 rounded-full blur-3xl z-0"
-           animate={{ scale: [1, 1.2, 1], opacity: [0.05, 0.1, 0.05] }}
-           transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-        />
+        .swiper-button-next::after, .swiper-button-prev::after { display: none; }
+      `}</style>
 
-        {/* Main Content Container */}
-        <div className="relative z-10 flex-1 flex flex-col lg:flex-row items-center justify-center lg:justify-between px-6 lg:px-24 pt-32 lg:pt-0">
-          
-          {/* Left Side: Text Content */}
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="flex flex-col items-start max-w-2xl select-none mt-10 lg:mt-0"
-          >
-            <motion.div variants={itemVariants}>
-              <h1
-                className="leading-[0.9] lg:leading-[1]"
-                style={{ fontFamily: "Montserrat, sans-serif" }}
-              >
-                <div className="flex flex-wrap items-baseline gap-4 mb-2">
-                  <span className="text-[#EFBF04] font-bold text-[64px] lg:text-[96px] drop-shadow-md">
-                    STAY
-                  </span>
-                  <span className="text-white font-bold text-[40px] lg:text-[64px]">
-                    UPDATED
-                  </span>
-                </div>
-
-                <div className="flex flex-wrap items-baseline gap-4 pl-0 lg:pl-20">
-                  <span className="text-[#EFBF04] font-bold text-[64px] lg:text-[96px] drop-shadow-md">
-                    STAY
-                  </span>
-                  <span className="text-white font-bold text-[40px] lg:text-[64px]">
-                    CONNECTED
-                  </span>
-                </div>
-              </h1>
-            </motion.div>
-
-            <motion.p
-              variants={itemVariants}
-              className="text-[18px] lg:text-[24px] text-gray-200 font-medium mt-8 mb-8 max-w-lg"
-              style={{ fontFamily: "PT Sans, sans-serif", lineHeight: "1.4" }}
-            >
-              From school events to lost & found, Katipunan Hub keeps
-              the whole <span className="text-[#EFBF04] font-bold">CIT community</span> in one place.
-            </motion.p>
-
-            <motion.div variants={itemVariants} className="ml-0 lg:ml-10">
-              <Button
-                text="JOIN THE HUB"
-                bg="bg-[#EFBF04]"
-                textcolor="text-[#8B0E0E]"
-                font="font-bold"
-                textSize="text-[20px]"
-                className="px-10 py-4 shadow-xl hover:shadow-2xl hover:scale-105 transition-transform border-2 border-[#8B0E0E]"
-                onClick={() => setMode("signup")}
-              />
-            </motion.div>
-          </motion.div>
-
-          {/* Right Side: Floating Visuals */}
-          <div className="hidden lg:flex relative w-[600px] h-[600px] items-center justify-center pointer-events-none">
-            <div className="absolute w-[500px] h-[500px] bg-white/5 rounded-full blur-3xl animate-pulse" />
-            
-            {/* Logo */}
-            <motion.div
-              variants={logoEntranceVariant}
-              initial="hidden"
-              animate="visible"
-              className="absolute z-20"
-            >
-              <Image 
-                src="/Logo.svg" 
-                alt="Katipunan Hub Logo" 
-                width={300} 
-                height={300} 
-                className="object-contain drop-shadow-2xl"
-                priority
-              />
-            </motion.div>
-
-            {/* Floating Cards */}
-            <motion.div variants={floatingVariant} animate="float" className="absolute top-0 right-10 z-30">
-              <GlassCard className="p-5 rotate-6 hover:rotate-0 transition-transform duration-500 group hover:bg-white/30">
-                <Image src="/Chat.svg" alt="Chat" width={60} height={60} className="drop-shadow-md transition-transform group-hover:scale-110" />
-              </GlassCard>
-            </motion.div>
-
-            <motion.div variants={floatingVariant} animate="floatReverse" className="absolute bottom-20 left-5 z-30">
-              <GlassCard className="p-5 -rotate-6 hover:rotate-0 transition-transform duration-500 group hover:bg-white/30">
-                <Image src="/Calendar.svg" alt="Calendar" width={60} height={60} className="drop-shadow-md transition-transform group-hover:scale-110" />
-              </GlassCard>
-            </motion.div>
-
-            <motion.div variants={floatingVariant} animate="float" className="absolute top-32 left-0 z-30">
-              <GlassCard className="p-5 hover:scale-110 transition-transform duration-500 group hover:bg-white/30">
-                <Image src="/found.svg" alt="Found" width={70} height={70} className="object-contain drop-shadow-md transition-transform group-hover:scale-110" />
-              </GlassCard>
-            </motion.div>
-
-            <motion.div variants={floatingVariant} animate="floatReverse" className="absolute bottom-10 right-24 z-30">
-              <GlassCard className="p-4 rotate-3 hover:-rotate-3 transition-transform duration-500 group hover:bg-white/30">
-                <Image src="/Bellplus.svg" alt="Notify" width={50} height={50} className="drop-shadow-md transition-transform group-hover:scale-110" />
-              </GlassCard>
-            </motion.div>
-          </div>
-        </div>
+      {/* --- FIXED TAB BAR --- */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-white/20 shadow-sm transition-all">
+         <LandingPageTab />
       </div>
 
       {/* ========================================= */}
-      {/* SECTION 2: OUR STORY / ABOUT US           */}
+      {/* SECTION 1: HERO (STICKY)                  */}
       {/* ========================================= */}
-      <section className="w-full flex flex-col relative">
+      <div className="sticky top-0 h-screen w-full bg-[#EFBF04] overflow-hidden flex flex-col pt-20 z-0"> 
+        <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+        <motion.div initial={{ scale: 1.2, x: -150, y: -150, opacity: 0 }} animate={{ scale: 1, x: -20, y: -20, opacity: 1 }} transition={{ duration: 2, ease: "easeOut" }} className="absolute top-0 left-0 w-[145%] h-[145%] lg:w-[78vw] lg:h-screen bg-[#A52A2A] z-0 opacity-50 rounded-br-[100%] rounded-tr-[25%]" />
+        <motion.div initial={{ scale: 1.2, x: -100, y: -100, opacity: 0 }} animate={{ scale: 1, x: 0, y: 0, opacity: 1 }} transition={{ duration: 1.8, ease: "easeOut" }} className="absolute top-0 left-0 w-[140%] h-[140%] lg:w-[75vw] lg:h-screen bg-[#8B0E0E] z-0 shadow-2xl rounded-br-[100%] rounded-tr-[20%]" />
 
-        {/* 2A: Top Banner (About Us) */}
-        <div className="relative h-[500px] w-full bg-[#5A0505] flex flex-col items-center justify-center overflow-hidden shrink-0 z-0">
-           {/* Background Image - AboutUs.svg */}
-           <div className="absolute inset-0 z-0">
-             <Image 
-               src="/AboutUs.svg" 
-               alt="About Us Background" 
-               fill 
-               className="object-cover object-center opacity-50"
-               priority
-             />
-             {/* Dark Overlay */}
-             <div className="absolute inset-0 bg-black/50" />
-           </div>
+        <div className="relative z-10 flex-1 flex flex-col lg:flex-row items-center justify-center lg:justify-between px-6 lg:px-24 pt-10 lg:pt-0">
+          <motion.div variants={containerVariants} initial="hidden" animate="visible" className="flex flex-col items-start max-w-3xl select-none mt-10 lg:mt-0 relative z-40">
+            <motion.div variants={itemVariants} className="w-full">
+              <h1 className="leading-[1.1] flex flex-col gap-2 font-montserrat">
+                <div className="flex flex-wrap items-baseline gap-3 lg:gap-6 text-[64px] lg:text-[96px] font-bold tracking-tight">
+                  <span className="text-white drop-shadow-md">STAY</span>
+                  <div className="flip-container inline-block align-bottom relative">
+                    <div className="flip-inner flex flex-col">
+                        <div className="h-[1.2em] flex items-center text-[#EFBF04]">UPDATED</div>
+                        <div className="h-[1.2em] flex items-center text-[#EFBF04]">CONNECTED</div>
+                        <div className="h-[1.2em] flex items-center text-[#EFBF04]">INFORMED</div>
+                        <div className="h-[1.2em] flex items-center text-[#EFBF04]">UPDATED</div>
+                    </div>
+                  </div>
+                </div>
+              </h1>
+            </motion.div>
+            <motion.p variants={itemVariants} className="text-[18px] lg:text-[24px] text-gray-200 font-medium mt-8 mb-8 max-w-lg font-ptsans leading-relaxed">
+              From school events to lost & found, Katipunan Hub keeps the whole <span className="text-[#EFBF04] font-bold">CIT community</span> in one place.
+            </motion.p>
+            <motion.div variants={itemVariants}>
+              <Button text="JOIN THE HUB" bg="bg-[#EFBF04]" textcolor="text-[#8B0E0E]" font="font-bold" textSize="text-[20px]" className="px-10 py-4 shadow-xl hover:shadow-2xl hover:scale-105 transition-transform border-2 border-[#8B0E0E]" />
+            </motion.div>
+          </motion.div>
 
-           {/* Title centered on the banner */}
-           <div className="z-10 text-center relative mt-10">
-              <h2 className="text-white font-bold font-montserrat text-[50px] drop-shadow-2xl">About Us</h2>
-           </div>
+          <motion.div variants={containerVariants} initial="hidden" animate="visible" className="hidden lg:flex relative w-[600px] h-[600px] items-center justify-center pointer-events-none">
+            <div className="absolute w-[500px] h-[500px] bg-white/5 rounded-full blur-3xl animate-pulse" />
+            <motion.div variants={logoEntranceVariant} initial="hidden" animate="visible" className="absolute z-20">
+              <Image src="/Logo.svg" alt="Katipunan Hub Logo" width={300} height={300} className="object-contain drop-shadow-2xl" priority />
+            </motion.div>
+            <motion.div variants={itemVariants} className="absolute top-20 right-0 z-30 pointer-events-auto"><motion.div variants={floatingVariant} animate="float"><GlassCard className="holographic-card p-5 rotate-6 hover:rotate-0 transition-transform duration-500 group"><Image src="/Chat.svg" alt="Chat" width={60} height={60} className="drop-shadow-md transition-transform group-hover:scale-110" /></GlassCard></motion.div></motion.div>
+            <motion.div variants={itemVariants} className="absolute top-40 left-0 z-30 pointer-events-auto"><motion.div variants={floatingVariant} animate="float"><GlassCard className="holographic-card p-5 hover:scale-110 transition-transform duration-500 group"><Image src="/found.svg" alt="Found" width={70} height={70} className="object-contain drop-shadow-md transition-transform group-hover:scale-110" /></GlassCard></motion.div></motion.div>
+            <motion.div variants={itemVariants} className="absolute bottom-12 left-10 z-30 pointer-events-auto"><motion.div variants={floatingVariant} animate="floatReverse"><GlassCard className="holographic-card p-5 -rotate-6 hover:rotate-0 transition-transform duration-500 group"><Image src="/Calendar.svg" alt="Calendar" width={60} height={60} className="drop-shadow-md transition-transform group-hover:scale-110" /></GlassCard></motion.div></motion.div>
+            <motion.div variants={itemVariants} className="absolute bottom-24 right-20 z-30 pointer-events-auto"><motion.div variants={floatingVariant} animate="floatReverse"><GlassCard className="holographic-card p-4 rotate-3 hover:-rotate-3 transition-transform duration-500 group"><Image src="/Bellplus.svg" alt="Notify" width={50} height={50} className="drop-shadow-md transition-transform group-hover:scale-110" /></GlassCard></motion.div></motion.div>
+          </motion.div>
         </div>
+      </div>
 
-        {/* 2B: Content Area (Beige/Peach with Nodes) */}
-        <div className="flex-1 bg-gradient-to-b from-[#FFF5E1] to-[#FFE6CE] relative py-24 z-10">
-            {/* Background Pattern - OurStory.svg */}
-            <div className="absolute inset-0 opacity-30 pointer-events-none">
-                <Image
-                    src="/OurStory.svg"
-                    alt="Background decoration"
-                    fill
-                    className="object-cover object-center"
-                />
-            </div>
-            
-            <div className="max-w-7xl mx-auto px-8">
-                {/* FIX: items-stretch ensures equal height children */}
-                <div className="flex flex-col lg:flex-row lg:items-stretch items-center gap-20">
-                   
-                   {/* LEFT: Image Card Column */}
-                   <div className="w-full lg:w-[55%] flex flex-col z-20">
-                     <motion.div 
-                       initial={{ opacity: 0, y: 50 }}
-                       whileInView={{ opacity: 1, y: 0 }}
-                       viewport={{ once: true }}
-                       transition={{ duration: 0.8 }}
-                       className="bg-white rounded-[30px] shadow-2xl p-3 w-full h-full"
-                     >
-                       <div className="w-full h-full rounded-[20px] border-2 border-dashed border-gray-200 flex items-center justify-center bg-gray-50 min-h-[400px]">
-                         <p className="text-gray-400 font-montserrat text-xl font-medium">Our pic together 3 of us</p>
-                       </div>
-                     </motion.div>
-                   </div>
+      {/* ======================================================= */}
+      {/* REST OF CONTENT (Scrolls OVER the Hero)                 */}
+      {/* ======================================================= */}
+      <div className="relative z-10 bg-white">
+        
+        <motion.div 
+            className="absolute inset-0 z-0 h-full w-full"
+            animate={{ backgroundColor: bgColor }}
+            transition={{ duration: 0.8, ease: "easeInOut" }}
+        />
 
-                   {/* RIGHT: Text Content */}
-                   <div className="w-full lg:w-[45%] z-10 flex flex-col justify-center">
-                      <motion.div 
-                        initial={{ opacity: 0, x: 50 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.8, delay: 0.2 }}
-                      >
-                         <h2 className="text-[#8B0E0E] font-bold text-[48px] lg:text-[60px] leading-tight mb-8 drop-shadow-sm font-montserrat">
-                           Our Story
-                         </h2>
-                         
-                         <div className="space-y-8 font-montserrat text-gray-800 text-lg leading-relaxed text-justify">
-                           <p>
-                             We built Katipunan Hub because we wanted to solve a problem that many students face every day. 
-                             Important updates and resources were scattered, often buried in Facebook groups like CIT Confessions 
-                             where lost and found posts, announcements, and discussions all mixed together. We felt the need 
-                             for a space where everything important could finally come together in one place.
-                           </p>
-                           <p>
-                             This project is not only our answer to that problem but also our stepping stone as aspiring programmers. 
-                             By creating Katipunan Hub, we are learning how to turn ideas into real solutions that can make a difference 
-                             for our community. What started as a project for three students has become a platform that represents 
-                             both our growth and our vision to reach greater heights in programming and beyond.
-                           </p>
-                         </div>
-                      </motion.div>
-                   </div>
+        {/* SECTION 2: OUR STORY */}
+        <motion.section 
+            onViewportEnter={() => setBgColor("#FFF5E1")} 
+            viewport={{ amount: 0.4 }}
+            className="w-full py-24 relative overflow-hidden z-10"
+        >
+            <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                    <motion.div initial={{ opacity: 0, x: -50 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="relative">
+                        <div className="absolute -inset-3 border-2 border-[#EFBF04]/20 rounded-[35px] transform rotate-2 pointer-events-none" />
+                        <div className="relative aspect-[4/3] w-full bg-white rounded-[30px] overflow-hidden shadow-xl border border-white flex items-center justify-center">
+                            <p className="text-gray-400 font-montserrat text-xl">Our pic together 3 of us</p>
+                        </div>
+                    </motion.div>
 
+                    <motion.div initial={{ opacity: 0, x: 50 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}>
+                        <h2 className="text-[#8B0E0E] font-bold text-[48px] lg:text-[60px] leading-tight mb-8 drop-shadow-sm font-montserrat">Our Story</h2>
+                        <div className="space-y-8 font-montserrat text-gray-800 text-lg leading-relaxed text-justify relative">
+                            <p>We built Katipunan Hub because we wanted to solve a problem that many students face every day. Important updates and resources were scattered, often buried in Facebook groups like CIT Confessions.</p>
+                            <p>This project is not only our answer to that problem but also our stepping stone as aspiring programmers. By creating Katipunan Hub, we are learning how to turn ideas into real solutions that can make a difference for our community.</p>
+                        </div>
+                    </motion.div>
                 </div>
             </div>
-        </div>
-      </section>
+        </motion.section>
 
-      {/* ========================================= */}
-      {/* SECTION 3: THE PROBLEM WE SAW             */}
-      {/* ========================================= */}
-      <section className="w-full min-h-screen flex items-center justify-center relative py-20 overflow-hidden">
-        
-        {/* Background Image */}
-        <div className="absolute inset-0 z-0">
-            <Image 
-              src="/TheProblemWeSaw.svg" 
-              alt="The Problem Background" 
-              fill 
-              className="object-cover object-center"
-              priority
-            />
-        </div>
+        {/* SECTION 3: THE PROBLEM */}
+        <motion.section 
+            onViewportEnter={() => setBgColor("#FFFFFF")} 
+            viewport={{ amount: 0.4 }}
+            className="w-full py-24 relative overflow-hidden z-10"
+        >
+            <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                    <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="order-2 lg:order-1">
+                        <h2 className="text-[#EFBF04] font-bold text-[48px] lg:text-[56px] leading-tight mb-8 drop-shadow-md font-montserrat">The Problem <br/> We Saw</h2>
+                        <div className="space-y-6 text-lg leading-relaxed text-justify font-medium font-montserrat text-gray-800">
+                            <p>As students at CIT we experienced firsthand how scattered and messy important information could be. Whenever we needed updates we often turned to Facebook groups like CIT Confessions or CIT - U official page.</p>
+                            <p>Over time this made it harder to find what truly mattered. A simple lost ID could get buried under dozens of unrelated posts. Announcements about events and deadlines were easy to miss because they blended in with casual discussions.</p>
+                        </div>
+                    </motion.div>
 
-        <div className="max-w-7xl mx-auto px-8 flex flex-col lg:flex-row items-center gap-20 z-10">
-            
-            {/* Left: Text Content */}
-            <div className="w-full lg:w-1/2 text-white font-montserrat">
-              <h2 className="text-[#EFBF04] font-bold text-[48px] lg:text-[56px] leading-tight mb-8 drop-shadow-md">
-                The Problem <br/> We Saw
-              </h2>
-              
-              <div className="space-y-6 text-lg leading-relaxed text-justify font-medium">
-                <p>
-                  As students at CIT we experienced firsthand how scattered and messy important information could be. 
-                  Whenever we needed updates we often turned to Facebook groups like CIT Confessions or CIT - U official page. 
-                  While these groups gave us a space to share they also turned into a mix of announcements, lost and found posts, 
-                  anonymous confessions and student conversations all in one place.
-                </p>
-                <p>
-                  Over time this made it harder to find what truly mattered. A simple lost ID could get buried under dozens 
-                  of unrelated posts. Announcements about events and deadlines were easy to miss because they blended in with 
-                  casual discussions. What should have been a reliable source of information turned into a confusing mix that 
-                  left many students frustrated.
-                </p>
-                <p>
-                  We knew there had to be a better way to keep our community informed without losing the connection that 
-                  made us feel part of something bigger.
-                </p>
-              </div>
-            </div>
-
-            {/* Right: Images Stack */}
-            <div className="w-full lg:w-1/2 flex flex-col gap-8">
-              {/* Top Image Card */}
-              <div className="bg-white rounded-[20px] shadow-lg h-[280px] flex items-center justify-center transform hover:scale-[1.02] transition-transform duration-300">
-                <p className="text-gray-400 font-montserrat font-medium text-lg">Problem pic sa page</p>
-              </div>
-              {/* Bottom Image Card */}
-              <div className="bg-white rounded-[20px] shadow-lg h-[280px] flex items-center justify-center transform hover:scale-[1.02] transition-transform duration-300">
-                <p className="text-gray-400 font-montserrat font-medium text-lg">Problem pic sa page</p>
-              </div>
-            </div>
-        </div>
-      </section>
-
-      {/* ========================================= */}
-      {/* SECTION 4: THE SOLUTION WE BUILT (RESTORED) */}
-      {/* ========================================= */}
-      <section className="w-full min-h-screen flex items-center justify-center relative py-20 overflow-hidden bg-gradient-to-tl from-[#FFF5E1] to-[#FFE6CE]">
-        
-        {/* Background Pattern - OurStory.svg (reused as requested) */}
-        <div className="absolute inset-0 opacity-20 pointer-events-none z-0">
-            <Image
-                src="/OurStory.svg"
-                alt="Background decoration"
-                fill
-                className="object-cover object-center"
-            />
-        </div>
-        {/* Additional glow for depth */}
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#EFBF04]/10 rounded-full blur-[100px] pointer-events-none z-0" />
-
-        <div className="max-w-7xl mx-auto px-8 flex flex-col-reverse lg:flex-row items-center gap-20 z-10">
-            
-            {/* Left: Images Stack */}
-            <div className="w-full lg:w-1/2 flex flex-col gap-8">
-              {/* Top Image Card */}
-              <div className="bg-white rounded-[20px] shadow-xl h-[280px] flex items-center justify-center transform hover:scale-[1.02] transition-transform duration-300 border border-gray-100">
-                <p className="text-gray-400 font-montserrat font-medium text-lg">Solution pic sato system</p>
-              </div>
-              {/* Bottom Image Card */}
-              <div className="bg-white rounded-[20px] shadow-xl h-[280px] flex items-center justify-center transform hover:scale-[1.02] transition-transform duration-300 border border-gray-100">
-                <p className="text-gray-400 font-montserrat font-medium text-lg">Solution pic sato system</p>
-              </div>
-            </div>
-
-            {/* Right: Text Content */}
-            <div className="w-full lg:w-1/2 font-montserrat text-black text-right lg:text-left">
-              <h2 className="text-[#8B0E0E] font-bold text-[48px] lg:text-[56px] leading-tight mb-10 drop-shadow-sm">
-                The Solution <br/> We Built
-              </h2>
-              
-              <div className="space-y-6 text-lg leading-relaxed text-justify text-gray-800">
-                <p>
-                  Seeing how information was always buried and scattered pushed us to think differently. 
-                  We wanted something that would make life easier not only for us but for every student at CIT. 
-                  That is where Katipunan Hub began.
-                </p>
-                <p>
-                  Instead of scrolling through endless anonymous posts just to find one important update we imagined a 
-                  platform where everything was already in its right place. Announcements would have their own space. 
-                  Lost and found items would be easy to track. Events would be visible on a calendar instead of being 
-                  buried in a feed. Conversations would still exist but in a way that kept the important things clear and accessible.
-                </p>
-                <p>
-                  Katipunan Hub is our answer to that problem. It is more than a school project. It is our way of 
-                  contributing to the community that shaped us. Building this system is also our stepping stone as 
-                  programmers teaching us how to transform a simple idea into something that can create real impact.
-                </p>
-              </div>
-            </div>
-        </div>
-      </section>
-
-      {/* ========================================= */}
-      {/* SECTION 5: GET TO KNOW US & FOOTER        */}
-      {/* ========================================= */}
-      <section className="w-full min-h-screen flex flex-col relative">
-        
-        {/* 5A: Team Carousel Section */}
-        <div className="flex-1 bg-gradient-to-b from-[#8B0E0E] to-[#5A0505] relative flex flex-col items-center justify-center py-24 overflow-hidden">
-          {/* Title */}
-          <h2 className="text-white font-montserrat font-light text-[48px] mb-16 drop-shadow-lg">
-            Get to Know Us
-          </h2>
-
-          {/* Carousel Container */}
-          <div className="flex items-center gap-12 z-10">
-            {/* Left Arrow */}
-            <button className="w-14 h-14 rounded-full border border-white/30 bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all text-white backdrop-blur-sm">
-              <ArrowLeft size={24} />
-            </button>
-
-            {/* Team Member Card */}
-            <div className="w-[350px] bg-white rounded-[30px] overflow-hidden shadow-2xl transform hover:scale-105 transition-transform duration-300">
-              {/* Image Placeholder (Top Half) */}
-              <div className="h-[300px] bg-gray-200 flex items-center justify-center relative border-b border-gray-100">
-                 <p className="text-gray-400 font-montserrat text-xl">(Image Nato)</p>
-              </div>
-              
-              {/* Details (Bottom Half) */}
-              <div className="p-8 text-left">
-                <h3 className="font-bold text-2xl text-black font-montserrat mb-1">
-                  Ivan Cañete
-                </h3>
-                <p className="text-sm text-gray-500 font-montserrat mb-6 font-medium">
-                  Project Lead / Backend Developer
-                </p>
-                
-                <p className="text-sm text-gray-700 font-montserrat leading-relaxed mb-8 min-h-[80px]">
-                  Focused on building secure and reliable systems for Katipunan Hub. Skilled in Node.js, Supabase, and API integration.
-                </p>
-
-                {/* Social Icons */}
-                <div className="flex gap-4 items-center">
-                   <Instagram className="w-6 h-6 text-black hover:text-[#8B0E0E] cursor-pointer transition-colors" />
-                   <Facebook className="w-6 h-6 text-black hover:text-[#8B0E0E] cursor-pointer transition-colors" />
-                   <div className="w-6 h-6 bg-black text-white flex items-center justify-center rounded-sm hover:bg-[#8B0E0E] cursor-pointer transition-colors">
-                     <Twitter size={14} fill="currentColor" />
-                   </div>
+                    <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="order-1 lg:order-2 flex flex-col gap-6">
+                        <div className="bg-white rounded-[20px] shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] h-[240px] flex items-center justify-center transform hover:scale-[1.02] transition-transform duration-300 border border-gray-50 relative overflow-hidden group">
+                            <div className="absolute inset-0 bg-gradient-to-tr from-[#EFBF04]/5 to-transparent opacity-50" />
+                            <p className="text-gray-400 font-montserrat font-medium text-lg relative z-10">Problem pic sa page</p>
+                        </div>
+                        <div className="bg-white rounded-[20px] shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] h-[240px] flex items-center justify-center transform hover:scale-[1.02] transition-transform duration-300 border border-gray-50 relative overflow-hidden group">
+                            <div className="absolute inset-0 bg-gradient-to-tr from-[#8B0E0E]/5 to-transparent opacity-50" />
+                            <p className="text-gray-400 font-montserrat font-medium text-lg relative z-10">Problem pic sa page</p>
+                        </div>
+                    </motion.div>
                 </div>
-              </div>
             </div>
+        </motion.section>
 
-            {/* Right Arrow */}
-            <button className="w-14 h-14 rounded-full border border-white/30 bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all text-white backdrop-blur-sm">
-              <ArrowRight size={24} />
-            </button>
+        {/* SECTION 4: THE SOLUTION */}
+        <motion.section 
+            onViewportEnter={() => setBgColor("#FFF0E0")} 
+            viewport={{ amount: 0.4 }}
+            className="w-full py-24 relative overflow-hidden z-10"
+        >
+            <div className="max-w-7xl mx-auto px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center relative z-10">
+                <motion.div className="w-full flex flex-col gap-6" initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+                    <div className="bg-white rounded-[20px] shadow-xl h-[240px] flex items-center justify-center border border-white relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#EFBF04]/20 to-transparent rounded-bl-full" />
+                        <p className="text-gray-400 font-montserrat font-medium text-lg z-10">Solution pic sato system</p>
+                    </div>
+                    <div className="bg-white rounded-[20px] shadow-xl h-[240px] flex items-center justify-center border border-white relative overflow-hidden">
+                        <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-[#8B0E0E]/10 to-transparent rounded-tr-full" />
+                        <p className="text-gray-400 font-montserrat font-medium text-lg z-10">Solution pic sato system</p>
+                    </div>
+                </motion.div>
+
+                <motion.div className="w-full" initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+                    <h2 className="text-[#8B0E0E] font-bold text-[48px] lg:text-[56px] leading-tight mb-10 drop-shadow-sm font-montserrat">The Solution <br/> We Built</h2>
+                    <div className="space-y-6 text-lg leading-relaxed text-justify text-gray-800 font-montserrat relative">
+                        <p>Seeing how information was always buried and scattered pushed us to think differently. We wanted something that would make life easier not only for us but for every student at CIT.</p>
+                        <p>Instead of scrolling through endless anonymous posts just to find one important update we imagined a platform where everything was already in its right place. Announcements would have their own space. Lost and found items would be easy to track.</p>
+                    </div>
+                </motion.div>
+            </div>
+        </motion.section>
+
+        {/* SECTION 5: TEAM */}
+        <motion.section 
+            onViewportEnter={() => setBgColor("#222222")} 
+            viewport={{ amount: 0.4 }}
+            className="w-full py-24 relative text-white overflow-hidden z-10"
+        >
+            <div className="absolute inset-0 bg-gradient-to-b from-[#8B0E0E] via-[#3a0a0a] to-[#222] opacity-50 pointer-events-none" />
+
+            <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
+                <div className="mb-12 text-center">
+                    <h2 className="text-white font-montserrat font-bold text-[48px] drop-shadow-lg">Get to Know Us</h2>
+                    <p className="text-gray-300 mt-4 font-montserrat">The minds behind Katipunan Hub.</p>
+                </div>
+
+                <div className="relative px-4 md:px-16">
+                    <Swiper
+                        effect={'coverflow'}
+                        grabCursor={true}
+                        centeredSlides={true}
+                        slidesPerView={3}
+                        loop={true}
+                        coverflowEffect={{ 
+                          rotate: 0, 
+                          stretch: 0, 
+                          depth: 200, 
+                          modifier: 1, 
+                          slideShadows: false 
+                        }}
+                        navigation={{ nextEl: '.swiper-button-next-custom', prevEl: '.swiper-button-prev-custom' }}
+                        modules={[EffectCoverflow, Navigation]}
+                        className="team-swiper"
+                        observer={true}
+                        observeParents={true}
+                    >
+                        {[...TEAM_MEMBERS, ...TEAM_MEMBERS].map((member, index) => (
+                            <SwiperSlide key={index}>
+                                <div className="bg-white rounded-[35px] overflow-hidden shadow-2xl h-full text-black transition-all duration-300 select-none">
+                                    <div className="h-[190px] bg-gray-200 relative flex items-center justify-center">
+                                        {member.image ? (
+                                            <Image src={member.image} alt={member.name} fill className="object-cover" />
+                                        ) : (
+                                            <p className="font-montserrat text-gray-500 text-lg font-medium">(Image Nato)</p>
+                                        )}
+                                    </div>
+                                    <div className="p-6 text-left">
+                                        <h3 className="text-2xl font-bold font-montserrat mb-1">{member.name}</h3>
+                                        <p className="text-gray-600 font-medium text-sm mb-4 font-montserrat">{member.role}</p>
+                                        <p className="text-gray-700 text-sm mb-4 leading-relaxed font-ptsans line-clamp-4">{member.bio}</p>
+                                        <div className="mb-6">
+                                            <p className="text-xs font-bold text-[#8B0E0E] uppercase tracking-wider mb-1">Skills</p>
+                                            <p className="text-gray-600 text-xs font-medium">{member.skills}</p>
+                                        </div>
+                                        <div className="flex gap-4 mt-auto">
+                                            <Instagram className="w-6 h-6 text-gray-800 hover:text-[#8B0E0E] cursor-pointer transition-colors" />
+                                            <Facebook className="w-6 h-6 text-gray-800 hover:text-[#8B0E0E] cursor-pointer transition-colors" />
+                                            <div className="w-6 h-6 bg-black text-white flex items-center justify-center rounded-sm hover:bg-[#8B0E0E] cursor-pointer transition-colors">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </SwiperSlide>
+                        ))}
+                    </Swiper>
+                    
+                    {/* --- FIX APPLIED: Removed standalone 'flex' so it doesn't conflict with 'hidden' --- */}
+                    <div className="swiper-button-prev-custom absolute top-1/2 left-0 -translate-y-1/2 z-20 bg-white text-black w-14 h-14 rounded-full shadow-lg items-center justify-center cursor-pointer hover:bg-[#EFBF04] hover:scale-110 transition-all hidden md:flex">
+                        <ArrowLeft size={24} />
+                    </div>
+                    <div className="swiper-button-next-custom absolute top-1/2 right-0 -translate-y-1/2 z-20 bg-white text-black w-14 h-14 rounded-full shadow-lg items-center justify-center cursor-pointer hover:bg-[#EFBF04] hover:scale-110 transition-all hidden md:flex">
+                        <ArrowRight size={24} />
+                    </div>
+                </div>
+            </div>
+        </motion.section>
+
+        {/* FOOTER */}
+        <footer className="bg-black text-white pt-16 pb-8 border-t border-white/10 z-20 relative">
+          <div className="max-w-7xl mx-auto px-6 lg:px-8">
+              <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                  <div className="flex items-center gap-4">
+                      <Logo width={60} height={70} unclickable />
+                      <span className="font-montserrat font-bold text-xl tracking-wider">KATIPUNAN HUB</span>
+                  </div>
+                  <p className="font-montserrat text-sm text-gray-500 font-medium">
+                      © 2025 Katipunan Hub. All rights reserved.
+                  </p>
+              </div>
           </div>
+        </footer>
+      </div>
 
-          {/* Optional: Background Ghost Cards for depth effect (Visual polish based on image style) */}
-          <div className="absolute left-[5%] top-1/2 -translate-y-1/2 w-[300px] h-[400px] bg-white/5 rounded-[30px] blur-[2px] -z-0 rotate-[-5deg] opacity-50" />
-          <div className="absolute right-[5%] top-1/2 -translate-y-1/2 w-[300px] h-[400px] bg-white/5 rounded-[30px] blur-[2px] -z-0 rotate-[5deg] opacity-50" />
-        </div>
-
-        {/* 5B: Footer (Gold/Beige) */}
-        <div className="bg-[#FFF5E1] border-t-[6px] border-[#EFBF04] relative py-10 px-16">
-           {/* Background Nodes Pattern */}
-           <div className="absolute inset-0 opacity-30 pointer-events-none" 
-                style={{ backgroundImage: 'radial-gradient(circle, #EFBF04 2px, transparent 2px)', backgroundSize: '30px 30px' }} 
-           />
-
-           <div className="max-w-7xl mx-auto relative z-10 flex flex-col gap-6">
-             {/* Logo & Text */}
-             <div className="flex items-center gap-4">
-                <Logo width={60} height={70} unclickable />
-             </div>
-             
-             <p className="font-montserrat text-sm text-gray-500 font-medium mt-4">
-               © 2025 Katipunan Hub. All rights reserved.
-             </p>
-           </div>
-        </div>
-      </section>
-
-      {/* --- Modals --- */}
-      <AnimatePresence mode="wait">
-        {mode === "signup" && (
-          <ModalWrapper>
-            <SignUpForm
-              key="signup"
-              onClose={() => setMode("none")}
-              onSwitch={() => setMode("signin")}
-            />
-          </ModalWrapper>
-        )}
-        {mode === "signin" && (
-          <SignInForm
-            key="signin"
-            onClose={() => setMode("none")}
-            onSwitch={() => setMode("signup")}
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 }
