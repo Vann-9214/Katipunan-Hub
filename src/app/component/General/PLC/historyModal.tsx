@@ -228,8 +228,8 @@ export default function HistoryModal({
                                 </span>
                               </div>
 
-                              {/* Show Rating Stars if Rated */}
-                              {hasRated && !isRejected && !isTutor && (
+                              {/* --- UPDATED: Show Rating Stars if Rated (For both Tutor and Student) --- */}
+                              {hasRated && !isRejected && (
                                 <div className="flex items-center gap-1 mt-2">
                                   {[...Array(5)].map((_, i) => (
                                     <Star
@@ -243,7 +243,9 @@ export default function HistoryModal({
                                     />
                                   ))}
                                   <span className="text-[10px] text-gray-400 font-medium ml-1">
-                                    You rated this
+                                    {isTutor
+                                      ? "Student Rating"
+                                      : "You rated this"}
                                   </span>
                                 </div>
                               )}

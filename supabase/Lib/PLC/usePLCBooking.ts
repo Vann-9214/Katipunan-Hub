@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../General/supabaseClient";
 import { getCurrentUserDetails } from "../General/getUser";
 import type { User } from "../General/user";
+// 1. Import the auth helper for chat
+import { getSortedUserPair } from "../Message/auth";
 
 // --- Types ---
 export interface Booking {
@@ -314,74 +316,115 @@ export const usePLCBookings = (
     }
   }, [fetchMyRatings, fetchMyRejections, fetchMonthBookings, fetchDayBookings, fetchHistoryBookings]);
 
-  // --- 4. CLEANUP ENGINE (UPDATED FOR NOTIFICATIONS) ---
+  const isCleaningUpRef = useRef(false);
+
+  // --- 4. CLEANUP ENGINE (FIXED: Manual Archive Logic) ---
   const cleanupExpired = useCallback(async () => {
-    const now = new Date();
-    const dateStr = getDateString(now.getFullYear(), now.getMonth(), now.getDate());
-    // Ensure time string includes seconds for precise database comparison
-    const timeStr = now.toLocaleTimeString('en-GB', { hour12: false }); // "HH:mm:ss"
+    // 1. THREAD LOCK
+    if (isCleaningUpRef.current) return;
+
+    // 2. TAB LOCK (with Jitter)
+    const LOCK_KEY = 'plc_cleanup_lock';
+    const lastRun = typeof window !== 'undefined' ? localStorage.getItem(LOCK_KEY) : '0';
+    const now = Date.now();
+
+    if (lastRun && (now - parseInt(lastRun)) < 10000) {
+      return; 
+    }
+
+    if (typeof window !== 'undefined') {
+        localStorage.setItem(LOCK_KEY, now.toString());
+    }
+
+    isCleaningUpRef.current = true;
+
+    // 3. JITTER
+    await new Promise((resolve) => setTimeout(resolve, Math.random() * 3000));
+
+    const dateStr = getDateString(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+    const timeStr = new Date().toLocaleTimeString('en-GB', { hour12: false }); 
 
     try {
-      // --- STEP 1: NOTIFY STUDENTS BEFORE ARCHIVING ---
-      // Identify Approved bookings that have expired right now
-      const { data: completedCandidates } = await supabase
+      // --- STEP 1: SELECT ALL EXPIRED (Approved AND Rejected) ---
+      // We look for statuses that should move to history, not just 'Approved'
+      const { data: expiredItems } = await supabase
         .from("PLCBookings")
-        .select("id, studentId, subject")
-        .eq("status", "Approved")
+        .select("*")
+        .in("status", ["Approved", "Rejected"]) // Include Rejected here!
         .or(`bookingDate.lt.${dateStr},and(bookingDate.eq.${dateStr},endTime.lte.${timeStr})`);
 
-      if (completedCandidates && completedCandidates.length > 0) {
-         const notificationsToInsert = [];
+      if (expiredItems && expiredItems.length > 0) {
+          
+         // A. NOTIFICATIONS (Only notify for Approved items)
+         const approvedItems = expiredItems.filter(i => i.status === 'Approved');
+         if (approvedItems.length > 0) {
+             const notificationsToInsert = [];
+             const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-         // Build notifications but check for duplicates first
-         for (const b of completedCandidates) {
-             const title = `Your PLC session for "${b.subject}" has been completed.`;
-             
-             // 1a. Check if we already notified this user about this specific completion
-             // This prevents spam if the interval runs multiple times before the item is archived
-             const { data: existing } = await supabase
-                .from("UserNotifications")
-                .select("id")
-                .eq("user_id", b.studentId)
-                .eq("title", title)
-                .maybeSingle();
+             for (const b of approvedItems) {
+                 const title = `Your PLC session for "${b.subject}" has been completed.`;
+                 
+                 const { data: existing } = await supabase
+                    .from("UserNotifications")
+                    .select("id")
+                    .eq("user_id", b.studentId)
+                    .eq("title", title)
+                    .gte("created_at", yesterday) 
+                    .maybeSingle();
 
-             if (!existing) {
-                 notificationsToInsert.push({
-                    user_id: b.studentId,
-                    title: title,
-                    type: 'system',
-                    is_read: false
-                 });
+                 if (!existing) {
+                     notificationsToInsert.push({
+                        user_id: b.studentId,
+                        title: title,
+                        type: 'system',
+                        is_read: false
+                     });
+                 }
+             }
+
+             if (notificationsToInsert.length > 0) {
+                 await supabase.from("UserNotifications").insert(notificationsToInsert);
              }
          }
 
-         // 1b. Insert only new notifications
-         if (notificationsToInsert.length > 0) {
-             await supabase.from("UserNotifications").insert(notificationsToInsert);
+         // B. MANUAL ARCHIVE (Crucial Fix: Explicitly Insert into History)
+         // We map the items to match the History table structure
+         const historyPayload = expiredItems.map(item => ({
+             id: item.id,
+             bookingDate: item.bookingDate,
+             subject: item.subject,
+             studentId: item.studentId,
+             approvedBy: item.approvedBy,
+             startTime: item.startTime,
+             endTime: item.endTime,
+             status: item.status,
+             description: item.description,
+             createdAt: item.createdAt
+         }));
+
+         const { error: insertError } = await supabase
+            .from("PLCBookingHistory")
+            .upsert(historyPayload);
+
+         // C. DELETE FROM ACTIVE (Only if archive succeeded)
+         if (!insertError) {
+             const idsToDelete = expiredItems.map(i => i.id);
+             await supabase.from("PLCBookings").delete().in("id", idsToDelete);
          }
       }
 
-      // --- STEP 2: ARCHIVE (Move to History) ---
-      await Promise.all([
-        supabase.rpc('move_and_archive_bookings', {
-          check_date: dateStr,
-          check_time: timeStr
-        }),
-        supabase.rpc("delete_expired_pending_bookings", {
-          check_date: dateStr,
-          check_time: timeStr
-        }),
-        supabase.from("PLCBookings")
-          .delete()
-          .eq("status", "Pending")
-          .or(`bookingDate.lt.${dateStr},and(bookingDate.eq.${dateStr},startTime.lte.${timeStr})`)
-      ]);
+      // --- STEP 2: DELETE EXPIRED PENDING ---
+      await supabase.from("PLCBookings")
+        .delete()
+        .eq("status", "Pending")
+        .or(`bookingDate.lt.${dateStr},and(bookingDate.eq.${dateStr},startTime.lte.${timeStr})`);
 
       setTimeout(() => refreshBookings(true), 500);
 
     } catch (err) {
       console.error("Cleanup error:", err);
+    } finally {
+      isCleaningUpRef.current = false;
     }
   }, [refreshBookings]);
 
@@ -422,8 +465,6 @@ export const usePLCBookings = (
   }
 
   // --- FIXED: DENY BOOKING (REMOVED DUPLICATE LOGIC) ---
-  // We simply call the RPC. We do NOT fetch data or insert notifications client-side.
-  // This prevents double notifications if the backend is already sending one.
   const denyBooking = async (bookingId: string) => {
     const { error } = await supabase.rpc("deny_booking", { booking_id: bookingId });
     
@@ -436,6 +477,7 @@ export const usePLCBookings = (
   const rateTutor = async (bookingId: string, tutorId: string, rating: number, review: string) => {
     if (!currentUser) return;
     
+    // 1. Insert the rating
     const { error } = await supabase.from("TutorRatings").insert({
       booking_id: bookingId,
       student_id: currentUser.id,
@@ -449,12 +491,64 @@ export const usePLCBookings = (
       throw error;
     }
 
+    // 2. Archive the booking (UI updates happen automatically via listeners)
     const { error: archiveError } = await supabase.rpc('archive_booking_on_rate', { 
       target_booking_id: bookingId 
     });
 
     if (archiveError) {
       console.warn("Archive warning (might already be archived):", archiveError.message);
+    }
+    
+    // 3. --- NEW: Send Chat Message ---
+    try {
+      // Get correct user IDs for conversation lookup
+      const { user_a_id, user_b_id } = getSortedUserPair(currentUser.id, tutorId);
+      
+      // Attempt to find existing conversation
+      let conversationId = null;
+      const { data: existingConvo } = await supabase
+        .from("Conversations")
+        .select("id")
+        .eq("user_a_id", user_a_id)
+        .eq("user_b_id", user_b_id)
+        .maybeSingle();
+        
+      if (existingConvo) {
+        conversationId = existingConvo.id;
+      } else {
+        // If no conversation exists, create one
+        const { data: newConvo, error: createError } = await supabase
+          .from("Conversations")
+          .insert({ 
+            user_a_id, 
+            user_b_id, 
+            last_message_at: new Date().toISOString() 
+          })
+          .select("id")
+          .single();
+          
+        if (!createError && newConvo) {
+          conversationId = newConvo.id;
+        }
+      }
+      
+      // If we have a conversation ID, insert the message
+      if (conversationId) {
+        // Format the star rating visual
+        const stars = "⭐".repeat(rating);
+        // Format message
+        const messageContent = `I rated you ${rating} stars! ${stars}\n\n"${review}"`;
+        
+        await supabase.from("Messages").insert({
+          conversation_id: conversationId,
+          sender_id: currentUser.id,
+          content: messageContent
+        });
+      }
+    } catch (chatError) {
+      // We log the error but do not throw it, so the rating process itself doesn't appear to fail to the user
+      console.error("Failed to send rating chat message:", chatError);
     }
     
     refreshBookings(false);
@@ -511,12 +605,15 @@ export const usePLCBookings = (
     return () => clearInterval(interval);
   }, [cleanupExpired]);
 
-  // 4. Realtime Subscription
+  // 4. Realtime Subscription (FIXED: Added PLCBookings listener)
   useEffect(() => {
     if (!currentUser) return;
 
     const channel = supabase
       .channel('plc-bookings-realtime')
+      // --- ADDED THIS LINE TO FIX REALTIME UPDATES ---
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'PLCBookings' }, () => { refreshBookings(true); })
+      // ------------------------------------------------
       .on('postgres_changes', { event: '*', schema: 'public', table: 'TutorRatings' }, () => { refreshBookings(true); })
       .on(
         'postgres_changes',

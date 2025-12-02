@@ -2,7 +2,9 @@
 
 import { NotificationItem } from "../../../../../supabase/Lib/General/useNotification";
 import { useRouter } from "next/navigation";
-import { BellRing, Megaphone } from "lucide-react"; // Added Megaphone
+import { BellRing, Megaphone, Trash2 } from "lucide-react"; // Added Trash2
+import { supabase } from "../../../../../supabase/Lib/General/supabaseClient"; // Added supabase import
+import { getCurrentUserDetails } from "../../../../../supabase/Lib/General/getUser"; // Added user import
 
 interface NotificationDropdownProps {
   notifications: NotificationItem[];
@@ -16,6 +18,29 @@ export default function NotificationDropdown({
   onClose,
 }: NotificationDropdownProps) {
   const router = useRouter();
+
+  // --- NEW: Handle Clear All Notifications ---
+  const handleClearAll = async () => {
+    const confirmClear = window.confirm(
+      "Are you sure you want to clear all your notifications?"
+    );
+    if (!confirmClear) return;
+
+    const user = await getCurrentUserDetails();
+    if (!user) return;
+
+    // 1. Delete all UserNotifications for this user
+    const { error } = await supabase
+      .from("UserNotifications")
+      .delete()
+      .eq("user_id", user.id);
+
+    if (error) {
+      console.error("Failed to clear notifications:", error);
+      alert("Failed to clear notifications. Please try again.");
+    }
+    // Note: The UI will update automatically because the useNotifications hook listens to database changes.
+  };
 
   const handleItemClick = (notif: NotificationItem) => {
     // 1. Handle System/PLC Notifications
@@ -48,8 +73,19 @@ export default function NotificationDropdown({
           <h3 className="font-montserrat font-bold text-[18px] text-white tracking-wide">
             Notifications
           </h3>
-          <div className="text-[10px] font-bold text-[#EFBF04] bg-white/10 px-2 py-1 rounded-md border border-white/10">
-            Recent
+
+          {/* --- NEW: Header Actions (Recent + Clear) --- */}
+          <div className="flex items-center gap-2">
+            <div className="text-[10px] font-bold text-[#EFBF04] bg-white/10 px-2 py-1 rounded-md border border-white/10 cursor-default">
+              Recent
+            </div>
+            <button
+              onClick={handleClearAll}
+              className="p-1.5 rounded-md hover:bg-white/10 text-white/70 hover:text-red-400 transition-colors"
+              title="Clear all notifications"
+            >
+              <Trash2 size={16} />
+            </button>
           </div>
         </div>
 
