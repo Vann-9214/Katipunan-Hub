@@ -23,7 +23,7 @@ interface SignInFormProps {
 export default function SignInForm({
   onClose,
   onSwitchToSignUp,
-  onSwitchToForgotPassword, // Uncommented
+  // onSwitchToForgotPassword, // Uncommented
   onSwitchToVerification,
 }: SignInFormProps) {
   const [email, setEmail] = useState("");
@@ -246,13 +246,13 @@ export default function SignInForm({
                   />
                   <div className="flex justify-end">
                     {/* Uncommented the button */}
-                    <button
+                    {/* <button
                       type="button"
                       onClick={onSwitchToForgotPassword}
                       className="text-xs font-semibold text-gray-500 hover:text-maroon transition-colors cursor-pointer mt-1"
                     >
                       Forgot Password?
-                    </button>
+                    </button> */}
                   </div>
                 </div>
               </div>

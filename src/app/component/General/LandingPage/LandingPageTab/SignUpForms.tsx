@@ -9,12 +9,12 @@ import TextBox from "@/app/component/ReusableComponent/Textbox";
 import { Combobox } from "@/app/component/ReusableComponent/Combobox";
 import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
 import Image from "next/image";
-import { ArrowRight, CheckCircle } from "lucide-react"; // Added CheckCircle
+import { ArrowRight, CheckCircle } from "lucide-react";
 import {
   COURSE_PROGRAMS,
   YEAR_LEVELS,
   EMAIL_DOMAIN,
-} from "../../../../../../supabase/Lib/constants"; // Imported constants
+} from "../../../../../../supabase/Lib/constants";
 
 interface SignUpFormProps {
   onClose?: () => void;
@@ -27,8 +27,6 @@ export default function SignUpForm({
   onSwitch,
   onSuccessfulSignUp,
 }: SignUpFormProps) {
-  // Constants now imported
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -38,7 +36,7 @@ export default function SignUpForm({
   const [selectedYear, setSelectedYear] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState(""); // New state for success
+  const [successMessage, setSuccessMessage] = useState("");
   const [showVerifyPrompt, setShowVerifyPrompt] = useState(false);
 
   const handleStudentIDChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -118,23 +116,20 @@ export default function SignUpForm({
           signUpError.message.includes("already registered") ||
           signUpError.message.includes("User already exists")
         ) {
-          // Replaced alert with custom UI logic
           setErrorMessage(
             "This account is already registered. Please sign in."
           );
-          setShowVerifyPrompt(true); // Reuse the verification prompt UI for this case
+          setShowVerifyPrompt(true);
           return;
         }
         setErrorMessage(signUpError.message);
         return;
       }
 
-      // Replaced alert with success message
       setSuccessMessage(
         "Sign up successful! Please check your email or sign in."
       );
 
-      // Optional: Delay switch to sign in to let user read message
       setTimeout(() => {
         onSwitch?.();
       }, 2000);
@@ -158,18 +153,20 @@ export default function SignUpForm({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
+      transition={{ duration: 0.2 }} // Faster fade for background
       className="flex justify-center items-center fixed inset-0 z-50 bg-black/60 backdrop-blur-sm p-4"
     >
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 0 }}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
-        className="flex flex-col md:flex-row w-full max-w-[1050px] h-[650px] bg-white rounded-[30px] shadow-2xl relative overflow-hidden"
+        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 10 }}
+        transition={{ duration: 0.2, ease: "easeOut" }} // Snappier modal transition
+        className="flex flex-col md:flex-row w-full max-w-[1050px] h-[650px] bg-white rounded-[30px] shadow-2xl relative"
+        // REMOVED 'overflow-hidden' to allow dropdowns to potentially escape if not portalled,
+        // though z-index fix in Combobox is the real solution.
       >
         {/* Left Side */}
-        <div className="relative w-full md:w-[45%] bg-gradient-to-br from-[#EFBF04] via-[#B79308] to-[#8A6D00] p-10 flex flex-col justify-start overflow-hidden text-white pt-20">
+        <div className="relative w-full md:w-[45%] bg-gradient-to-br from-[#EFBF04] via-[#B79308] to-[#8A6D00] p-10 flex flex-col justify-start overflow-hidden text-white pt-20 rounded-t-[30px] md:rounded-l-[30px] md:rounded-tr-none">
           <div
             className="absolute inset-0 opacity-[0.07] pointer-events-none"
             style={{
@@ -202,7 +199,8 @@ export default function SignUpForm({
         </div>
 
         {/* Right Side */}
-        <div className="flex-1 bg-white flex flex-col justify-center items-center p-6 sm:p-8 relative overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        {/* Added rounded corners to match parent */}
+        <div className="flex-1 bg-white flex flex-col justify-center items-center p-6 sm:p-8 relative overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] rounded-b-[30px] md:rounded-r-[30px] md:rounded-bl-none">
           <button
             onClick={onClose}
             className="absolute top-6 right-6 p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-800 z-20 cursor-pointer"

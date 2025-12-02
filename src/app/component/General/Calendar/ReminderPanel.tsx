@@ -1,7 +1,7 @@
 // ReminderPanel.tsx
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Image from "next/image";
 import { PT_Sans } from "next/font/google";
 import {
@@ -188,10 +188,10 @@ export default function ReminderPanel({
 
         {/* === MAXIMIZED TOGGLE SWITCH === */}
         {isMaximized && (
-            <PanelToggleSwitch
-                currentPanel={currentMaximizedPanel}
-                onPanelChange={onPanelSwitch}
-            />
+          <PanelToggleSwitch
+            currentPanel={currentMaximizedPanel}
+            onPanelChange={onPanelSwitch}
+          />
         )}
         {/* =============================== */}
 
@@ -211,12 +211,7 @@ export default function ReminderPanel({
             style={{ width: "43px", height: "40px" }}
             onClick={handleAddReminder}
           >
-            <Image
-              src="/Bellplus.svg"
-              alt="Bell Icon"
-              width={30}
-              height={30}
-            />
+            <Image src="/Bellplus.svg" alt="Bell Icon" width={30} height={30} />
           </div>
         </div>
       </div>

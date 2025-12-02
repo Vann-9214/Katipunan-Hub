@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import Image from "next/image"; // Added Import
+import Image from "next/image";
 import {
   X,
   MessageCircle,
@@ -18,8 +18,9 @@ interface PostViewModalProps {
   post: Post;
   isOwner: boolean;
   onClose: () => void;
-  onStatusChange: (postId: number, newStatus: "Open" | "Resolved") => void;
-  onChat: () => void; // This opens YOUR ChatModal
+  // CHANGED: postId type from number to string to match Supabase UUIDs
+  onStatusChange: (postId: string, newStatus: "Open" | "Resolved") => void;
+  onChat: () => void;
 }
 
 export default function PostViewModal({
@@ -91,7 +92,6 @@ export default function PostViewModal({
                 )}
               </div>
 
-              {/* REPLACED <img> WITH <Image /> */}
               <Image
                 src={post.imageUrl}
                 alt={post.title}
@@ -240,8 +240,6 @@ export default function PostViewModal({
                       <span className="text-xs text-gray-400">
                         {inquiry.time}
                       </span>
-
-                      {/* --- THIS IS THE LINK TO YOUR CHAT MODAL --- */}
                       <button
                         onClick={onChat}
                         className="px-4 py-2 bg-[#800000] text-white text-xs font-bold rounded-lg hover:bg-red-900 transition-colors"

@@ -1,4 +1,3 @@
-//
 "use client";
 
 import * as React from "react";
@@ -197,7 +196,7 @@ export function Combobox({
       {!disabled && (
         <PopoverContent
           className={cn(
-            "p-0 overflow-y-auto",
+            "p-0 overflow-y-auto z-[100]", // ADDED z-[100] HERE
             // Apply the same font to the content container
             font,
             "w-[var(--radix-popover-trigger-width)]",
@@ -209,9 +208,6 @@ export function Combobox({
           )}
         >
           <Command
-            // --- ADDED: Custom Filter Function ---
-            // This function strips spaces from both the item value and the search term
-            // allowing "BSAccountancy" to match "BS Accountancy"
             filter={(value, search) => {
               if (!value) return 0;
               const normalizedValue = value.toLowerCase().replace(/\s+/g, "");
@@ -226,10 +222,8 @@ export function Combobox({
                 {items.map((item) => (
                   <CommandItem
                     key={item.value}
-                    // We use item.label as the value here so the filter function receives the visible text
                     value={item.label}
                     onSelect={(currentValue) => {
-                      // Find the original item by matching the label (case-insensitive)
                       const foundItem = items.find(
                         (i) =>
                           i.label.toLowerCase() === currentValue.toLowerCase()

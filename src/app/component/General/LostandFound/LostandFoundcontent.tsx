@@ -17,7 +17,9 @@ import {
 } from "lucide-react";
 import PostItemModal, { ModalPostData } from "./PostItemModal";
 import PostViewModal from "./PostViewModal";
-import ChatModal from "./ChatModal";
+
+import { useRouter } from "next/navigation";
+import { supabase } from "../../../../../supabase/Lib/General/supabaseClient";
 
 // --- TYPE DEFINITIONS ---
 
@@ -45,7 +47,7 @@ export interface Inquiry {
 }
 
 export type Post = {
-  id: number;
+  id: string;
   userId: string;
   type: "Lost" | "Found";
   status: "Open" | "Resolved";
@@ -60,106 +62,26 @@ export type Post = {
   inquiries: Inquiry[];
 };
 
-// --- DUMMY DATA ---
-const INITIAL_POSTS: Post[] = [
-  {
-    id: 1,
-    userId: "123",
-    type: "Lost",
-    status: "Open",
-    imageUrl: "/cat.svg",
-    title: "White Persian Cat",
-    postedBy: "You",
-    lostOn: "Oct 31",
-    location: "Last seen in the canteen",
-    description: "Very friendly white persian cat.",
-    category: "Other",
-    createdAt: "2025-10-31T10:00:00Z",
-    inquiries: [
-      {
-        id: "u1",
-        userName: "Maria S.",
-        messagePreview: "I saw a cat nearby!",
-        time: "2m ago",
-      },
-    ],
-  },
-  {
-    id: 2,
-    userId: "999",
-    type: "Found",
-    status: "Resolved",
-    imageUrl: "/cat.svg",
-    title: "Scientific Calculator",
-    postedBy: "Maria S. | BSME",
-    lostOn: "Oct 30",
-    location: "Found near the library entrance",
-    description: "Casio fx-991EX ClassWiz. Owner already claimed it.",
-    category: "Electronics",
-    createdAt: "2025-10-30T12:00:00Z",
-    inquiries: [],
-  },
-  {
-    id: 3,
-    userId: "456",
-    type: "Lost",
-    status: "Open",
-    imageUrl: "/Id Card.svg",
-    title: "Black Leather Wallet",
-    postedBy: "Carlos R. | BSIT",
-    lostOn: "Nov 01",
-    location: "GLE Building 3rd Floor",
-    description: "Contains my student ID and some cash. Please return!",
-    category: "Wallets",
-    createdAt: "2025-11-01T08:30:00Z",
-    inquiries: [],
-  },
-  {
-    id: 4,
-    userId: "789",
-    type: "Found",
-    status: "Resolved",
-    imageUrl: "/cat.svg",
-    title: "Physics Textbook",
-    postedBy: "Liza M. | BSEd",
-    lostOn: "Oct 29",
-    location: "Study area bench",
-    description: "University Physics 14th Edition. Returned to owner.",
-    category: "Books",
-    createdAt: "2025-10-29T14:15:00Z",
-    inquiries: [],
-  },
-  {
-    id: 5,
-    userId: "101",
-    type: "Lost",
-    status: "Open",
-    imageUrl: "/cat.svg",
-    title: "Blue PE Shirt",
-    postedBy: "Mark T. | BSCE",
-    lostOn: "Nov 02",
-    location: "Gym Locker Room",
-    description: "Size Large, has my initials 'M.T.' on the tag.",
-    category: "Clothing",
-    createdAt: "2025-11-02T16:45:00Z",
-    inquiries: [],
-  },
-  {
-    id: 6,
-    userId: "102",
-    type: "Found",
-    status: "Resolved",
-    imageUrl: "/cat.svg",
-    title: "Airpods Case",
-    postedBy: "Sarah L. | BSN",
-    lostOn: "Nov 03",
-    location: "Near the main gate",
-    description: "White Airpods Pro case. Returned to owner.",
-    category: "Electronics",
-    createdAt: "2025-11-03T09:00:00Z",
-    inquiries: [],
-  },
-];
+/**
+ * Interface representing the raw shape of a post row returned from Supabase.
+ * Added to resolve the "Unexpected any" error during data mapping.
+ */
+interface SupabasePostItem {
+  id: string;
+  user_id: string;
+  type: string;
+  status: string;
+  image_url: string | null;
+  title: string;
+  lost_date: string;
+  location: string;
+  description: string;
+  category: string;
+  created_at: string;
+  Accounts: {
+    fullName: string;
+  } | null;
+}
 
 // --- ANIMATION CONFIGS ---
 const liquidSpring: Transition = {
@@ -204,12 +126,64 @@ const categoryIcons: { [key in Category]?: React.ReactNode } = {
 
 // --- MAIN COMPONENT ---
 export default function LostandFoundContent({ user }: { user: User | null }) {
-  const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
+  const router = useRouter();
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    fetchPosts();
   }, []);
+
+  // --- FETCH POSTS FROM SUPABASE ---
+  const fetchPosts = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("LostAndFoundPosts")
+        .select(
+          `
+          *,
+          Accounts (
+            fullName
+          )
+        `
+        )
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      if (data) {
+        /* Using the SupabasePostItem interface here instead of 'any' 
+           to resolve the TypeScript error.
+        */
+        const formattedPosts: Post[] = data.map((item: SupabasePostItem) => ({
+          id: item.id,
+          userId: item.user_id,
+          type: item.type as "Lost" | "Found",
+          status: item.status as "Open" | "Resolved",
+          // UPDATED: Proper default image logic
+          imageUrl:
+            item.image_url ||
+            (item.type === "Found" ? "/found.svg" : "/lost.svg"),
+          title: item.title,
+          postedBy: item.Accounts?.fullName || "Anonymous",
+          lostOn: item.lost_date || "",
+          location: item.location || "",
+          description: item.description || "",
+          category: (item.category as Category) || "Other",
+          createdAt: item.created_at,
+          inquiries: [],
+        }));
+        setPosts(formattedPosts);
+      }
+    } catch (err) {
+      console.error("Error fetching posts:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const [showStarOptions, setShowStarOptions] = useState<boolean>(false);
   const [activeStarFilter, setActiveStarFilter] = useState("All");
@@ -224,7 +198,6 @@ export default function LostandFoundContent({ user }: { user: User | null }) {
 
   const [showPostModal, setShowPostModal] = useState<boolean>(false);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
-  const [showChatModal, setShowChatModal] = useState<boolean>(false);
 
   const sortRef = useRef<HTMLDivElement>(null);
   const categoryRef = useRef<HTMLDivElement>(null);
@@ -294,41 +267,107 @@ export default function LostandFoundContent({ user }: { user: User | null }) {
       return selectedSort === "Latest" ? dateB - dateA : dateA - dateB;
     });
 
-  const handlePublishPost = (data: ModalPostData) => {
-    const objectUrl = URL.createObjectURL(data.attachment);
-    const newPost: Post = {
-      id: Date.now(),
-      userId: user?.id || "anonymous",
-      type: data.itemType,
-      status: "Open",
-      imageUrl: objectUrl,
-      title: data.itemName,
-      postedBy: user?.name || "You",
-      lostOn: new Date().toLocaleDateString(),
-      location: data.itemLocation,
-      description: data.itemDescription,
-      category:
-        data.itemCategory === "Select Category" ? "Other" : data.itemCategory,
-      createdAt: new Date().toISOString(),
-      inquiries: [],
-    };
-    setPosts((prev) => [newPost, ...prev]);
+  const handlePublishPost = async (data: ModalPostData) => {
+    if (!user) {
+      alert("You must be logged in to post.");
+      return;
+    }
+
+    try {
+      let publicUrl = null;
+
+      if (data.attachment) {
+        const fileExt = data.attachment.name.split(".").pop();
+        const fileName = `${Date.now()}_${Math.random()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("lost-and-found")
+          .upload(filePath, data.attachment);
+
+        if (uploadError) throw uploadError;
+
+        const { data: publicUrlData } = supabase.storage
+          .from("lost-and-found")
+          .getPublicUrl(filePath);
+
+        publicUrl = publicUrlData.publicUrl;
+      }
+
+      /* Removed 'data: newPostData' from destructuring 
+         to resolve unused variable warning.
+      */
+      const { error: insertError } = await supabase
+        .from("LostAndFoundPosts")
+        .insert({
+          user_id: user.id,
+          title: data.itemName,
+          description: data.itemDescription,
+          type: data.itemType,
+          location: data.itemLocation,
+          category:
+            data.itemCategory === "Select Category"
+              ? "Other"
+              : data.itemCategory,
+          lost_date: new Date().toLocaleDateString(),
+          image_url: publicUrl,
+          status: "Open",
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      fetchPosts();
+      setShowPostModal(false);
+    } catch (error) {
+      console.error("Error publishing post:", error);
+      alert("Failed to publish post. Please try again.");
+    }
   };
 
-  const handleStatusUpdate = (
-    postId: number,
+  const handleStatusUpdate = async (
+    postId: number | string,
     newStatus: "Open" | "Resolved"
   ) => {
-    setPosts((prevPosts) =>
-      prevPosts.map((post) =>
-        post.id === postId ? { ...post, status: newStatus } : post
-      )
-    );
-    setSelectedPost((prev) => (prev ? { ...prev, status: newStatus } : null));
+    try {
+      const { error } = await supabase
+        .from("LostAndFoundPosts")
+        .update({ status: newStatus })
+        .eq("id", postId);
+
+      if (error) throw error;
+
+      setPosts((prevPosts) =>
+        prevPosts.map((post) =>
+          post.id === postId ? { ...post, status: newStatus } : post
+        )
+      );
+      setSelectedPost((prev) => (prev ? { ...prev, status: newStatus } : null));
+    } catch (error) {
+      console.error("Error updating status:", error);
+      alert("Failed to update status.");
+    }
   };
 
+  // --- UPDATED CHAT HANDLER ---
   const handleOpenChat = () => {
-    setShowChatModal(true);
+    if (selectedPost && selectedPost.userId) {
+      if (user && user.id === selectedPost.userId) {
+        alert("You cannot chat with yourself.");
+        return;
+      }
+
+      // Construct an initial inquiry message
+      const inquiryMessage = `Hello, I'm inquiring about the "${selectedPost.title}" (${selectedPost.type}) you posted in Lost & Found.`;
+
+      // Redirect to message page with the pre-filled message in query params
+      router.push(
+        `/Message/new/${
+          selectedPost.userId
+        }?initialMessage=${encodeURIComponent(inquiryMessage)}`
+      );
+    }
   };
 
   return (
@@ -546,19 +585,25 @@ export default function LostandFoundContent({ user }: { user: User | null }) {
 
         <div className="flex-1 overflow-y-auto px-8 pb-20 w-full relative z-0">
           <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-items-center mt-4">
-              {filteredPosts.length > 0 ? (
-                filteredPosts.map((post) => (
-                  <PostCard
-                    key={post.id}
-                    post={post}
-                    onClick={() => setSelectedPost(post)}
-                  />
-                ))
-              ) : (
-                <p className="text-gray-500 text-lg">No posts found.</p>
-              )}
-            </div>
+            {loading ? (
+              <div className="flex items-center justify-center h-40">
+                <p className="text-gray-600 text-lg">Loading posts...</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-items-center mt-4">
+                {filteredPosts.length > 0 ? (
+                  filteredPosts.map((post) => (
+                    <PostCard
+                      key={post.id}
+                      post={post}
+                      onClick={() => setSelectedPost(post)}
+                    />
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-lg">No posts found.</p>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -572,7 +617,6 @@ export default function LostandFoundContent({ user }: { user: User | null }) {
         </motion.button>
       </div>
 
-      {/* --- MODALS --- */}
       {mounted &&
         createPortal(
           <>
@@ -589,35 +633,16 @@ export default function LostandFoundContent({ user }: { user: User | null }) {
               {selectedPost && (
                 <PostViewModal
                   post={selectedPost}
-                  // Check if user exists before checking ID
                   isOwner={user ? user.id === selectedPost.userId : false}
                   onClose={() => setSelectedPost(null)}
-                  onStatusChange={handleStatusUpdate}
+                  /* Removed 'id as any' cast. 
+                     Passed parameters directly as they are compatible.
+                  */
+                  onStatusChange={(id, status) =>
+                    handleStatusUpdate(id, status)
+                  }
                   onChat={handleOpenChat}
                 />
-              )}
-            </AnimatePresence>
-
-            <AnimatePresence>
-              {showChatModal && selectedPost && (
-                <div
-                  style={{
-                    position: "fixed",
-                    inset: 0,
-                    zIndex: 10000,
-                    pointerEvents: "auto",
-                  }}
-                >
-                  <ChatModal
-                    post={selectedPost}
-                    onClose={() => setShowChatModal(false)}
-                    // FIX: Added these props back to satisfy the TypeScript interface
-                    // They are required by the ChatModal component definition
-                    isOwner={user ? user.id === selectedPost.userId : false}
-                    onStatusChange={() => {}} // Dummy function
-                    onChat={() => {}} // Dummy function
-                  />
-                </div>
               )}
             </AnimatePresence>
           </>,

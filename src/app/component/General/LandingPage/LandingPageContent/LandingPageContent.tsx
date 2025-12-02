@@ -1,94 +1,61 @@
+// StructuralContent.tsx
 "use client";
-
-import React, { useState } from "react";
-import { AnimatePresence } from "framer-motion";
-import { createPortal } from "react-dom";
-
-// Imports for Modals and Tabs (from original structure)
-import ForgotPasswordForm from "../LandingPageTab/ForgotPasswordForm";
-import EmailVerificationMessage from "../LandingPageTab/EmailVerificationMessage";
-import LandingPageTab from "../LandingPageTab/LandingPageTab";
-import SignUpForm from "../LandingPageTab/SignUpForms";
-import SignInForm from "../LandingPageTab/SignInForms";
-
-// Imports for the new separated files
-import StructuralContent from "./StructuralContent";
+import React from "react";
+import Logo from "@/app/component/ReusableComponent/Logo";
 import { AuthMode } from "./LandingPageTypesAndUtils";
+export type { AuthMode };
 
-export default function LandingPageContent() {
-  /**
-   * STATE
-   */
-  const [mode, setMode] = useState<AuthMode>("none");
-  const [signupEmail, setSignupEmail] = useState("");
+// --- Section Imports ---
+import HeroSection from "./HeroSection";
+import ProjectInfoSection from "./ProjectInfoSection";
+import TechStackSection from "./TechStackContent";
+import TeamSection from "./TeamSection";
 
-  /**
-   * HELPER FUNCTIONS (Copied from original)
-   */
+interface StructuralContentProps {
+  setMode: React.Dispatch<React.SetStateAction<AuthMode>>;
+}
 
-  const ModalWrapper = ({ children }: { children: React.ReactNode }) => {
-    if (typeof document === "undefined") return null;
-    return createPortal(children, document.body);
-  };
-
-  const handleSuccessfulSignUp = (email: string) => {
-    setSignupEmail(email);
-    setMode("verify"); // CRITICAL: This triggers the new UI
-  };
-
+/**
+ * Main Layout for Landing Page Content
+ */
+const StructuralContent: React.FC<StructuralContentProps> = ({ setMode }) => {
   return (
-    // Changed from h-screen to min-h-screen and flex-col to allow scrolling
-    <div className="bg-white min-h-screen w-full relative flex flex-col overflow-x-hidden">
-      {/* LandingPageTab is fixed at the top (z-50). */}
-      <LandingPageTab />
+    <div className="flex flex-col w-full">
+      {/* 1. HERO SECTION */}
+      <HeroSection setMode={setMode} />
 
-      {/* =========================================================
-        MAIN CONTENT SECTIONS (Bundled into StructuralContent.tsx)
-        =========================================================
-      */}
-      <StructuralContent setMode={setMode} />
+      {/* 2. PROJECT OBJECTIVES & ABOUT */}
+      <ProjectInfoSection />
 
-      {/* --- Modals --- (Preserved original Modal logic) */}
-      <AnimatePresence mode="wait">
-        {mode === "signup" && (
-          <ModalWrapper>
-            <SignUpForm
-              key="signup"
-              onClose={() => setMode("none")}
-              onSwitch={() => setMode("signin")}
-              onSuccessfulSignUp={handleSuccessfulSignUp}
-            />
-          </ModalWrapper>
-        )}
-        {mode === "signin" && (
-          <ModalWrapper>
-            <SignInForm
-              key="signin"
-              onClose={() => setMode("none")}
-              onSwitchToSignUp={() => setMode("signup")}
-              onSwitchToForgotPassword={() => setMode("forgotpassword")}
-            />
-          </ModalWrapper>
-        )}
-        {mode === "forgotpassword" && (
-          <ModalWrapper>
-            <ForgotPasswordForm
-              key="forgotpassword"
-              onClose={() => setMode("none")}
-              onSwitchToSignIn={() => setMode("signin")}
-            />
-          </ModalWrapper>
-        )}
-        {mode === "verify" && (
-          <ModalWrapper>
-            <EmailVerificationMessage
-              key="verify"
-              onClose={() => setMode("none")}
-              email={signupEmail}
-            />
-          </ModalWrapper>
-        )}
-      </AnimatePresence>
+      {/* 3. TECH STACK (New) */}
+      <TechStackSection />
+
+      {/* 4. TEAM MEMBERS */}
+      <TeamSection />
+
+      {/* 5. FOOTER */}
+      <footer className="bg-black text-white pt-16 pb-8 border-t border-white/10">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="flex items-center gap-4">
+              <Logo width={50} height={60} unclickable />
+              <div className="flex flex-col">
+                <span className="font-montserrat font-bold text-xl tracking-wider text-white">
+                  KATIPUNAN HUB
+                </span>
+                <span className="text-xs text-gray-500 font-montserrat uppercase tracking-widest">
+                  Connect • Inform • Engage
+                </span>
+              </div>
+            </div>
+            <p className="font-montserrat text-sm text-gray-500 font-medium">
+              © 2025 Katipunan Hub. All rights reserved.
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
-}
+};
+
+export default StructuralContent;

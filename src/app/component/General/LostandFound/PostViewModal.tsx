@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import Image from "next/image"; // Added Import
+import Image from "next/image";
 import {
   X,
   MessageCircle,
@@ -12,14 +12,14 @@ import {
   ChevronLeft,
   User as UserIcon,
 } from "lucide-react";
-// FIX: Matches your filename (lowercase c)
 import { Post } from "./LostandFoundcontent";
 
 interface PostViewModalProps {
   post: Post;
   isOwner: boolean;
   onClose: () => void;
-  onStatusChange: (postId: number, newStatus: "Open" | "Resolved") => void;
+  // CHANGED: postId type from number to string
+  onStatusChange: (postId: string, newStatus: "Open" | "Resolved") => void;
   onChat: () => void;
 }
 
