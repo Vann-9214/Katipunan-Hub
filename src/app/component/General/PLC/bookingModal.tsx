@@ -203,13 +203,13 @@ export default function BookingModal({
         >
           {/* --- Outer Wrapper: Gold Gradient Border --- */}
           <motion.div
-            className="w-full max-w-[500px] p-[2px] rounded-[24px] bg-gradient-to-br from-[#EFBF04] via-[#FFD700] to-[#D4AF37] shadow-2xl"
+            className="w-full max-w-[500px] max-h-[90vh] p-[2px] rounded-[24px] bg-gradient-to-br from-[#EFBF04] via-[#FFD700] to-[#D4AF37] shadow-2xl flex flex-col"
             variants={modalVariants}
           >
             {/* --- Inner Wrapper: White Background --- */}
             <div className="bg-white rounded-[22px] overflow-hidden w-full h-full flex flex-col shadow-inner relative">
               {/* --- Header: Dark Red Gradient --- */}
-              <div className="relative p-5 bg-gradient-to-b from-[#4e0505] to-[#3a0000] border-b border-[#EFBF04]/30">
+              <div className="relative p-5 bg-gradient-to-b from-[#4e0505] to-[#3a0000] border-b border-[#EFBF04]/30 shrink-0">
                 <motion.div
                   variants={itemVariants}
                   className="flex justify-between items-center relative z-10"
@@ -240,7 +240,10 @@ export default function BookingModal({
               </div>
 
               {/* --- Form Content --- */}
-              <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4">
+              <form
+                onSubmit={handleSubmit}
+                className="p-6 flex flex-col gap-4 overflow-y-auto custom-scrollbar"
+              >
                 {/* Date Display (Read Only) */}
                 <motion.div
                   variants={itemVariants}
@@ -372,7 +375,7 @@ export default function BookingModal({
                 {/* Action Buttons */}
                 <motion.div
                   variants={itemVariants}
-                  className="flex gap-3 pt-4 border-t border-gray-100 mt-2"
+                  className="flex gap-3 pt-4 border-t border-gray-100 mt-2 shrink-0"
                 >
                   <motion.button
                     whileHover={{ scale: 1.02, backgroundColor: "#f9fafb" }}

@@ -100,7 +100,16 @@ export default function EditMainProfileModal({
     if (!tempImageSrc || !croppedAreaPixels || !cropMode) return;
 
     try {
-      const croppedBlob = await getCroppedImg(tempImageSrc, croppedAreaPixels);
+      /* Determine the shape based on cropMode.
+         If 'cover', use 'rect' to prevent the utility from clipping it into a circle/round shape.
+      */
+      const shape = cropMode === "avatar" ? "round" : "rect";
+      const croppedBlob = await getCroppedImg(
+        tempImageSrc,
+        croppedAreaPixels,
+        shape
+      );
+
       if (!croppedBlob) return;
 
       const previewUrl = URL.createObjectURL(croppedBlob);

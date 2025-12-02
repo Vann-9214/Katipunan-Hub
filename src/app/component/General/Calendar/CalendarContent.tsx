@@ -5,7 +5,6 @@ import React, { useMemo, useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { Montserrat } from "next/font/google";
 import {
-  Holiday,
   PostedEvent,
   PersonalEvent,
   MenuType,
@@ -73,7 +72,7 @@ export default function CalendarContent() {
   const handlePanelSwitch = useCallback((panel: PanelType) => {
     setMaximizedPanel(panel);
   }, []);
-  
+
   // Logic to determine if a panel is currently maximized
   const isScheduleMaximized = maximizedPanel === "Schedule";
   const isReminderMaximized = maximizedPanel === "Reminder";
@@ -246,7 +245,7 @@ export default function CalendarContent() {
     activePanel === "Reminder" || maximizedPanel === "Reminder";
   const renderSchedulePanel =
     activePanel === "Schedule" || maximizedPanel === "Schedule";
-    
+
   return (
     <div className="relative min-h-screen flex flex-col">
       <div className="fixed inset-0 -z-10">
@@ -279,7 +278,7 @@ export default function CalendarContent() {
               height={65}
             />
           </div>
-          
+
           <div className="flex flex-col">
             <h1
               className={`${montserrat.className} text-[#800000] text-[32px] font-extrabold leading-tight`}
@@ -311,7 +310,7 @@ export default function CalendarContent() {
           onMonthClick={handleMonthClick}
         />
       </div>
-      
+
       <button
         onClick={() => setShowAddEvent(true)}
         className="fixed bottom-6 right-6 z-[99999] cursor-pointer bg-transparent"
@@ -351,7 +350,6 @@ export default function CalendarContent() {
           isAdmin={isAdmin}
           onDeletePostedEvent={handleDeletePostedEvent}
           setPersonalEvents={setPersonalEvents}
-          
           // CRITICAL: Maximization Props
           isMaximized={isReminderMaximized}
           onMaximizeToggle={handleMaximizeToggle}
@@ -374,7 +372,6 @@ export default function CalendarContent() {
           monthName={monthName}
           isAdmin={isAdmin}
           onDeletePostedEvent={handleDeletePostedEvent}
-          
           // CRITICAL: Maximization Props
           isMaximized={isScheduleMaximized}
           onMaximizeToggle={handleMaximizeToggle}

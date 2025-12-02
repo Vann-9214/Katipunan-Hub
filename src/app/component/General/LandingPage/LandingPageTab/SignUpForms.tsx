@@ -9,7 +9,12 @@ import TextBox from "@/app/component/ReusableComponent/Textbox";
 import { Combobox } from "@/app/component/ReusableComponent/Combobox";
 import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
 import Image from "next/image";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, CheckCircle } from "lucide-react"; // Added CheckCircle
+import {
+  COURSE_PROGRAMS,
+  YEAR_LEVELS,
+  EMAIL_DOMAIN,
+} from "../../../../../../supabase/Lib/constants"; // Imported constants
 
 interface SignUpFormProps {
   onClose?: () => void;
@@ -22,48 +27,7 @@ export default function SignUpForm({
   onSwitch,
   onSuccessfulSignUp,
 }: SignUpFormProps) {
-  const year = [
-    { value: "1st", label: "1st Year" },
-    { value: "2nd", label: "2nd Year" },
-    { value: "3rd", label: "3rd Year" },
-    { value: "4th", label: "4th Year" },
-    { value: "5th", label: "5th Year" },
-  ];
-
-  const programs = [
-    { value: "Accountancy", label: "BS Accountancy" },
-    { value: "Business Administration", label: "BS Business Administration" },
-    { value: "Office Administration", label: "BS Office Administration" },
-    { value: "English", label: "BA English" },
-    { value: "Political Science", label: "BA Political Science" },
-    { value: "Psychology", label: "BS Psychology" },
-    { value: "Biology", label: "BS Biology" },
-    { value: "Mathematics", label: "BS Mathematics" },
-    { value: "Computer Science", label: "BS Computer Science" },
-    { value: "Information Technology", label: "BS Information Technology" },
-    { value: "Computer Engineering", label: "BS Computer Engineering" },
-    {
-      value: "Elementary Education",
-      label: "Bachelor of Elementary Education",
-    },
-    { value: "Secondary Education", label: "Bachelor of Secondary Education" },
-    { value: "Electrical Engineering", label: "BS Electrical Engineering" },
-    { value: "Industrial Engineering", label: "BS Industrial Engineering" },
-    { value: "Civil Engineering", label: "BS Civil Engineering" },
-    { value: "Mechanical Engineering", label: "BS Mechanical Engineering" },
-    { value: "Mining Engineering", label: "BS Mining Engineering" },
-    { value: "Chemical Engineering", label: "BS Chemical Engineering" },
-    { value: "Electronics Engineering", label: "BS Electronics Engineering" },
-    { value: "Nursing", label: "BS Nursing" },
-    { value: "Midwifery", label: "Diploma in Midwifery" },
-    { value: "Architecture", label: "BS Architecture" },
-    {
-      value: "Hotel and Restaurant Management",
-      label: "BS Hotel and Restaurant Management",
-    },
-    { value: "Tourism Management", label: "BS Tourism Management" },
-    { value: "Agriculture", label: "BS Agriculture" },
-  ];
+  // Constants now imported
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -74,6 +38,7 @@ export default function SignUpForm({
   const [selectedYear, setSelectedYear] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState(""); // New state for success
   const [showVerifyPrompt, setShowVerifyPrompt] = useState(false);
 
   const handleStudentIDChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -92,6 +57,7 @@ export default function SignUpForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
+    setSuccessMessage("");
     setShowVerifyPrompt(false);
 
     // Validation
@@ -112,10 +78,15 @@ export default function SignUpForm({
       return;
     }
 
-    if (!email.toLowerCase().endsWith("@cit.edu")) {
+    if (!email.toLowerCase().endsWith(EMAIL_DOMAIN)) {
       setErrorMessage(
-        "Please use your valid CIT email address (must end with @cit.edu)."
+        `Please use your valid CIT email address (must end with ${EMAIL_DOMAIN}).`
       );
+      return;
+    }
+
+    if (password.length < 6) {
+      setErrorMessage("Password must be at least 6 characters long.");
       return;
     }
 
@@ -131,8 +102,6 @@ export default function SignUpForm({
         email,
         password,
         options: {
-          // --- THIS LINE HANDLES THE REDIRECT ---
-          // We append ?auth=signin so the LandingPageTab knows what to do
           emailRedirectTo: `${window.location.origin}/auth/callback`,
           data: {
             fullName: firstName,
@@ -149,14 +118,26 @@ export default function SignUpForm({
           signUpError.message.includes("already registered") ||
           signUpError.message.includes("User already exists")
         ) {
-          setShowVerifyPrompt(true);
+          // Replaced alert with custom UI logic
+          setErrorMessage(
+            "This account is already registered. Please sign in."
+          );
+          setShowVerifyPrompt(true); // Reuse the verification prompt UI for this case
           return;
         }
         setErrorMessage(signUpError.message);
         return;
       }
 
-      onSuccessfulSignUp?.(email);
+      // Replaced alert with success message
+      setSuccessMessage(
+        "Sign up successful! Please check your email or sign in."
+      );
+
+      // Optional: Delay switch to sign in to let user read message
+      setTimeout(() => {
+        onSwitch?.();
+      }, 2000);
     } catch (err: unknown) {
       console.error("Sign up error:", err);
       setErrorMessage("Unexpected error during sign-up.");
@@ -273,6 +254,18 @@ export default function SignUpForm({
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
               <AnimatePresence>
+                {/* Success Message UI */}
+                {successMessage && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="text-sm p-3 rounded-lg font-ptsans bg-green-100 text-green-700 border border-green-200 overflow-hidden flex items-center gap-2"
+                  >
+                    <CheckCircle size={16} /> {successMessage}
+                  </motion.div>
+                )}
+
                 {errorMessage && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
@@ -345,7 +338,7 @@ export default function SignUpForm({
                   className={inputClasses}
                 />
                 <Combobox
-                  items={programs}
+                  items={COURSE_PROGRAMS}
                   placeholder="Select Course"
                   onChange={(val) => setSelectedCourse(val)}
                   width="w-full"
@@ -379,7 +372,7 @@ export default function SignUpForm({
                   </div>
                   <div className="w-[130px]">
                     <Combobox
-                      items={year}
+                      items={YEAR_LEVELS}
                       placeholder="Year"
                       onChange={(val) => setSelectedYear(val)}
                       width="w-full"

@@ -244,6 +244,7 @@ export function AddPostModal(props: AddPostModalProps) {
                       </label>
                       <input
                         type="text"
+                        autoFocus={true}
                         id="title"
                         value={title}
                         onChange={(e) => handlers.setTitle(e.target.value)}
@@ -265,6 +266,8 @@ export function AddPostModal(props: AddPostModalProps) {
                       id="description"
                       ref={refs.textareaRef}
                       value={description}
+                      // --- UPDATED: Auto-focus if it's a feed post ---
+                      autoFocus={props.isFeed}
                       onChange={(e) => {
                         handlers.setDescription(e.target.value);
                         handlers.handleInput();

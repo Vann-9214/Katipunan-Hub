@@ -13,6 +13,7 @@ export interface FeedPost {
 
 export interface PLCHighlight {
   id: string; // booking id or rating id
+  tutorId: string; // Added tutorId for linking
   tutorName: string;
   tutorAvatar: string | null;
   studentName: string;

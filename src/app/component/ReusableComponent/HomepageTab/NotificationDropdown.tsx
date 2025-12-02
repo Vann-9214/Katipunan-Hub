@@ -2,7 +2,7 @@
 
 import { NotificationItem } from "../../../../../supabase/Lib/General/useNotification";
 import { useRouter } from "next/navigation";
-import { BellRing } from "lucide-react"; // Import an icon for system notifs
+import { BellRing, Megaphone } from "lucide-react"; // Added Megaphone
 
 interface NotificationDropdownProps {
   notifications: NotificationItem[];
@@ -20,8 +20,13 @@ export default function NotificationDropdown({
   const handleItemClick = (notif: NotificationItem) => {
     // 1. Handle System/PLC Notifications
     if (notif.type === "system") {
-      // Just go to their PLC page as requested
-      router.push("/PLC");
+      if (notif.redirect_url) {
+        // If it has a specific link (like to a Feed post or Announcement)
+        router.push(notif.redirect_url);
+      } else {
+        // Fallback for generic PLC system notifications
+        router.push("/PLC");
+      }
       onClose();
       return;
     }
@@ -69,21 +74,32 @@ export default function NotificationDropdown({
                   <div
                     key={notif.id}
                     onClick={() => handleItemClick(notif)}
-                    className="p-4 border-b border-gray-100 hover:bg-[#EFBF04]/5 cursor-pointer transition-colors flex gap-3 group"
+                    className="p-4 border-b border-gray-100 hover:bg-[#FFF9E5]/40 cursor-pointer transition-colors flex gap-4 group items-start"
                   >
-                    <div className="mt-1 shrink-0 text-[#EFBF04] bg-[#EFBF04]/10 p-2 rounded-full h-fit">
-                      <BellRing size={18} />
+                    {/* Icon Container - Gold Theme */}
+                    <div className="mt-1 shrink-0 h-9 w-9 rounded-full bg-gradient-to-br from-[#EFBF04] to-[#F59E0B] flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform duration-200">
+                      <BellRing
+                        size={16}
+                        fill="currentColor"
+                        className="text-white"
+                      />
                     </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-800 mb-1 font-montserrat leading-snug group-hover:text-black">
+
+                    <div className="flex-1">
+                      <p className="text-[14px] font-bold text-gray-800 mb-1 font-montserrat leading-snug group-hover:text-[#B48E00] transition-colors line-clamp-3">
                         {notif.title}
                       </p>
-                      <p className="text-xs text-gray-400 font-medium">
-                        {new Date(notif.created_at).toLocaleDateString()} •{" "}
-                        {new Date(notif.created_at).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                      <p className="text-[11px] text-gray-400 font-medium font-ptsans flex items-center gap-1">
+                        <span>
+                          {new Date(notif.created_at).toLocaleDateString()}
+                        </span>
+                        <span className="w-1 h-1 rounded-full bg-gray-300" />
+                        <span>
+                          {new Date(notif.created_at).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
                       </p>
                     </div>
                   </div>
@@ -101,19 +117,32 @@ export default function NotificationDropdown({
                 <div
                   key={notif.id}
                   onClick={() => handleItemClick(notif)}
-                  className="p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors group"
+                  className="p-4 border-b border-gray-100 hover:bg-[#FDF2F2]/50 cursor-pointer transition-colors flex gap-4 group items-start"
                 >
-                  <p className="text-sm font-medium text-gray-700 mb-1 line-clamp-2 font-montserrat leading-snug group-hover:text-black">
-                    <span className="font-bold text-[#8B0E0E]">CIT-U</span>{" "}
-                    added {contextText}: &quot;{notif.title}&quot;
-                  </p>
-                  <p className="text-xs text-gray-400 font-medium">
-                    {new Date(notif.created_at).toLocaleDateString()} •{" "}
-                    {new Date(notif.created_at).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
+                  {/* Icon Container - Maroon Theme */}
+                  <div className="mt-1 shrink-0 h-9 w-9 rounded-full bg-gradient-to-br from-[#8B0E0E] to-[#A52A2A] flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform duration-200">
+                    <Megaphone size={16} className="text-white" />
+                  </div>
+
+                  <div className="flex-1">
+                    <p className="text-[13px] font-medium text-gray-700 mb-1 line-clamp-2 font-montserrat leading-relaxed group-hover:text-black transition-colors">
+                      <span className="font-bold text-[#8B0E0E]">CIT-U</span>{" "}
+                      added {contextText}:{" "}
+                      <span className="italic">&quot;{notif.title}&quot;</span>
+                    </p>
+                    <p className="text-[11px] text-gray-400 font-medium font-ptsans flex items-center gap-1">
+                      <span>
+                        {new Date(notif.created_at).toLocaleDateString()}
+                      </span>
+                      <span className="w-1 h-1 rounded-full bg-gray-300" />
+                      <span>
+                        {new Date(notif.created_at).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </p>
+                  </div>
                 </div>
               );
             })
@@ -121,14 +150,14 @@ export default function NotificationDropdown({
         </div>
 
         {/* Footer */}
-        <div className="p-3 bg-gray-50 text-center border-t border-gray-100">
-          <button
-            onClick={() => {
-              router.push("/Announcement");
-              onClose();
-            }}
-            className="text-xs font-bold text-gray-500 hover:text-[#8B0E0E] transition-colors uppercase tracking-wider"
-          >
+        <div
+          className="p-3 bg-gray-50 text-center border-t border-gray-100 hover:bg-gray-100 transition-colors cursor-pointer"
+          onClick={() => {
+            router.push("/Announcement");
+            onClose();
+          }}
+        >
+          <button className="text-xs font-bold text-gray-500 hover:text-[#8B0E0E] transition-colors uppercase tracking-wider">
             View All Announcements
           </button>
         </div>
