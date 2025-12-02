@@ -11,10 +11,8 @@ export default function MessageLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // 5. Add state for user
   const [user, setUser] = useState<User | null>(null);
 
-  // 6. Add effect to fetch user
   useEffect(() => {
     const loadUser = async () => {
       const userDetails = await getCurrentUserDetails();
@@ -24,17 +22,20 @@ export default function MessageLayout({
   }, []);
 
   return (
-    <div>
+    <div className="min-h-screen bg-[#F2F4F7]">
       {/* 1. The header (fixed to top) */}
       <HomepageTab user={user} />
 
       {/* 2. The main chat UI container */}
-      <div className="flex h-screen w-full pt-[80px]">
+      {/* ADDED: Padding and Gap for the "Card" look */}
+      <div className="flex h-screen w-full pt-[100px] pb-6 px-6 gap-6 box-border overflow-hidden">
         {/* COLUMN 1: Your sidebar */}
-        <ChatSidebar />
+        <div className="h-full flex-shrink-0">
+          <ChatSidebar />
+        </div>
 
         {/* COLUMN 2: The content (your page) */}
-        <main className="flex-1 h-full bg-white">{children}</main>
+        <main className="flex-1 h-full min-w-0 relative">{children}</main>
       </div>
     </div>
   );

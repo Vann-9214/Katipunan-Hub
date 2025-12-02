@@ -1,14 +1,16 @@
 import { Area } from "react-easy-crop";
 
 /**
- * Creates a new, CIRCULAR image file (Blob) from a source image and crop data.
+ * Creates a new image file (Blob) from a source image and crop data.
  * @param imageSrc - The base64 or URL source of the image.
  * @param crop - The pixel area to crop.
+ * @param shape - The shape of the crop ('round' or 'rect'). Defaults to 'round'.
  * @returns {Promise<Blob | null>} A Promise that resolves with the cropped image as a Blob.
  */
 export async function getCroppedImg(
   imageSrc: string,
-  crop: Area
+  crop: Area,
+  shape: "round" | "rect" = "round" // 1. Added shape parameter with default to 'round'
 ): Promise<Blob | null> {
   const image = new Image();
   // Allow cross-origin images for canvas
@@ -30,25 +32,26 @@ export async function getCroppedImg(
   canvas.width = crop.width;
   canvas.height = crop.height;
 
-  // --- Start of Circle Clip Logic ---
+  // --- Start of Clipping Logic ---
 
-  // 1. Draw a circle in the center
-  ctx.beginPath();
-  ctx.arc(
-    crop.width / 2,
-    crop.height / 2,
-    crop.width / 2,
-    0,
-    Math.PI * 2,
-    true
-  );
-  ctx.closePath();
-  // 2. Use the circle as a clipping mask
-  ctx.clip();
+  // 2. Only apply circle clip if the shape is 'round'
+  if (shape === "round") {
+    ctx.beginPath();
+    ctx.arc(
+      crop.width / 2,
+      crop.height / 2,
+      crop.width / 2,
+      0,
+      Math.PI * 2,
+      true
+    );
+    ctx.closePath();
+    ctx.clip();
+  }
 
-  // --- End of Circle Clip Logic ---
+  // --- End of Clipping Logic ---
 
-  // 3. Draw the image inside the clipping mask
+  // 3. Draw the image
   ctx.drawImage(
     image,
     crop.x,

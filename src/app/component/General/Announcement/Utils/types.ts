@@ -129,4 +129,5 @@ export interface UploadButtonProps {
 export interface UploadButtonHandle {
   uploadAndGetFinalUrls: () => Promise<string[]>;
   getRemovedUrls: () => string[];
+  isDirty: () => boolean; // Added to check for changes
 }

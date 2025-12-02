@@ -1,7 +1,7 @@
 "use client";
 
 import { Search, Maximize2, Loader2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
 import { getCurrentUserDetails } from "../../../../../../supabase/Lib/General/getUser";
@@ -55,34 +55,35 @@ export default function ChatPopup() {
 
   const currentUserId = currentUser?.id;
 
-  // 2. Fetch conversations, last message, and unread count
-  useEffect(() => {
-    if (!currentUserId) {
-      setLoading(false);
-      return;
-    }
+  // 2. Reusable Data Fetching Function (Refactored for Realtime)
+  const fetchConversationsData = useCallback(
+    async (isBackgroundUpdate = false) => {
+      if (!currentUserId) {
+        if (!isBackgroundUpdate) setLoading(false);
+        return;
+      }
 
-    const fetchConversationsData = async (userId: string) => {
-      setLoading(true);
+      // Only show loading spinner on initial load, not on realtime updates
+      if (!isBackgroundUpdate) setLoading(true);
 
       try {
         // 1. Fetch conversations (top 5)
         const { data: convoData, error: convoError } = await supabase
           .from("Conversations")
           .select(`id, user_a_id, user_b_id, last_message_at`)
-          .or(`user_a_id.eq.${userId},user_b_id.eq.${userId}`)
+          .or(`user_a_id.eq.${currentUserId},user_b_id.eq.${currentUserId}`)
           .order("last_message_at", { ascending: false })
           .limit(5);
 
         if (convoError) {
           console.error("Error fetching popup conversations:", convoError);
-          setLoading(false);
+          if (!isBackgroundUpdate) setLoading(false);
           return;
         }
 
         // 2. Extract other user IDs and fetch accounts
         const otherUserIds = convoData.map((convo) =>
-          convo.user_a_id === userId ? convo.user_b_id : convo.user_a_id
+          convo.user_a_id === currentUserId ? convo.user_b_id : convo.user_a_id
         );
         const { data: accountsData } = await supabase
           .from("Accounts")
@@ -95,7 +96,9 @@ export default function ChatPopup() {
         // 3. Fetch last message content and unread count
         const conversationPromises = convoData.map(async (convo) => {
           const otherUserId =
-            convo.user_a_id === userId ? convo.user_b_id : convo.user_a_id;
+            convo.user_a_id === currentUserId
+              ? convo.user_b_id
+              : convo.user_a_id;
           const otherUser = accountsMap.get(otherUserId) || {
             id: otherUserId,
             fullName: "Unknown User",
@@ -132,7 +135,7 @@ export default function ChatPopup() {
             lastMessagePreview: lastMessage,
             avatarURL: otherUser.avatarURL,
             timestamp: timestamp,
-            unreadCount: unreadCount || 0, // This will be 4 if there are 4 messages
+            unreadCount: unreadCount || 0,
           } as ConversationItem;
         });
 
@@ -141,19 +144,43 @@ export default function ChatPopup() {
       } catch (err) {
         console.error("Error processing conversation data:", err);
       } finally {
-        setLoading(false);
+        if (!isBackgroundUpdate) setLoading(false);
       }
-    };
+    },
+    [currentUserId]
+  );
 
-    fetchConversationsData(currentUserId);
-  }, [currentUserId]);
+  // 3. Initial Load Effect
+  useEffect(() => {
+    fetchConversationsData();
+  }, [fetchConversationsData]);
+
+  // 4. Realtime Subscription Effect (NEW)
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    const channel = supabase
+      .channel("chat_popup_realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "Messages" },
+        () => {
+          // Call fetch with true to suppress the loading spinner
+          fetchConversationsData(true);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentUserId, fetchConversationsData]);
 
   const filteredConversations = conversations.filter((convo) =>
     convo.otherUserName.toLowerCase().includes(search.toLowerCase())
   );
 
   const handleSeeAllChats = () => {
-    // Using the logic from your preferred previous fix:
     const navPath = "/Message";
     setTimeout(() => {
       router.push(navPath);
@@ -161,82 +188,105 @@ export default function ChatPopup() {
   };
 
   return (
-    <div className="w-80 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden transform transition-all duration-300 z-40">
-      {/* Header */}
-      <div className="px-4 py-2 border-b border-gray-200 flex justify-between items-center bg-gray-50">
-        <h2 className="text-[32px] font-montserrat font-bold text-gray-800">
-          Chats
-        </h2>
+    // --- WRAPPER (Gold Gradient) ---
+    <div className="w-[340px] p-[2px] rounded-[24px] bg-gradient-to-br from-[#EFBF04] via-[#FFD700] to-[#D4AF37] shadow-2xl transform transition-all duration-300 z-50">
+      {/* --- INNER WRAPPER (White) --- */}
+      <div className="bg-white w-full h-full rounded-[22px] flex flex-col overflow-hidden shadow-inner">
+        {/* --- HEADER (Maroon Gradient) --- */}
+        <div className="relative px-6 py-4 border-b border-[#EFBF04]/30 flex justify-between items-center bg-gradient-to-b from-[#4e0505] to-[#3a0000] overflow-hidden">
+          {/* Decorative Glow */}
+          <div className="absolute -top-6 -right-6 w-24 h-24 bg-[#EFBF04]/20 blur-2xl rounded-full pointer-events-none" />
+
+          <h2 className="relative z-10 text-[18px] font-montserrat font-bold text-white tracking-wide">
+            Messages
+          </h2>
+          <div
+            onClick={handleSeeAllChats}
+            title="See all chats"
+            className="relative z-10 cursor-pointer p-2 rounded-full hover:bg-white/10 transition-colors group"
+          >
+            <Maximize2 className="w-4 h-4 text-white/80 group-hover:text-[#EFBF04] transition-colors" />
+          </div>
+        </div>
+
+        {/* Search Bar */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2, delay: 0.05 }}
+          className="p-3 border-b border-gray-100 bg-gray-50/50"
+        >
+          <div className="relative group">
+            <input
+              type="text"
+              placeholder="Search conversations..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 text-[13px] rounded-xl bg-white border border-gray-200 text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#EFBF04]/20 focus:border-[#EFBF04] transition-all shadow-sm group-hover:border-[#EFBF04]/50"
+            />
+            <Search
+              size={16}
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-[#EFBF04] transition-colors"
+            />
+          </div>
+        </motion.div>
+
+        {/* Conversation List */}
+        <motion.div
+          variants={listVariants}
+          initial="hidden"
+          animate="visible"
+          className="p-2 space-y-1 max-h-[360px] min-h-[150px] overflow-y-auto custom-scrollbar"
+        >
+          {loading ? (
+            <div className="flex flex-col justify-center items-center py-10 space-y-3 text-gray-400">
+              <Loader2 className="h-6 w-6 animate-spin text-[#EFBF04]" />
+              <span className="text-xs font-medium tracking-wide">
+                Syncing chats...
+              </span>
+            </div>
+          ) : filteredConversations.length === 0 ? (
+            <motion.div
+              // FIX: Use explicit initial/animate instead of variants to ensure it shows up
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="flex flex-col items-center justify-center py-10 text-gray-400"
+            >
+              <div className="p-3 bg-gray-50 rounded-full mb-2">
+                <Search size={20} className="opacity-50" />
+              </div>
+              <span className="text-sm font-medium italic">
+                {search.length > 0
+                  ? `No results for "${search}"`
+                  : "No chats yet."}
+              </span>
+            </motion.div>
+          ) : (
+            filteredConversations.map((item) => (
+              <PopupConversationItem
+                key={item.id}
+                conversation={item}
+                variants={itemVariants}
+              />
+            ))
+          )}
+        </motion.div>
+
+        {/* Footer Link */}
         <div
           onClick={handleSeeAllChats}
-          title="See all chats"
-          className="cursor-pointer"
+          className="cursor-pointer group relative p-3 text-center border-t border-gray-100 hover:bg-gray-50 transition-colors bg-white"
         >
-          <Maximize2 className="w-5 h-5 text-black hover:text-black/70" />
+          <span className="text-[12px] font-bold text-gray-500 uppercase tracking-wider group-hover:text-[#8B0E0E] transition-colors flex items-center justify-center gap-2">
+            View All Messages
+            <Maximize2
+              size={12}
+              className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300"
+            />
+          </span>
         </div>
       </div>
-
-      {/* Search Bar */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.2, delay: 0.05 }}
-        className="p-4 border-b border-gray-200"
-      >
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search User..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-3 py-2 text-sm rounded-full bg-gray-100 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-black"
-          />
-          <Search
-            size={24}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-black/70"
-          />
-        </div>
-      </motion.div>
-
-      {/* Conversation List */}
-      <motion.div
-        variants={listVariants}
-        initial="hidden"
-        animate="visible"
-        className="p-2 space-y-1 max-h-[350px] overflow-y-auto"
-      >
-        {loading ? (
-          <div className="flex justify-center items-center py-4 space-x-2 text-gray-500">
-            <Loader2 className="h-5 w-5 animate-spin text-[#8B0E0E]" />
-            <span className="text-sm font-medium">Loading recent chats...</span>
-          </div>
-        ) : filteredConversations.length === 0 ? (
-          <motion.div
-            variants={itemVariants}
-            className="text-center py-4 text-sm text-gray-500"
-          >
-            {search.length > 0
-              ? `No results for "${search}"`
-              : "No chats found."}
-          </motion.div>
-        ) : (
-          filteredConversations.map((item) => (
-            <PopupConversationItem
-              key={item.id}
-              conversation={item}
-              variants={itemVariants}
-            />
-          ))
-        )}
-      </motion.div>
-
-      {/* Footer Link */}
-      <button
-        onClick={handleSeeAllChats}
-        className="cursor-pointer block w-full text-center py-2 text-[16px] font-montserrat font-medium text-gray-600 hover:text-[#8B0E0E] bg-gray-100 hover:bg-gray-200 transition-colors border-t border-gray-200"
-      >
-        See all in chats
-      </button>
     </div>
   );
 }

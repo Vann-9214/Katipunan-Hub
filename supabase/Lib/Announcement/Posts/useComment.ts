@@ -1,12 +1,11 @@
 "use client";
 
 import { supabase } from "../../General/supabaseClient";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { CommentWithAuthor } from "@/app/component/General/Announcement/Posts/Comment/commentItem";
 import { usePostComment } from "@/app/component/General/Announcement/Posts/Comment/postCommentContext";
 import { ReactionCount } from "./usePostReaction";
 
-// --- HELPER: Simple Optimistic Update ---
 const simpleOptimisticUpdate = (
   comments: CommentWithAuthor[],
   commentId: string,
@@ -17,16 +16,17 @@ const simpleOptimisticUpdate = (
     if (comment.id === commentId) {
       const newComment = { ...comment };
       newComment.userReactionId = newReactionId;
+      
       const newSummary = { ...newComment.reactionSummary };
       let newTotalCount = newSummary.totalCount || 0;
 
       if (oldReactionId && !newReactionId) {
-        newTotalCount--;
+        newTotalCount = Math.max(0, newTotalCount - 1);
       } else if (!oldReactionId && newReactionId) {
         newTotalCount++;
       }
-
-      newSummary.totalCount = newTotalCount < 0 ? 0 : newTotalCount;
+      
+      newSummary.totalCount = newTotalCount;
       newComment.reactionSummary = newSummary;
       return newComment;
     }
@@ -38,132 +38,25 @@ export function useComments(postId: string, isFeed: boolean = false) {
   const [comments, setComments] = useState<CommentWithAuthor[]>([]);
   const [commentCount, setCommentCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  
   const [currentUser, setCurrentUser] = useState<{
     id: string;
     avatarURL: string;
     fullName: string | null;
   } | null>(null);
 
-  const [reactingCommentId, setReactingCommentId] = useState<string | null>(
-    null
-  );
+  const [reactingCommentId, setReactingCommentId] = useState<string | null>(null);
   const { closePostModal } = usePostComment();
 
-  // --- FETCH COMMENTS LOGIC ---
-  const fetchCommentsWithReactions = useCallback(async () => {
-    if (!postId) return;
-    setIsLoading(true);
-
-    if (isFeed) {
-      // --- FEED LOGIC (Updated to fetch reactions) ---
-      const { data, error } = await supabase
-        .from("FeedComments")
-        .select(`
-          id,
-          content,
-          created_at,
-          user_id,
-          Accounts:user_id (
-            id,
-            fullName,
-            avatarURL
-          ),
-          FeedCommentReactions (
-            user_id,
-            reaction
-          )
-        `)
-        .eq("feed_id", postId)
-        .order("created_at", { ascending: true });
-
-      if (error) {
-        console.error("Error fetching feed comments:", error.message);
-        setIsLoading(false);
-        return;
-      }
-
-      // Map Feed comments and calculate reactions manually
-      // (Since we don't have an RPC for feed comment aggregation yet)
-      const feedComments: CommentWithAuthor[] = (data || []).map((c: any) => {
-        const reactions = c.FeedCommentReactions || [];
-
-        // 1. Check if current user reacted
-        const userReaction =
-          reactions.find((r: any) => r.user_id === currentUser?.id)?.reaction ||
-          null;
-
-        // 2. Aggregate counts locally
-        const counts: Record<string, number> = {};
-        reactions.forEach((r: any) => {
-          counts[r.reaction] = (counts[r.reaction] || 0) + 1;
-        });
-
-        const topReactions: ReactionCount[] = Object.entries(counts)
-          .map(([reaction, count]) => ({ reaction, count }))
-          .sort((a, b) => b.count - a.count);
-
-        return {
-          id: c.id,
-          comment: c.content,
-          created_at: c.created_at,
-          parent_comment_id: null,
-          author: {
-            id: c.Accounts?.id || c.user_id,
-            fullName: c.Accounts?.fullName || "Unknown",
-            avatarURL: c.Accounts?.avatarURL || "/DefaultAvatar.svg",
-          },
-          reactionSummary: {
-            totalCount: reactions.length,
-            topReactions,
-          },
-          userReactionId: userReaction,
-        };
-      });
-
-      setComments(feedComments);
-      setCommentCount(feedComments.length);
-      setIsLoading(false);
-    } else {
-      // --- ANNOUNCEMENT LOGIC (Unchanged) ---
-      const { data: rpcData, error } = await supabase.rpc(
-        "get_comments_for_post",
-        {
-          p_post_id: postId,
-        }
-      );
-
-      if (error) {
-        console.error(
-          "Error fetching comments:",
-          error.message || error
-        );
-        setIsLoading(false);
-        return;
-      }
-
-      const commentsData: CommentWithAuthor[] = (rpcData as any) || [];
-      setCommentCount(commentsData.length);
-      setComments(commentsData);
-      setIsLoading(false);
-    }
-  }, [postId, supabase, isFeed, currentUser?.id]);
-
-  // Fetch User (Unchanged)
   useEffect(() => {
     const fetchUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: accountData, error: accountError } = await supabase
+        const { data: accountData } = await supabase
           .from("Accounts")
           .select("id, avatarURL, fullName")
           .eq("id", user.id)
           .single();
-
-        if (accountError) {
-          console.error("Error fetching user account:", accountError);
-        }
 
         setCurrentUser({
           id: user.id,
@@ -173,231 +66,241 @@ export function useComments(postId: string, isFeed: boolean = false) {
       }
     };
     fetchUser();
-  }, [supabase]);
+  }, []);
 
-  // Initial Fetch (Unchanged)
-  useEffect(() => {
-    if (postId) {
-      fetchCommentsWithReactions();
+  const fetchCommentsWithReactions = useCallback(async () => {
+    if (!postId) return;
+    if (comments.length === 0) setIsLoading(true);
+
+    try {
+      let rawData: any[] = [];
+
+      if (isFeed) {
+        const { data, error } = await supabase
+          .from("FeedComments")
+          .select(`
+            id,
+            content,
+            created_at,
+            user_id,
+            parent_comment_id,
+            Accounts:user_id ( id, fullName, avatarURL ),
+            FeedCommentReactions ( user_id, reaction )
+          `)
+          .eq("feed_id", postId)
+          .order("created_at", { ascending: false }); // UPDATED: Changed to false for latest on top
+
+        if (error) throw error;
+        rawData = data || [];
+
+      } else {
+        const { data, error } = await supabase
+          .from("PostComments")
+          .select(`
+            id,
+            comment, 
+            created_at,
+            user_id,
+            parent_comment_id,
+            Accounts:user_id ( id, fullName, avatarURL ),
+            PostCommentReactions ( user_id, reaction )
+          `)
+          .eq("post_id", postId)
+          .order("created_at", { ascending: false }); // UPDATED: Changed to false for latest on top
+
+        if (error) throw error;
+        rawData = data || [];
+      }
+
+      const processedComments: CommentWithAuthor[] = rawData.map((c) => {
+        const reactions = c.FeedCommentReactions || c.PostCommentReactions || [];
+        
+        const myReaction = currentUser 
+          ? reactions.find((r: any) => r.user_id === currentUser.id)?.reaction 
+          : null;
+
+        const reactionCounts: Record<string, number> = {};
+        reactions.forEach((r: any) => {
+          reactionCounts[r.reaction] = (reactionCounts[r.reaction] || 0) + 1;
+        });
+
+        const topReactions: ReactionCount[] = Object.entries(reactionCounts)
+          .map(([reaction, count]) => ({ reaction, count }))
+          .sort((a, b) => b.count - a.count);
+
+        return {
+          id: c.id,
+          comment: c.comment || c.content, 
+          created_at: c.created_at,
+          parent_comment_id: c.parent_comment_id || null,
+          author: {
+            id: c.Accounts?.id || c.user_id,
+            fullName: c.Accounts?.fullName || "Unknown",
+            avatarURL: c.Accounts?.avatarURL || "/DefaultAvatar.svg",
+          },
+          reactionSummary: {
+            totalCount: reactions.length,
+            topReactions: topReactions,
+          },
+          userReactionId: myReaction || null,
+        };
+      });
+
+      setComments(processedComments);
+      setCommentCount(processedComments.length);
+
+    } catch (error: any) {
+      console.error("Error fetching comments:", error.message);
+    } finally {
+      setIsLoading(false);
     }
-  }, [postId, fetchCommentsWithReactions]);
+  }, [postId, isFeed, currentUser]);
 
-  // Realtime Subscriptions (Unchanged logic, added reaction listener for feeds)
+  useEffect(() => {
+    fetchCommentsWithReactions();
+  }, [fetchCommentsWithReactions]);
+
   useEffect(() => {
     if (!postId) return;
 
-    if (isFeed) {
-      const channel = supabase
-        .channel(`feed-comments-${postId}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "FeedComments",
-            filter: `feed_id=eq.${postId}`,
-          },
-          () => fetchCommentsWithReactions()
-        )
-        // Listen for reaction changes on feeds too
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "FeedCommentReactions",
-          },
-          () => fetchCommentsWithReactions()
-        )
-        .subscribe();
+    const commentTable = isFeed ? "FeedComments" : "PostComments";
+    const reactionTable = isFeed ? "FeedCommentReactions" : "PostCommentReactions";
+    const idFilter = isFeed ? `feed_id=eq.${postId}` : `post_id=eq.${postId}`;
 
-      return () => {
-        supabase.removeChannel(channel);
+    const channel = supabase.channel(`comments-${postId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: commentTable, filter: idFilter },
+        () => fetchCommentsWithReactions()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: reactionTable },
+        () => fetchCommentsWithReactions()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [postId, isFeed, fetchCommentsWithReactions]);
+
+  const handleCommentReaction = useCallback(async (commentId: string, newReactionId: string | null) => {
+    if (!currentUser) return;
+    
+    setReactingCommentId(commentId);
+
+    let oldReactionId: string | null = null;
+    setComments((prev) => {
+      const target = prev.find(c => c.id === commentId);
+      oldReactionId = target?.userReactionId || null;
+      return simpleOptimisticUpdate(prev, commentId, newReactionId, oldReactionId);
+    });
+
+    try {
+      const table = isFeed ? "FeedCommentReactions" : "PostCommentReactions";
+      const idColumn = isFeed ? "feed_comment_id" : "comment_id";
+
+      if (newReactionId) {
+        const { error } = await supabase
+          .from(table)
+          .upsert({
+            [idColumn]: commentId,
+            user_id: currentUser.id,
+            reaction: newReactionId
+          }, { onConflict: `${idColumn}, user_id` });
+        
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from(table)
+          .delete()
+          .match({ [idColumn]: commentId, user_id: currentUser.id });
+
+        if (error) throw error;
+      }
+    } catch (error) {
+      console.error("Reaction failed:", error);
+      setComments((prev) => simpleOptimisticUpdate(prev, commentId, oldReactionId, newReactionId));
+    } finally {
+      setReactingCommentId(null);
+      fetchCommentsWithReactions();
+    }
+  }, [currentUser, isFeed, fetchCommentsWithReactions]);
+
+  const postComment = useCallback(async (commentText: string, replyTo: CommentWithAuthor | null) => {
+    if (!currentUser || !postId || !commentText.trim()) return;
+
+    let payload: any = {};
+    let table = "";
+    
+    // Determine the structural parent (Always the root comment)
+    let parentId = null;
+    let replyToUserId = null; // New Variable
+
+    if (replyTo) {
+        // Structural Parent (DB Requirement)
+        parentId = replyTo.parent_comment_id || replyTo.id;
+        // Who we are specifically replying to (For Notification Logic)
+        // UPDATED: Only allow reply notifications if it is a Feed. Disable for Announcements.
+        if (isFeed) {
+          replyToUserId = replyTo.author.id;
+        }
+    }
+
+    if (isFeed) {
+      table = "FeedComments";
+      payload = {
+        feed_id: postId,
+        user_id: currentUser.id,
+        content: commentText.trim(),
+        parent_comment_id: parentId,
+        reply_to_user_id: replyToUserId // Pass this to SQL
       };
     } else {
-      const handleNewComment = (payload: any) => {
-        if (payload.new.user_id === currentUser?.id) return;
-        fetchCommentsWithReactions();
-      };
-
-      const channel = supabase
-        .channel(`post-comments-${postId}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "PostComments",
-            filter: `post_id=eq.${postId}`,
-          },
-          handleNewComment
-        )
-        .on(
-          "postgres_changes",
-          {
-            event: "DELETE",
-            schema: "public",
-            table: "PostComments",
-            filter: `post_id=eq.${postId}`,
-          },
-          () => fetchCommentsWithReactions()
-        )
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "PostCommentReactions",
-            filter: `post_id=eq.${postId}`,
-          },
-          () => fetchCommentsWithReactions()
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
+      table = "PostComments";
+      payload = {
+        post_id: postId,
+        user_id: currentUser.id,
+        comment: commentText.trim(),
+        parent_comment_id: parentId,
+        reply_to_user_id: replyToUserId // Pass this to SQL
       };
     }
-  }, [supabase, fetchCommentsWithReactions, postId, currentUser?.id, isFeed]);
 
-  // --- 4. UPDATED `handleCommentReaction` ---
-  const handleCommentReaction = useCallback(
-    async (commentId: string, newReactionId: string | null) => {
-      if (!currentUser) return;
-      setReactingCommentId(commentId);
+    const { data, error } = await supabase
+      .from(table)
+      .insert(payload)
+      .select()
+      .single();
 
-      let oldReactionId: string | null = null;
-      setComments((prevComments) => {
-        const comment = prevComments.find((c) => c.id === commentId);
-        oldReactionId = comment ? comment.userReactionId : null;
-        return simpleOptimisticUpdate(
-          prevComments,
-          commentId,
-          newReactionId,
-          oldReactionId
-        );
-      });
+    if (error) {
+      console.error("Error posting comment:", error.message);
+      return;
+    }
 
-      try {
-        // Dynamic Table & ID Selection
-        const table = isFeed ? "FeedCommentReactions" : "PostCommentReactions";
-        const idField = isFeed ? "feed_comment_id" : "comment_id";
+    if (data) {
+      // --- MANUAL NOTIFICATION BLOCK REMOVED --- 
+      // The SQL Trigger now handles this safely without duplicates.
 
-        if (newReactionId) {
-          const { error } = await supabase
-            .from(table)
-            .upsert(
-              {
-                [idField]: commentId,
-                user_id: currentUser.id,
-                reaction: newReactionId,
-              },
-              { onConflict: `${idField}, user_id` }
-            );
-          if (error) throw error;
-        } else {
-          const { error } = await supabase
-            .from(table)
-            .delete()
-            .match({ [idField]: commentId, user_id: currentUser.id });
-          if (error) throw error;
-        }
-      } catch (error: any) {
-        console.error("Error handling reaction:", error.message || error);
-        // Revert on failure
-        setComments((prevComments) =>
-          simpleOptimisticUpdate(
-            prevComments,
-            commentId,
-            oldReactionId, // Swapped to revert
-            newReactionId // Swapped to revert
-          )
-        );
-      } finally {
-        setReactingCommentId(null);
-        fetchCommentsWithReactions();
-      }
-    },
-    [currentUser, supabase, fetchCommentsWithReactions, isFeed]
-  );
+      const newComment: CommentWithAuthor = {
+        id: data.id,
+        comment: data.comment || data.content, 
+        created_at: data.created_at,
+        parent_comment_id: data.parent_comment_id || null,
+        author: {
+          id: currentUser.id,
+          fullName: currentUser.fullName || "Me",
+          avatarURL: currentUser.avatarURL,
+        },
+        reactionSummary: { totalCount: 0, topReactions: [] },
+        userReactionId: null,
+      };
 
-  // --- 5. POST COMMENT (Unchanged) ---
-  const postComment = useCallback(
-    async (commentText: string) => {
-      if (!currentUser || !postId || !commentText.trim()) return;
-
-      if (isFeed) {
-        const newFeedComment = {
-          feed_id: postId,
-          user_id: currentUser.id,
-          content: commentText,
-        };
-
-        const { data: insertedComment, error } = await supabase
-          .from("FeedComments")
-          .insert(newFeedComment)
-          .select()
-          .single();
-
-        if (error || !insertedComment) {
-          console.error("Error posting feed comment:", error?.message);
-          return;
-        }
-
-        const newCommentForUI: CommentWithAuthor = {
-          id: insertedComment.id,
-          comment: insertedComment.content,
-          created_at: insertedComment.created_at,
-          parent_comment_id: null,
-          author: {
-            id: currentUser.id,
-            fullName: currentUser.fullName || "User",
-            avatarURL: currentUser.avatarURL,
-          },
-          reactionSummary: { totalCount: 0, topReactions: [] },
-          userReactionId: null,
-        };
-
-        setComments((prevComments) => [...prevComments, newCommentForUI]);
-        setCommentCount((prevCount) => prevCount + 1);
-      } else {
-        const newComment = {
-          post_id: postId,
-          user_id: currentUser.id,
-          comment: commentText,
-          parent_comment_id: null,
-        };
-
-        const { data: insertedComment, error } = await supabase
-          .from("PostComments")
-          .insert(newComment)
-          .select()
-          .single();
-
-        if (error || !insertedComment) {
-          console.error("Error posting comment:", error?.message);
-          return;
-        }
-
-        const newCommentForUI: CommentWithAuthor = {
-          ...insertedComment,
-          parent_comment_id: insertedComment.parent_comment_id || null,
-          author: {
-            id: currentUser.id,
-            fullName: currentUser.fullName || "User",
-            avatarURL: currentUser.avatarURL,
-          },
-          reactionSummary: { totalCount: 0, topReactions: [] },
-          userReactionId: null,
-        };
-
-        setComments((prevComments) => [...prevComments, newCommentForUI]);
-        setCommentCount((prevCount) => prevCount + 1);
-      }
-    },
-    [currentUser, postId, supabase, isFeed]
-  );
-
+      setComments((prev) => [newComment, ...prev]); // UPDATED: Prepend new comment to top
+      setCommentCount((prev) => prev + 1);
+    }
+  }, [currentUser, postId, isFeed]);
   return {
     comments,
     isLoading,

@@ -25,9 +25,11 @@ export interface Booking {
     studentID: string;
     avatarURL: string;
   };
+  // --- UPDATED: Added avatarURL ---
   Tutor?: {
     id: string;
     fullName: string;
+    avatarURL: string | null;
   };
   TutorRatings?: TutorRating[];
 }
@@ -111,7 +113,6 @@ export const usePLCBookings = (
   const fetchMyRatings = useCallback(async () => {
     if (!currentUser) return new Map();
     
-    // FIX: Select specific rating and review columns
     const { data } = await supabase
       .from("TutorRatings")
       .select("booking_id, rating, review")
@@ -191,12 +192,13 @@ export const usePLCBookings = (
 
     const dateQuery = getDateString(year, monthIndex, targetDay);
 
+    // --- UPDATED: Added avatarURL to Tutor selection ---
     let query = supabase
       .from("PLCBookings")
       .select(`
         *, 
         Accounts:Accounts!PLCBookings_studentId_fkey (fullName, course, year, studentID, avatarURL), 
-        Tutor:Accounts!PLCBookings_approvedBy_fkey (id, fullName)
+        Tutor:Accounts!PLCBookings_approvedBy_fkey (id, fullName, avatarURL)
       `)
       .eq("bookingDate", dateQuery)
       .in("status", ["Pending", "Approved", "Rejected", "Completed"])
@@ -229,13 +231,11 @@ export const usePLCBookings = (
       const mapToUse = passedMap || myRatingsMap;
       
       const mappedData = filtered.map((booking) => {
-        // FIX: Get actual rating data
         const ratingData = mapToUse.get(booking.id);
         
         return {
           ...booking,
           hasRejected: myRejections.includes(booking.id),
-          // FIX: Assign actual data if it exists
           TutorRatings: ratingData ? [ratingData] : [],
         };
       });
@@ -251,12 +251,13 @@ export const usePLCBookings = (
   const fetchHistoryBookings = useCallback(async (passedMap: RatingsMap | null = null) => {
     if (!currentUser) return;
     
+    // --- UPDATED: Added avatarURL to Tutor selection ---
     let query = supabase
       .from("PLCBookingHistory")
       .select(`
         *, 
         Accounts:Accounts!plcbookinghistory_studentid_fkey (fullName, course, year, studentID, avatarURL), 
-        Tutor:Accounts!plcbookinghistory_approvedby_fkey (id, fullName)
+        Tutor:Accounts!plcbookinghistory_approvedby_fkey (id, fullName, avatarURL)
       `)
       .order("bookingDate", { ascending: false });
 
@@ -274,16 +275,13 @@ export const usePLCBookings = (
     }
     
     if (data) {
-      // Use passed map or fallback to state
       const mapToUse = passedMap || myRatingsMap;
       
       const mappedHistory = data.map((booking: any) => {
-        // FIX: Get actual rating data
         const ratingData = mapToUse.get(booking.id);
         
         return {
           ...booking,
-          // FIX: Assign actual data if it exists
           TutorRatings: ratingData ? [ratingData] : [],
         };
       });
@@ -300,13 +298,11 @@ export const usePLCBookings = (
     if (!silent) setIsInitialLoading(true);
     
     try {
-      // Fetch ratings first to get the map
       const freshRatingsMap = await fetchMyRatings();
       
       await Promise.all([
         fetchMyRejections(),
         fetchMonthBookings(),
-        // Pass the fresh map to avoid stale state issues
         fetchDayBookings(silent, freshRatingsMap), 
         fetchHistoryBookings(freshRatingsMap)      
       ]);
@@ -318,13 +314,55 @@ export const usePLCBookings = (
     }
   }, [fetchMyRatings, fetchMyRejections, fetchMonthBookings, fetchDayBookings, fetchHistoryBookings]);
 
-  // --- 4. CLEANUP ENGINE ---
+  // --- 4. CLEANUP ENGINE (UPDATED FOR NOTIFICATIONS) ---
   const cleanupExpired = useCallback(async () => {
     const now = new Date();
     const dateStr = getDateString(now.getFullYear(), now.getMonth(), now.getDate());
-    const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0') + ':00';
+    // Ensure time string includes seconds for precise database comparison
+    const timeStr = now.toLocaleTimeString('en-GB', { hour12: false }); // "HH:mm:ss"
 
     try {
+      // --- STEP 1: NOTIFY STUDENTS BEFORE ARCHIVING ---
+      // Identify Approved bookings that have expired right now
+      const { data: completedCandidates } = await supabase
+        .from("PLCBookings")
+        .select("id, studentId, subject")
+        .eq("status", "Approved")
+        .or(`bookingDate.lt.${dateStr},and(bookingDate.eq.${dateStr},endTime.lte.${timeStr})`);
+
+      if (completedCandidates && completedCandidates.length > 0) {
+         const notificationsToInsert = [];
+
+         // Build notifications but check for duplicates first
+         for (const b of completedCandidates) {
+             const title = `Your PLC session for "${b.subject}" has been completed.`;
+             
+             // 1a. Check if we already notified this user about this specific completion
+             // This prevents spam if the interval runs multiple times before the item is archived
+             const { data: existing } = await supabase
+                .from("UserNotifications")
+                .select("id")
+                .eq("user_id", b.studentId)
+                .eq("title", title)
+                .maybeSingle();
+
+             if (!existing) {
+                 notificationsToInsert.push({
+                    user_id: b.studentId,
+                    title: title,
+                    type: 'system',
+                    is_read: false
+                 });
+             }
+         }
+
+         // 1b. Insert only new notifications
+         if (notificationsToInsert.length > 0) {
+             await supabase.from("UserNotifications").insert(notificationsToInsert);
+         }
+      }
+
+      // --- STEP 2: ARCHIVE (Move to History) ---
       await Promise.all([
         supabase.rpc('move_and_archive_bookings', {
           check_date: dateStr,
@@ -340,7 +378,6 @@ export const usePLCBookings = (
           .or(`bookingDate.lt.${dateStr},and(bookingDate.eq.${dateStr},startTime.lte.${timeStr})`)
       ]);
 
-      // Silent refresh after cleanup
       setTimeout(() => refreshBookings(true), 500);
 
     } catch (err) {
@@ -360,9 +397,19 @@ export const usePLCBookings = (
     if (!error) refreshBookings(false);
   };
 
+  // --- UPDATED DELETE HISTORY WITH LOGGING ---
   const deleteHistoryBooking = async (bookingId: string) => {
-    const { error } = await supabase.from("PLCBookingHistory").delete().eq("id", bookingId);
-    if (!error) refreshBookings(false);
+    const { error } = await supabase
+      .from("PLCBookingHistory")
+      .delete()
+      .eq("id", bookingId);
+
+    if (error) {
+      console.error("Failed to delete history:", error.message);
+      alert(`Delete failed: ${error.message}. Check your database permissions.`);
+    } else {
+      refreshBookings(false);
+    }
   };
 
   const approveBooking = async (bookingId: string) => {
@@ -374,8 +421,12 @@ export const usePLCBookings = (
     if (!error) refreshBookings(false);
   }
 
+  // --- FIXED: DENY BOOKING (REMOVED DUPLICATE LOGIC) ---
+  // We simply call the RPC. We do NOT fetch data or insert notifications client-side.
+  // This prevents double notifications if the backend is already sending one.
   const denyBooking = async (bookingId: string) => {
     const { error } = await supabase.rpc("deny_booking", { booking_id: bookingId });
+    
     if (!error) {
       setMyRejections(prev => [...prev, bookingId]);
       refreshBookings(false);
@@ -415,9 +466,7 @@ export const usePLCBookings = (
   useEffect(() => {
     if (currentUser) {
       const shouldShowLoader = isFirstLoad.current;
-      
       refreshBookings(!shouldShowLoader); 
-      
       if (shouldShowLoader) {
         isFirstLoad.current = false;
       }

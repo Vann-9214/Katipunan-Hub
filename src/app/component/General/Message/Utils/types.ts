@@ -1,14 +1,25 @@
-// Chat Popup
-export interface ConversationItem {
+export interface Message {
   id: string;
-  otherUserName: string;
-  lastMessagePreview: string;
-  avatarURL: string | null;
-  timestamp: string; // Formatted time
-  unreadCount: number; // Crucial for 'active' state
+  created_at: string;
+  content: string;
+  sender_id: string;
+  conversation_id: string;
+  read_at: string | null;
+  image_url?: string | null;
+  file_name?: string | null;
+  // Added reply_to_id
+  reply_to_id?: string | null;
 }
 
-// Sidebar
+export interface OtherUser {
+  id: string;
+  fullName: string;
+  avatarURL: string | null;
+  role?: string;
+  course?: string;
+  studentID?: string;
+  year?: string;
+}
 
 export interface OtherAccount {
   id: string;
@@ -26,18 +37,11 @@ export interface Conversation {
   unreadCount: number;
 }
 
-// Conversation Window
-
-// --- Types ---
-export interface Message {
+export interface ConversationItem {
   id: string;
-  content: string;
-  created_at: string;
-  sender_id: string;
-}
-
-export interface OtherUser {
-  id: string;
-  fullName: string;
+  otherUserName: string;
+  lastMessagePreview: string;
   avatarURL: string | null;
+  timestamp: string;
+  unreadCount: number;
 }

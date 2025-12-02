@@ -12,11 +12,10 @@ export async function getCurrentUserDetails(): Promise<User | null> {
     return null;
   }
 
-  console.log("🟩 Auth user fetched:", user.email, user.id);
-
+  // Added 'location' to select
   const { data: account, error: accountError } = await supabase
     .from("Accounts")
-    .select("id, fullName, avatarURL, role, course, studentID, year")
+    .select("id, fullName, avatarURL, coverURL, bio, location, role, course, studentID, year")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -29,12 +28,14 @@ export async function getCurrentUserDetails(): Promise<User | null> {
     email: user.email,
     fullName: account?.fullName ?? "",
     avatarURL: account?.avatarURL ?? "",
+    coverURL: account?.coverURL ?? "",
+    bio: account?.bio ?? "",
+    location: account?.location ?? "", 
     role: account?.role ?? "",
     course: account?.course ?? "",
     studentID: account?.studentID ?? "",
     year: account?.year ?? "",
   };
 
-  console.log("✅ Full merged user:", fullUser);
   return fullUser;
 }

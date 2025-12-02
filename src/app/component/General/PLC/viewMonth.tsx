@@ -51,23 +51,6 @@ const formatTimeDisplay = (startStr: string, endStr?: string) => {
   return end ? `${start} - ${end}` : start;
 };
 
-// const getStatusColor = (status: string) => {
-//   switch (status) {
-//     case "Pending":
-//       return "#FFB74D";
-//     case "Approved":
-//     case "Completed":
-//       return "#81C784";
-//     case "Rejected":
-//     case "Cancelled":
-//       return "#EF9A9A";
-//     case "Starting...":
-//       return "#FFD239";
-//     default:
-//       return "#FFFFFF";
-//   }
-// };
-
 // Helper for the small dots in the calendar grid
 const getStatusDotColor = (status: string) => {
   switch (status) {
@@ -236,13 +219,13 @@ export default function PLCViewMonth({
               <div className="flex gap-2">
                 <button
                   onClick={onPrevMonth}
-                  className="hover:bg-[#8B0E0E]/10 p-2 rounded-full text-[#8B0E0E] transition-colors"
+                  className="hover:bg-[#8B0E0E]/10 p-2 rounded-full text-[#8B0E0E] cursor-pointer transition-colors"
                 >
                   <ChevronLeft size={24} />
                 </button>
                 <button
                   onClick={onNextMonth}
-                  className="hover:bg-[#8B0E0E]/10 p-2 rounded-full text-[#8B0E0E] transition-colors"
+                  className="hover:bg-[#8B0E0E]/10 p-2 rounded-full text-[#8B0E0E] cursor-pointer transition-colors"
                 >
                   <ChevronRight size={24} />
                 </button>
@@ -433,7 +416,8 @@ export default function PLCViewMonth({
                           bg: "bg-white",
                           border: "border-l-4 border-[#EFBF04]",
                           badgeBg: "bg-[#EFBF04]/20",
-                          text: "text-[#B48E00]", // Darker gold for text
+                          // UPDATED: Added animate-pulse to text
+                          text: "text-[#B48E00] animate-pulse",
                           icon: "text-[#EFBF04]",
                         };
                       } else if (
@@ -484,7 +468,7 @@ export default function PLCViewMonth({
                       }
 
                       return (
-                        // 4. Animated Booking Cards (Beautified)
+                        // 4. Animated Booking Cards (Beautified) - REPLACED SPRING WITH EASE
                         <motion.div
                           key={booking.id}
                           layout
@@ -492,10 +476,10 @@ export default function PLCViewMonth({
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0, x: -20 }}
                           transition={{
-                            delay: idx * 0.05, // Stagger effect
-                            type: "spring",
-                            stiffness: 300,
-                            damping: 25,
+                            delay: idx * 0.05,
+                            type: "tween",
+                            ease: "easeOut",
+                            duration: 0.3,
                           }}
                           whileHover={{ scale: 1.02, x: 5 }}
                           whileTap={{ scale: 0.98 }}

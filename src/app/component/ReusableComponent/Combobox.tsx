@@ -1,3 +1,4 @@
+//
 "use client";
 
 import * as React from "react";
@@ -28,6 +29,10 @@ interface ComboboxProps {
   dropdownHeight?: string;
   rounded?: string;
 
+  // --- NEW PROPS FOR TEXT MATCHING ---
+  textSize?: string;
+  font?: string;
+
   buttonBG?: string;
   borderColor?: string;
   textColor?: string;
@@ -51,8 +56,7 @@ interface ComboboxProps {
 
   defaultMode?: "none" | "first" | "value";
   defaultValue?: string | null;
-  
-  // 1. Add className to interface
+
   className?: string;
 }
 
@@ -65,6 +69,10 @@ export function Combobox({
   buttonHeight = "h-[55px]",
   dropdownHeight = "h-[300px]",
   rounded = "rounded-[30px]",
+
+  // Default to your original styles
+  textSize = "text-[20px]",
+  font = "font-light font-montserrat",
 
   buttonBG = "bg-white",
   borderColor = "border border-black",
@@ -89,8 +97,7 @@ export function Combobox({
 
   defaultMode = "none",
   defaultValue = null,
-  
-  // 2. Destructure className
+
   className,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
@@ -160,7 +167,10 @@ export function Combobox({
           aria-expanded={open}
           disabled={disabled}
           className={cn(
-            "justify-between transition-colors text-[20px] font-light font-montserrat px-4 select-none overflow-hidden",
+            "justify-between transition-colors px-4 select-none overflow-hidden",
+            // Apply the shared font and text size here
+            font,
+            textSize,
             width,
             buttonHeight,
             rounded,
@@ -176,7 +186,6 @@ export function Combobox({
                 ],
             open ? activeHoverBG : "",
             open ? activeHoverTextColor : "",
-            // 3. Apply className to the button
             className
           )}
         >
@@ -188,7 +197,9 @@ export function Combobox({
       {!disabled && (
         <PopoverContent
           className={cn(
-            "p-0 overflow-y-auto text-[20px] font-light font-montserrat",
+            "p-0 overflow-y-auto",
+            // Apply the same font to the content container
+            font,
             "w-[var(--radix-popover-trigger-width)]",
             dropdownHeight,
             dropdownRounded,
@@ -197,7 +208,17 @@ export function Combobox({
             dropdownBorderColor
           )}
         >
-          <Command>
+          <Command
+            // --- ADDED: Custom Filter Function ---
+            // This function strips spaces from both the item value and the search term
+            // allowing "BSAccountancy" to match "BS Accountancy"
+            filter={(value, search) => {
+              if (!value) return 0;
+              const normalizedValue = value.toLowerCase().replace(/\s+/g, "");
+              const normalizedSearch = search.toLowerCase().replace(/\s+/g, "");
+              return normalizedValue.includes(normalizedSearch) ? 1 : 0;
+            }}
+          >
             <CommandInput placeholder={placeholder} className="h-9 pl-4 pr-3" />
             <CommandList>
               <CommandEmpty>{emptyText}</CommandEmpty>
@@ -205,16 +226,26 @@ export function Combobox({
                 {items.map((item) => (
                   <CommandItem
                     key={item.value}
-                    value={item.value}
+                    // We use item.label as the value here so the filter function receives the visible text
+                    value={item.label}
                     onSelect={(currentValue) => {
+                      // Find the original item by matching the label (case-insensitive)
+                      const foundItem = items.find(
+                        (i) =>
+                          i.label.toLowerCase() === currentValue.toLowerCase()
+                      );
+                      if (!foundItem) return;
+
                       const newValue =
-                        currentValue === value ? "" : currentValue;
+                        foundItem.value === value ? "" : foundItem.value;
                       setValue(newValue);
                       setOpen(false);
                       onChange?.(newValue);
                     }}
                     className={cn(
-                      "cursor-pointer text-[20px] font-light font-montserrat px-4",
+                      "cursor-pointer px-4 whitespace-nowrap",
+                      font,
+                      textSize,
                       dropdownTextColor,
                       dropdownHoverBG,
                       dropdownHoverTextColor,
