@@ -28,7 +28,7 @@ export interface ModalPostData {
   itemType: "Lost" | "Found";
   itemLocation: string;
   itemCategory: ModalCategory;
-  attachment: File;
+  attachment: File | null; // Changed to allow null
 }
 
 // --- Icon Helper ---
@@ -110,15 +110,14 @@ export default function PostItemModal({
 
   // --- Publish Handler ---
   const handlePublishClick = () => {
-    // validate fields
+    // validate fields (Removed !attachment check)
     if (
       !itemName ||
       !itemDescription ||
       !itemLocation ||
-      selectedModalCategory === "Select Category" ||
-      !attachment
+      selectedModalCategory === "Select Category"
     ) {
-      alert("Please fill in all fields and add an attachment.");
+      alert("Please fill in all fields.");
       return;
     }
 
@@ -268,7 +267,7 @@ export default function PostItemModal({
           {/* Attachment */}
           <div className="mb-6">
             <span className="text-lg font-semibold text-gray-700 block mb-2">
-              Attachment
+              Attachment (Optional)
             </span>
             <div
               className="w-full h-32 bg-[#800000] rounded-xl flex items-center justify-center border-2 border-dashed border-white text-white p-4 text-center cursor-pointer relative"

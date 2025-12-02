@@ -60,12 +60,20 @@ export default function CalendarViews({
   onMonthClick,
 }: CalendarViewsProps) {
   const today = new Date();
-  const [selectedEvent, setSelectedEvent] = useState<Holiday | PostedEvent | PersonalEvent | null>(null);
-  const [popupPosition, setPopupPosition] = useState<{ x: number; y: number } | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<
+    Holiday | PostedEvent | PersonalEvent | null
+  >(null);
+  const [popupPosition, setPopupPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
 
-  const handleEventHover = (event: Holiday | PostedEvent | PersonalEvent, e: React.MouseEvent) => {
+  const handleEventHover = (
+    event: Holiday | PostedEvent | PersonalEvent,
+    e: React.MouseEvent
+  ) => {
     e.stopPropagation();
-    
+
     const rect = (e.target as HTMLElement).getBoundingClientRect();
     setPopupPosition({
       x: rect.right + 10,
@@ -85,9 +93,11 @@ export default function CalendarViews({
 
   return (
     <>
-      <div className={`relative mt-[20px] bg-white rounded-lg border-4 border-[#5C0000] shadow-xl transition-all duration-300 ${
-        viewMode === "year" ? "w-[1272px]" : "w-[922px]"
-      }`}>
+      <div
+        className={`relative mt-[20px] bg-white rounded-lg border-4 border-[#5C0000] shadow-xl transition-all duration-300 ${
+          viewMode === "year" ? "w-[1272px]" : "w-[922px]"
+        }`}
+      >
         {/* Calendar Header */}
         <div
           className={`${montserrat.className} flex justify-between items-center px-10 py-3 bg-[#5C0000] text-white text-[24px] font-semibold rounded-t-md`}
@@ -176,7 +186,9 @@ export default function CalendarViews({
                       className={`${
                         ptSans.className
                       } text-[14px] font-bold absolute top-[6px] left-1/2 -translate-x-1/2 ${
-                        selectedDay === day ? "text-[#FFD700]" : "text-[#5C0000]"
+                        selectedDay === day
+                          ? "text-[#FFD700]"
+                          : "text-[#5C0000]"
                       }`}
                     >
                       {day}
@@ -232,7 +244,6 @@ export default function CalendarViews({
                   (e) => e.year === year && e.month === monthIndex + 1
                 ),
               ];
-              const hasEvents = monthHolidays.length > 0 || monthEvents.length > 0;
 
               return (
                 <div
@@ -257,12 +268,17 @@ export default function CalendarViews({
                     {monthDays.map((day, i) => {
                       if (!day)
                         return (
-                          <div key={i} className="text-[11px] text-center py-1" />
+                          <div
+                            key={i}
+                            className="text-[11px] text-center py-1"
+                          />
                         );
                       const dayHasHoliday = monthHolidays.some(
                         (h) => h.day === day
                       );
-                      const dayHasEvent = monthEvents.some((e) => e.day === day);
+                      const dayHasEvent = monthEvents.some(
+                        (e) => e.day === day
+                      );
                       const isToday =
                         today.getFullYear() === year &&
                         today.getMonth() === monthIndex &&

@@ -1,4 +1,3 @@
-// CalendarContent.tsx
 "use client";
 
 import React, { useMemo, useState, useEffect, useCallback } from "react";
@@ -25,7 +24,7 @@ const montserrat = Montserrat({
   weight: ["500", "600"],
 });
 
-type PanelType = "Schedule" | "Reminder"; // Define this type consistently
+type PanelType = "Schedule" | "Reminder";
 
 export default function CalendarContent() {
   const [isLoading, setIsLoading] = useState(true);
@@ -43,9 +42,7 @@ export default function CalendarContent() {
   const [viewMode, setViewMode] = useState<"month" | "year">("month");
 
   // --- NEW STATE FOR MAXIMIZED VIEW ---
-  // Tracks which panel is currently taking up the full maximized screen
   const [maximizedPanel, setMaximizedPanel] = useState<PanelType | null>(null);
-  // ------------------------------------
 
   // ---------------------
   // Data state
@@ -58,22 +55,17 @@ export default function CalendarContent() {
   // ---------------------
   // Maximization Handlers
   // ---------------------
-
-  // Handler for the maximize/minimize buttons within the panels
   const handleMaximizeToggle = useCallback((panel: PanelType | null) => {
     setMaximizedPanel(panel);
-    // If maximizing, ensure the calendar view switches to the corresponding panel
     if (panel) {
       setActivePanel(panel);
     }
   }, []);
 
-  // Handler for the internal toggle switch (only used when a panel is maximized)
   const handlePanelSwitch = useCallback((panel: PanelType) => {
     setMaximizedPanel(panel);
   }, []);
 
-  // Logic to determine if a panel is currently maximized
   const isScheduleMaximized = maximizedPanel === "Schedule";
   const isReminderMaximized = maximizedPanel === "Reminder";
 
@@ -92,20 +84,20 @@ export default function CalendarContent() {
       const isUserAdmin = role.includes("Platform Administrator");
       setIsAdmin(isUserAdmin);
 
-      const userCourse = user.course || "";
+      // We don't strictly need userCourse if we want Global to be visible to all
+      // const userCourse = user.course || "";
 
-      let query = supabase.from("Events").select("*");
+      // CHANGE 1: Remove manual .or() filter.
+      // RLS policies on the database now handle security automatically.
+      // We just ask for everything ("*"), and the DB gives us what we are allowed to see.
+      const { data, error } = await supabase.from("Events").select("*");
 
-      if (!isUserAdmin) {
-        query = query.or(`user_id.eq.${user.id},audience.eq.Global`);
-      }
-
-      const { data, error } = await query;
       if (error) throw error;
 
       if (data) {
         const dbEvents = data as DBEvent[];
 
+        // Filter Personal Events: Must match user ID (redundant with RLS but good for safety)
         const pEvents: PersonalEvent[] = dbEvents
           .filter((e) => e.audience === "Personal" && e.user_id === user.id)
           .map((e) => ({
@@ -115,15 +107,13 @@ export default function CalendarContent() {
             day: e.day,
           }));
 
+        // CHANGE 2: Relaxed "Global" filtering.
+        // Previously, it hid events if the user's course didn't match.
+        // Now, if it says "Global", we show it to everyone.
         const gEvents: PostedEvent[] = dbEvents
-          .filter((e) => {
-            if (e.audience !== "Global") return false;
-            if (isUserAdmin) return true;
-            if (!e.courses || e.courses.length === 0) return true;
-            return e.courses.includes(userCourse);
-          })
+          .filter((e) => e.audience === "Global")
           .map((e) => ({
-            id: e.id, // Include ID for deletion
+            id: e.id,
             title: e.title,
             course:
               e.courses && e.courses.length > 0
@@ -146,7 +136,6 @@ export default function CalendarContent() {
     }
   };
 
-  // Handle delete posted event (admin only)
   const handleDeletePostedEvent = async (eventId: string) => {
     if (!isAdmin) return;
 
@@ -157,8 +146,6 @@ export default function CalendarContent() {
         .eq("id", eventId);
 
       if (error) throw error;
-
-      // Optimistically update UI
       setPostedEvents((prev) => prev.filter((e) => e.id !== eventId));
     } catch (err) {
       console.error("Error deleting event:", err);
@@ -217,16 +204,16 @@ export default function CalendarContent() {
     if (name === "Year") {
       setViewMode("year");
       setSelectedMenu("Year");
-      setMaximizedPanel(null); // Minimize any maximized panel
+      setMaximizedPanel(null);
     } else if (name === "Month") {
       setViewMode("month");
       setSelectedMenu("Month");
-      setMaximizedPanel(null); // Minimize any maximized panel
+      setMaximizedPanel(null);
     } else if (name === "Schedule" || name === "Reminder") {
       setViewMode("month");
       setSelectedMenu(name as MenuType);
       setActivePanel(name as PanelType);
-      setMaximizedPanel(null); // Minimize any maximized panel
+      setMaximizedPanel(null);
     }
   }
 
@@ -240,7 +227,6 @@ export default function CalendarContent() {
     return <LoadingScreen />;
   }
 
-  // --- CONDITIONAL RENDERING LOGIC ---
   const renderReminderPanel =
     activePanel === "Reminder" || maximizedPanel === "Reminder";
   const renderSchedulePanel =
@@ -268,7 +254,6 @@ export default function CalendarContent() {
       />
 
       <div className="relative flex flex-col px-[66px] pt-[130px]">
-        {/* Header content... */}
         <div className="flex items-center gap-4 mb-6">
           <div className="shadow-lg rounded-2xl">
             <Image
@@ -330,9 +315,6 @@ export default function CalendarContent() {
         onEventAdded={fetchEvents}
       />
 
-      {/* --- Conditional Panel Rendering --- */}
-
-      {/* Only render ReminderPanel if it is the active panel AND NOT the Schedule maximized panel */}
       {renderReminderPanel && !isScheduleMaximized && (
         <ReminderPanel
           reminders={reminders}
@@ -350,7 +332,6 @@ export default function CalendarContent() {
           isAdmin={isAdmin}
           onDeletePostedEvent={handleDeletePostedEvent}
           setPersonalEvents={setPersonalEvents}
-          // CRITICAL: Maximization Props
           isMaximized={isReminderMaximized}
           onMaximizeToggle={handleMaximizeToggle}
           currentMaximizedPanel={maximizedPanel as PanelType}
@@ -358,7 +339,6 @@ export default function CalendarContent() {
         />
       )}
 
-      {/* Only render SchedulePanel if it is the active panel AND NOT the Reminder maximized panel */}
       {renderSchedulePanel && !isReminderMaximized && (
         <SchedulePanel
           holidaysForCurrentMonth={holidaysForCurrentMonth}
@@ -372,7 +352,6 @@ export default function CalendarContent() {
           monthName={monthName}
           isAdmin={isAdmin}
           onDeletePostedEvent={handleDeletePostedEvent}
-          // CRITICAL: Maximization Props
           isMaximized={isScheduleMaximized}
           onMaximizeToggle={handleMaximizeToggle}
           currentMaximizedPanel={maximizedPanel as PanelType}
