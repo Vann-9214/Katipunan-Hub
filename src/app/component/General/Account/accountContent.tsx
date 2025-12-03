@@ -3,8 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-// 1. Added Pen import
-import { Pen, MapPin, Calendar, Mail, BookOpen } from "lucide-react";
+import {
+  Pen,
+  MapPin,
+  Calendar,
+  Mail,
+  BookOpen,
+  MessageCircle,
+} from "lucide-react";
 import { motion } from "framer-motion";
 
 // Components
@@ -23,23 +29,22 @@ import { getCurrentUserDetails } from "../../../../../supabase/Lib/General/getUs
 import { useUserPosts } from "../../../../../supabase/Lib/Account/useUserPosts";
 import { supabase } from "../../../../../supabase/Lib/General/supabaseClient";
 import { updateFeedPost } from "../../../../../supabase/Lib/Feeds/feeds";
+// 1. Import helper to sort IDs
+import { getSortedUserPair } from "../../../../../supabase/Lib/Message/auth";
+
 import type { User } from "../../../../../supabase/Lib/General/user";
 import type { PostUI, UpdatePostPayload } from "../Announcement/Utils/types";
 
 /* --- NEW: Import Lightbox Hook --- */
 import { useImageLightbox } from "../Announcement/ImageAttachment/imageLightboxContent";
 
-// 2. Accept an optional prop for specific profile viewing
 interface AccountContentProps {
   targetUserId?: string;
 }
 
 export default function AccountContent({ targetUserId }: AccountContentProps) {
-  // 'viewedUser' is the profile we are looking at
   const [viewedUser, setViewedUser] = useState<User | null>(null);
-  // 'currentUser' is the person logged in (YOU)
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-
   const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   // Modal States
@@ -50,7 +55,6 @@ export default function AccountContent({ targetUserId }: AccountContentProps) {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<PostUI | null>(null);
 
-  // Fetch posts for the VIEWED user
   const {
     posts,
     loading: postsLoading,
@@ -58,19 +62,14 @@ export default function AccountContent({ targetUserId }: AccountContentProps) {
   } = useUserPosts(viewedUser?.id);
   const router = useRouter();
 
-  /* --- NEW: Lightbox Control --- */
   const { openLightbox } = useImageLightbox();
 
-  // 3. Determine Ownership
-  // If targetUserId is missing, we are on /Account, so we are the owner.
-  // If targetUserId matches our ID, we are also the owner.
   const isOwner = !targetUserId || currentUser?.id === viewedUser?.id;
 
   useEffect(() => {
     const loadData = async () => {
       setIsInitialLoading(true);
 
-      // A. Always get the logged-in user first (for Navbar and Auth check)
       const loggedIn = await getCurrentUserDetails();
       if (!loggedIn) {
         router.push("/signin");
@@ -78,13 +77,10 @@ export default function AccountContent({ targetUserId }: AccountContentProps) {
       }
       setCurrentUser(loggedIn);
 
-      // B. Determine which profile to show
       if (targetUserId) {
-        // CASE 1: Viewing someone else (or yourself via ID)
         if (targetUserId === loggedIn.id) {
           setViewedUser(loggedIn);
         } else {
-          // Fetch the OTHER user's details
           const { data: account, error } = await supabase
             .from("Accounts")
             .select(
@@ -94,10 +90,9 @@ export default function AccountContent({ targetUserId }: AccountContentProps) {
             .maybeSingle();
 
           if (account) {
-            // Construct User object manually since getUser helper implies auth session
             setViewedUser({
               id: account.id,
-              email: "", // Often hidden for others
+              email: "",
               fullName: account.fullName,
               avatarURL: account.avatarURL,
               coverURL: account.coverURL,
@@ -110,11 +105,9 @@ export default function AccountContent({ targetUserId }: AccountContentProps) {
             });
           } else {
             console.error("User not found:", error);
-            // Handle 404 behavior if needed
           }
         }
       } else {
-        // CASE 2: Viewing /Account (My Profile)
         setViewedUser(loggedIn);
       }
 
@@ -124,7 +117,6 @@ export default function AccountContent({ targetUserId }: AccountContentProps) {
     loadData();
   }, [router, targetUserId]);
 
-  // Realtime subscription for the VIEWED user's feed
   useEffect(() => {
     if (!viewedUser?.id) return;
 
@@ -150,6 +142,40 @@ export default function AccountContent({ targetUserId }: AccountContentProps) {
   }, [viewedUser?.id, refetch]);
 
   // --- Handlers ---
+
+  // 2. SMART CHAT HANDLER
+  const handleChatClick = async () => {
+    if (!currentUser?.id || !viewedUser?.id) return;
+
+    try {
+      // Determine the correct order of IDs (same logic as creating a chat)
+      const { user_a_id, user_b_id } = getSortedUserPair(
+        currentUser.id,
+        viewedUser.id
+      );
+
+      // Check if conversation exists
+      const { data: existingConvo } = await supabase
+        .from("Conversations")
+        .select("id")
+        .eq("user_a_id", user_a_id)
+        .eq("user_b_id", user_b_id)
+        .maybeSingle();
+
+      if (existingConvo) {
+        // Conversation exists -> Go directly to it
+        router.push(`/Message/${existingConvo.id}`);
+      } else {
+        // No conversation -> Go to 'New Message' screen
+        router.push(`/Message/new/${viewedUser.id}`);
+      }
+    } catch (error) {
+      console.error("Error navigating to chat:", error);
+      // Fallback
+      router.push(`/Message/new/${viewedUser.id}`);
+    }
+  };
+
   const handleEditPost = (postId: string) => {
     const postToEdit = posts.find((p) => p.id === postId);
     if (!postToEdit) return;
@@ -189,17 +215,15 @@ export default function AccountContent({ targetUserId }: AccountContentProps) {
   };
 
   const handleUpdateSuccess = (updatedData: Partial<User>) => {
-    // If we are editing, we are likely editing the currentUser/viewedUser (since they are the same)
     setViewedUser((prev) => (prev ? { ...prev, ...updatedData } : null));
     setCurrentUser((prev) => (prev ? { ...prev, ...updatedData } : null));
   };
 
   if (isInitialLoading) return <LoadingScreen />;
-  if (!viewedUser || !currentUser) return null; // Or a "User Not Found" state
+  if (!viewedUser || !currentUser) return null;
 
   return (
     <main className="min-h-screen bg-[#F0F2F5] pb-20">
-      {/* Navbar uses currentUser */}
       <HomepageTab user={currentUser} />
 
       {/* --- HEADER SECTION --- */}
@@ -210,7 +234,6 @@ export default function AccountContent({ targetUserId }: AccountContentProps) {
               {/* Cover Photo */}
               <div className="relative w-full h-[200px] md:h-[350px] bg-gray-800 overflow-hidden group">
                 {viewedUser.coverURL ? (
-                  /* --- UPDATED: Cover Photo with Click Handler --- */
                   <Image
                     src={viewedUser.coverURL}
                     alt="Cover"
@@ -233,7 +256,6 @@ export default function AccountContent({ targetUserId }: AccountContentProps) {
                 <div className="flex flex-col md:flex-row items-center md:items-end relative -mt-[80px] md:-mt-[50px] gap-4 md:gap-6">
                   {/* Avatar */}
                   <div className="relative z-10">
-                    {/* --- UPDATED: Avatar Container with Click Handler --- */}
                     <div
                       className="w-[168px] h-[168px] relative rounded-full overflow-hidden border-[5px] border-[#EFBF04] shadow-2xl bg-[#3a0000] cursor-pointer"
                       onClick={() =>
@@ -261,8 +283,8 @@ export default function AccountContent({ targetUserId }: AccountContentProps) {
                     </p>
                   </div>
 
-                  {/* Edit Profile Button - ONLY IF OWNER */}
-                  {isOwner && (
+                  {/* Action Button */}
+                  {isOwner ? (
                     <div className="mb-6 md:mb-4 flex-shrink-0">
                       <motion.button
                         whileHover={{ scale: 1.05 }}
@@ -272,6 +294,19 @@ export default function AccountContent({ targetUserId }: AccountContentProps) {
                       >
                         <Pen size={16} className="text-[#EFBF04]" />
                         <span className="font-montserrat">Edit Profile</span>
+                      </motion.button>
+                    </div>
+                  ) : (
+                    <div className="mb-6 md:mb-4 flex-shrink-0">
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        // 3. Attach new handler here
+                        onClick={handleChatClick}
+                        className="bg-white/10 cursor-pointer hover:bg-white/20 border border-white/30 text-white px-5 py-2.5 rounded-xl font-semibold flex items-center gap-2 transition-all shadow-lg backdrop-blur-sm"
+                      >
+                        <MessageCircle size={16} className="text-[#EFBF04]" />
+                        <span className="font-montserrat">Chat</span>
                       </motion.button>
                     </div>
                   )}
@@ -345,7 +380,6 @@ export default function AccountContent({ targetUserId }: AccountContentProps) {
                 </div>
               </div>
 
-              {/* Edit Bio - ONLY IF OWNER */}
               {isOwner && (
                 <motion.button
                   whileHover={{ scale: 1.02 }}
@@ -363,7 +397,6 @@ export default function AccountContent({ targetUserId }: AccountContentProps) {
         {/* RIGHT: POSTS FEED */}
         <div className="flex-1 min-w-0">
           <div className="flex flex-col items-center space-y-8">
-            {/* Add Posts - ONLY IF OWNER */}
             {isOwner && (
               <AddPosts
                 currentType="feed"
@@ -390,7 +423,7 @@ export default function AccountContent({ targetUserId }: AccountContentProps) {
                   key={post.id}
                   postId={post.id}
                   type={post.type}
-                  userId={currentUser.id} // Pass viewer ID for reactions
+                  userId={currentUser.id}
                   title={post.title}
                   description={post.description}
                   date={post.date}
@@ -398,12 +431,12 @@ export default function AccountContent({ targetUserId }: AccountContentProps) {
                   visibility={post.visibility}
                   isFeed={true}
                   author={{
-                    id: viewedUser.id, // <--- ADDED THIS LINE
+                    id: viewedUser.id,
                     fullName: viewedUser.fullName,
                     avatarURL: viewedUser.avatarURL,
                     role: viewedUser.role,
                   }}
-                  canEdit={isOwner} // Control post editability
+                  canEdit={isOwner}
                   onEdit={() => handleEditPost(post.id)}
                   onDelete={() => handleDeletePost(post.id)}
                 />
@@ -439,7 +472,6 @@ export default function AccountContent({ targetUserId }: AccountContentProps) {
         </div>
       </div>
 
-      {/* --- MODALS (Only render if owner) --- */}
       {isOwner && showMainEdit && (
         <EditMainProfileModal
           user={currentUser}

@@ -29,6 +29,8 @@ export interface OtherAccount {
 
 export interface Conversation {
   id: string;
+  user_a_id: string; // Added
+  user_b_id: string; // Added
   last_message_at: string;
   is_favorite: boolean;
   is_blocked: boolean;
@@ -39,6 +41,8 @@ export interface Conversation {
 
 export interface ConversationItem {
   id: string;
+  user_a_id: string; // Added
+  user_b_id: string; // Added
   otherUserName: string;
   lastMessagePreview: string;
   avatarURL: string | null;

@@ -6,14 +6,19 @@ import { MoreHorizontal, Star, Ban, Trash2 } from "lucide-react";
 import { ConversationItem } from "../Utils/types";
 import Avatar from "@/app/component/ReusableComponent/Avatar";
 import { motion, Variants, AnimatePresence } from "framer-motion";
+import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
 
 interface PopupConversationItemProps {
   conversation: ConversationItem;
   variants: Variants;
+  currentUserId: string | undefined;
+  onUpdate: () => void;
 }
 
 export default function PopupConversationItem({
   conversation,
+  currentUserId,
+  onUpdate,
 }: PopupConversationItemProps) {
   const isActive = conversation.unreadCount > 0;
   const router = useRouter();
@@ -36,18 +41,76 @@ export default function PopupConversationItem({
     setIsMenuOpen((prev) => !prev);
   };
 
-  const handleFavorite = (e: React.MouseEvent) => {
+  const handleFavorite = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!currentUserId) return;
+    try {
+      const isUserA = currentUserId === conversation.user_a_id;
+      const updateField = isUserA ? "user_a_is_favorite" : "user_b_is_favorite";
+      // Need to fetch current status or assume false/toggle?
+      // Since item doesn't have is_favorite, we can just fetch first or toggle blindly.
+      // Better to fetch single.
+      const { data } = await supabase
+        .from("Conversations")
+        .select(updateField)
+        .eq("id", conversation.id)
+        .single();
+
+      if (data) {
+        const currentVal = data[updateField as keyof typeof data];
+        await supabase
+          .from("Conversations")
+          .update({ [updateField]: !currentVal })
+          .eq("id", conversation.id);
+        onUpdate();
+      }
+    } catch (err) {
+      console.error(err);
+    }
     setIsMenuOpen(false);
   };
 
-  const handleBlock = (e: React.MouseEvent) => {
+  const handleBlock = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!currentUserId) return;
+    try {
+      const isUserA = currentUserId === conversation.user_a_id;
+      const updateField = isUserA
+        ? "user_b_is_blocked_by_a"
+        : "user_a_is_blocked_by_b";
+
+      const { data } = await supabase
+        .from("Conversations")
+        .select(updateField)
+        .eq("id", conversation.id)
+        .single();
+
+      if (data) {
+        const currentVal = data[updateField as keyof typeof data];
+        await supabase
+          .from("Conversations")
+          .update({ [updateField]: !currentVal })
+          .eq("id", conversation.id);
+        onUpdate();
+      }
+    } catch (err) {
+      console.error(err);
+    }
     setIsMenuOpen(false);
   };
 
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!confirm("Delete this chat?")) {
+      setIsMenuOpen(false);
+      return;
+    }
+    try {
+      await supabase.from("Conversations").delete().eq("id", conversation.id);
+      onUpdate();
+    } catch (err) {
+      console.error(err);
+    }
     setIsMenuOpen(false);
   };
 
@@ -71,6 +134,7 @@ export default function PopupConversationItem({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.2 }}
+      style={{ zIndex: isMenuOpen ? 50 : 1 }}
       className={`relative group flex items-center gap-3 p-3 rounded-[16px] cursor-pointer transition-all duration-200 w-full border
         ${
           isActive
