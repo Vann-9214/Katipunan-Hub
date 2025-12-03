@@ -5,6 +5,8 @@ import HomepageTab from "@/app/component/ReusableComponent/HomepageTab/HomepageT
 import { useState, useEffect } from "react";
 import { getCurrentUserDetails } from "../../../../supabase/Lib/General/getUser";
 import type { User } from "../../../../supabase/Lib/General/user";
+// --- NEW IMPORT ---
+import BackgroundGradient from "@/app/component/ReusableComponent/BackgroundGradient";
 
 export default function MessageLayout({
   children,
@@ -22,7 +24,11 @@ export default function MessageLayout({
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#F2F4F7]">
+    // Replaced min-h-screen bg-[#F2F4F7] with relative to allow background gradient visibility
+    <div className="relative min-h-screen">
+      {/* --- ADDED BACKGROUND GRADIENT --- */}
+      <BackgroundGradient />
+
       {/* 1. The header (fixed to top) */}
       <HomepageTab user={user} />
 

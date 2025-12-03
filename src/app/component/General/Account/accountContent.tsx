@@ -19,6 +19,7 @@ import LoadingScreen from "../../ReusableComponent/LoadingScreen";
 import Avatar from "@/app/component/ReusableComponent/Avatar";
 import Posts from "../Announcement/Posts/Posts";
 import AddPosts from "../Announcement/AddPosts/addPosts";
+import BackgroundGradient from "../../ReusableComponent/BackgroundGradient";
 
 // Modals
 import EditMainProfileModal from "./editMainProfileModal";
@@ -225,7 +226,7 @@ export default function AccountContent({ targetUserId }: AccountContentProps) {
   return (
     <main className="min-h-screen bg-[#F0F2F5] pb-20">
       <HomepageTab user={currentUser} />
-
+      <BackgroundGradient />
       {/* --- HEADER SECTION --- */}
       <div className="pt-[20px] pb-4">
         <div className="max-w-[1095px] mx-auto px-4">

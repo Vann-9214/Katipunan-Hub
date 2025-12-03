@@ -8,7 +8,18 @@ import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { createPortal } from "react-dom";
 
-// --- Custom Liquid Glass Component ---
+// Export this type so parent can use it
+export type AuthMode = "signin" | "signup" | "forgotpassword" | "verify" | null;
+
+// --- PROPS INTERFACE ---
+interface LandingPageTabProps {
+  authMode: AuthMode;
+  setAuthMode: (mode: AuthMode) => void;
+  direction: number;
+  setDirection: (dir: number) => void;
+}
+
+// ... (Keep LiquidGlassBar, ModalWrapper, and variants defined exactly as they were) ...
 const LiquidGlassBar = ({
   children,
   className,
@@ -33,7 +44,6 @@ const LiquidGlassBar = ({
   </div>
 );
 
-// --- Portal Wrapper ---
 const ModalWrapper = ({ children }: { children: React.ReactNode }) => {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -44,11 +54,10 @@ const ModalWrapper = ({ children }: { children: React.ReactNode }) => {
   return createPortal(children, document.body);
 };
 
-// --- Slide Variants ---
 const variants = {
   enter: (direction: number) => ({
     x: direction > 0 ? "100%" : "-100%",
-    opacity: 1, 
+    opacity: 1,
   }),
   center: {
     x: 0,
@@ -60,12 +69,14 @@ const variants = {
   }),
 };
 
-type AuthMode = "signin" | "signup" | "forgotpassword" | "verify" | null;
-
-export default function LandingPageTab() {
-  const [authMode, setAuthMode] = useState<AuthMode>(null);
-  const [direction, setDirection] = useState(0);
-
+// --- MAIN COMPONENT ---
+// Receives state from props instead of creating it
+export default function LandingPageTab({
+  authMode,
+  setAuthMode,
+  direction,
+  setDirection,
+}: LandingPageTabProps) {
   const handleClose = () => setAuthMode(null);
 
   const handleSwitchToSignUp = () => {
@@ -106,17 +117,14 @@ export default function LandingPageTab() {
       <AnimatePresence>
         {authMode && (
           <ModalWrapper key="auth-modal">
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="flex justify-center items-center fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] p-4"
             >
-              {/* Static Card Container */}
               <div className="relative w-full max-w-[1050px] h-[650px] bg-white rounded-[30px] shadow-2xl overflow-hidden">
-                
-                {/* Static Close Button */}
+                {/* Close Button */}
                 <button
                   onClick={handleClose}
                   className="absolute top-6 right-6 p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-800 z-50 cursor-pointer"
@@ -136,9 +144,12 @@ export default function LandingPageTab() {
                   </svg>
                 </button>
 
-                {/* Sliding Content Area */}
                 <div className="relative w-full h-full">
-                  <AnimatePresence initial={false} custom={direction} mode="popLayout">
+                  <AnimatePresence
+                    initial={false}
+                    custom={direction}
+                    mode="popLayout"
+                  >
                     {authMode === "signin" && (
                       <motion.div
                         key="signin"
@@ -147,9 +158,8 @@ export default function LandingPageTab() {
                         initial="enter"
                         animate="center"
                         exit="exit"
-                        // UPDATED: ease: "easeOut" starts fast and decelerates
                         transition={{
-                          x: { type: "tween", ease: "easeOut", duration: 0.5 }, 
+                          x: { type: "tween", ease: "easeOut", duration: 0.5 },
                           opacity: { duration: 0.2 },
                         }}
                         className="absolute inset-0 w-full h-full"
@@ -169,9 +179,8 @@ export default function LandingPageTab() {
                         initial="enter"
                         animate="center"
                         exit="exit"
-                        // UPDATED: ease: "easeOut" starts fast and decelerates
                         transition={{
-                          x: { type: "tween", ease: "easeOut", duration: 0.5 }, 
+                          x: { type: "tween", ease: "easeOut", duration: 0.5 },
                           opacity: { duration: 0.2 },
                         }}
                         className="absolute inset-0 w-full h-full"

@@ -18,6 +18,8 @@ import CalendarViews from "@/app/component/General/Calendar/CalendarViews";
 import { getPhilippineHolidays } from "@/app/component/General/Calendar/calendarUtils";
 import { supabase } from "../../../../../supabase/Lib/General/supabaseClient";
 import { getCurrentUserDetails } from "../../../../../supabase/Lib/General/getUser";
+// --- NEW IMPORT ---
+import BackgroundGradient from "@/app/component/ReusableComponent/BackgroundGradient";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -226,16 +228,8 @@ export default function CalendarContent() {
 
   return (
     <div className="relative min-h-screen flex flex-col">
-      <div className="fixed inset-0 -z-10">
-        <Image
-          src="/backgroundimage.svg"
-          alt="Background"
-          fill
-          className="object-cover"
-          priority
-          quality={100}
-        />
-      </div>
+      {/* REPLACED IMAGE BACKGROUND WITH GRADIENT */}
+      <BackgroundGradient />
 
       <CalendarMenu
         menuOpen={menuOpen}
@@ -270,18 +264,19 @@ export default function CalendarContent() {
         </div>
 
         {/* FLEX CONTAINER for Calendar and Side Panels */}
-        <div className={`flex flex-col gap-8 w-full mx-auto transition-all duration-300 ${
-          maximizedPanel 
-            ? 'max-w-[1600px] lg:flex-row' 
-            : 'max-w-[1400px] lg:flex-row'
-        }`}>
-          
+        <div
+          className={`flex flex-col gap-8 w-full mx-auto transition-all duration-300 ${
+            maximizedPanel
+              ? "max-w-[1600px] lg:flex-row"
+              : "max-w-[1400px] lg:flex-row"
+          }`}
+        >
           {/* Calendar View - responsive width based on maximization state */}
-          <div className={`w-full transition-all duration-300 ${
-            maximizedPanel 
-              ? 'lg:w-1/2' 
-              : 'lg:w-2/3'
-          }`}>
+          <div
+            className={`w-full transition-all duration-300 ${
+              maximizedPanel ? "lg:w-1/2" : "lg:w-2/3"
+            }`}
+          >
             <CalendarViews
               viewMode={viewMode}
               currentDate={currentDate}
@@ -303,58 +298,61 @@ export default function CalendarContent() {
           </div>
 
           {/* Side Panels Container - responsive width with proper containment */}
-          <div className={`w-full transition-all duration-300 ${
-            maximizedPanel 
-              ? 'lg:w-1/2' 
-              : 'lg:w-1/3'
-          }`}>
-            {viewMode === "month" && renderReminderPanel && !isScheduleMaximized && (
-              <ReminderPanel
-                reminders={reminders}
-                setReminders={setReminders}
-                newReminder={newReminder}
-                setNewReminder={setNewReminder}
-                selectedDay={selectedDay}
-                monthName={monthName}
-                todayDate={todayDate}
-                year={year}
-                currentMonth={currentDate.getMonth()}
-                postedEvents={postedEvents}
-                personalEvents={personalEvents}
-                holidays={holidaysForCurrentMonth}
-                isAdmin={isAdmin}
-                onDeletePostedEvent={handleDeletePostedEvent}
-                setPersonalEvents={setPersonalEvents}
-                isMaximized={isReminderMaximized}
-                onMaximizeToggle={handleMaximizeToggle}
-                currentMaximizedPanel={maximizedPanel as PanelType}
-                onPanelSwitch={handlePanelSwitch}
-              />
-            )}
+          <div
+            className={`w-full transition-all duration-300 ${
+              maximizedPanel ? "lg:w-1/2" : "lg:w-1/3"
+            }`}
+          >
+            {viewMode === "month" &&
+              renderReminderPanel &&
+              !isScheduleMaximized && (
+                <ReminderPanel
+                  reminders={reminders}
+                  setReminders={setReminders}
+                  newReminder={newReminder}
+                  setNewReminder={setNewReminder}
+                  selectedDay={selectedDay}
+                  monthName={monthName}
+                  todayDate={todayDate}
+                  year={year}
+                  currentMonth={currentDate.getMonth()}
+                  postedEvents={postedEvents}
+                  personalEvents={personalEvents}
+                  holidays={holidaysForCurrentMonth}
+                  isAdmin={isAdmin}
+                  onDeletePostedEvent={handleDeletePostedEvent}
+                  setPersonalEvents={setPersonalEvents}
+                  isMaximized={isReminderMaximized}
+                  onMaximizeToggle={handleMaximizeToggle}
+                  currentMaximizedPanel={maximizedPanel as PanelType}
+                  onPanelSwitch={handlePanelSwitch}
+                />
+              )}
 
-            {viewMode === "month" && renderSchedulePanel && !isReminderMaximized && (
-              <SchedulePanel
-                holidaysForCurrentMonth={holidaysForCurrentMonth}
-                personalEvents={personalEvents}
-                setPersonalEvents={setPersonalEvents}
-                postedEvents={postedEvents}
-                year={year}
-                currentMonth={currentDate.getMonth()}
-                selectedDay={selectedDay}
-                todayDate={todayDate}
-                monthName={monthName}
-                isAdmin={isAdmin}
-                onDeletePostedEvent={handleDeletePostedEvent}
-                isMaximized={isScheduleMaximized}
-                onMaximizeToggle={handleMaximizeToggle}
-                currentMaximizedPanel={maximizedPanel as PanelType}
-                onPanelSwitch={handlePanelSwitch}
-              />
-            )}
+            {viewMode === "month" &&
+              renderSchedulePanel &&
+              !isReminderMaximized && (
+                <SchedulePanel
+                  holidaysForCurrentMonth={holidaysForCurrentMonth}
+                  personalEvents={personalEvents}
+                  setPersonalEvents={setPersonalEvents}
+                  postedEvents={postedEvents}
+                  year={year}
+                  currentMonth={currentDate.getMonth()}
+                  selectedDay={selectedDay}
+                  todayDate={todayDate}
+                  monthName={monthName}
+                  isAdmin={isAdmin}
+                  onDeletePostedEvent={handleDeletePostedEvent}
+                  isMaximized={isScheduleMaximized}
+                  onMaximizeToggle={handleMaximizeToggle}
+                  currentMaximizedPanel={maximizedPanel as PanelType}
+                  onPanelSwitch={handlePanelSwitch}
+                />
+              )}
           </div>
         </div>
         {/* END of FLEX CONTAINER */}
-
       </div>
 
       <button
@@ -375,7 +373,6 @@ export default function CalendarContent() {
         setShowAddEvent={setShowAddEvent}
         onEventAdded={fetchEvents}
       />
-      
     </div>
   );
 }

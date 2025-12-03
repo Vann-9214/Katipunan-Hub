@@ -15,6 +15,8 @@ import AnnouncementLeftBar from "./AnnouncementLeftBar";
 import AnnouncementFeed from "./AnnouncementFeed";
 import PLCAdCard from "./PLCAdCard";
 import { useSearchParams } from "next/navigation";
+import BackgroundGradient from "@/app/component/ReusableComponent/BackgroundGradient";
+
 // --- Types ---
 import {
   type DBPostRow,
@@ -395,6 +397,9 @@ export default function AnnouncementPageContent() {
 
   return (
     <div className="p-[25px] flex-col">
+      {/* --- NEW: Reusable Background Component Used Here --- */}
+      <BackgroundGradient />
+
       <HomepageTab user={currentUser} />
 
       <AnnouncementLeftBar

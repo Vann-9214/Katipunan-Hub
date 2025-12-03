@@ -116,6 +116,9 @@ export default function ChatSidebar() {
         avatarURL: null,
       };
 
+      const is_communication_blocked =
+        convo.user_a_is_blocked_by_b || convo.user_b_is_blocked_by_a;
+
       const is_favorite = isCurrentUserA
         ? convo.user_a_is_favorite
         : convo.user_b_is_favorite;
@@ -135,6 +138,7 @@ export default function ChatSidebar() {
         : 0;
 
       return {
+        is_communication_blocked: is_communication_blocked,
         id: convo.id,
         user_a_id: convo.user_a_id,
         user_b_id: convo.user_b_id,

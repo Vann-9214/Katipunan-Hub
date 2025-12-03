@@ -15,6 +15,8 @@ import { usePLCBookings } from "../../../../../supabase/Lib/PLC/usePLCBooking";
 import LoadingScreen from "../../ReusableComponent/LoadingScreen";
 // 1. Import motion
 import { motion } from "framer-motion";
+// --- NEW IMPORT ---
+import BackgroundGradient from "@/app/component/ReusableComponent/BackgroundGradient";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -74,7 +76,11 @@ export default function PLCContent() {
 
   // --- Main Content ---
   return (
-    <div className="min-h-screen bg-white w-full pb-12">
+    // Changed bg-white to transparent or remove class so background is visible
+    <div className="min-h-screen w-full pb-12 relative">
+      {/* --- ADDED BACKGROUND GRADIENT --- */}
+      <BackgroundGradient />
+
       {/* --- Page Container --- */}
       <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-8 space-y-8">
         {/* --- Header & Toolbar Section --- */}

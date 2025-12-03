@@ -1,3 +1,4 @@
+// src/app/component/General/Announcement/AnnouncementContent/AnnouncementFeed.tsx
 "use client";
 
 import AddPosts from "../AddPosts/addPosts";
@@ -62,7 +63,8 @@ export default function AnnouncementFeed({
                   <Megaphone size={18} className="text-[#EFBF04]" />
                 </div>
                 <h3 className="font-montserrat font-bold text-[18px] text-white tracking-wide">
-                  Announcements
+                  {/* Dynamic Header Text */}
+                  {currentType === "highlight" ? "Highlights" : "Announcements"}
                 </h3>
               </div>
               {/* Body */}
@@ -71,7 +73,12 @@ export default function AnnouncementFeed({
                   <Megaphone size={24} className="text-gray-300" />
                 </div>
                 <h3 className="text-lg font-bold text-gray-700 mb-1 font-montserrat">
-                  {searchTerm ? "No results found" : "No announcements yet"}
+                  {/* Dynamic Body Text */}
+                  {searchTerm
+                    ? "No results found"
+                    : currentType === "highlight"
+                    ? "No highlights yet"
+                    : "No announcements yet"}
                 </h3>
                 <p className="text-gray-500 text-sm font-ptsans">
                   {searchTerm

@@ -29,6 +29,7 @@ export interface OtherAccount {
 
 export interface Conversation {
   id: string;
+  is_communication_blocked: boolean;
   user_a_id: string; // Added
   user_b_id: string; // Added
   last_message_at: string;
