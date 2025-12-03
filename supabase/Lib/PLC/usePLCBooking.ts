@@ -318,17 +318,18 @@ export const usePLCBookings = (
 
   const isCleaningUpRef = useRef(false);
 
-  // --- 4. CLEANUP ENGINE (FIXED: Manual Archive Logic) ---
+  // --- 4. CLEANUP ENGINE (WITH LOGGING FOR DEBUGGING) ---
   const cleanupExpired = useCallback(async () => {
-    // 1. THREAD LOCK
+    // 1. Thread Lock
     if (isCleaningUpRef.current) return;
 
-    // 2. TAB LOCK (with Jitter)
+    // 2. Tab Lock (Prevent spamming)
     const LOCK_KEY = 'plc_cleanup_lock';
     const lastRun = typeof window !== 'undefined' ? localStorage.getItem(LOCK_KEY) : '0';
     const now = Date.now();
-
-    if (lastRun && (now - parseInt(lastRun)) < 10000) {
+    
+    // Check every 60 seconds (60000ms) to reduce database load
+    if (lastRun && (now - parseInt(lastRun)) < 60000) {
       return; 
     }
 
@@ -338,91 +339,29 @@ export const usePLCBookings = (
 
     isCleaningUpRef.current = true;
 
-    // 3. JITTER
-    await new Promise((resolve) => setTimeout(resolve, Math.random() * 3000));
-
-    const dateStr = getDateString(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
-    const timeStr = new Date().toLocaleTimeString('en-GB', { hour12: false }); 
+    // 3. Get Current Date/Time
+    const today = new Date();
+    const dateStr = getDateString(today.getFullYear(), today.getMonth(), today.getDate());
+    const timeStr = today.toLocaleTimeString('en-GB', { hour12: false }); // "HH:MM:SS"
 
     try {
-      // --- STEP 1: SELECT ALL EXPIRED (Approved AND Rejected) ---
-      // We look for statuses that should move to history, not just 'Approved'
-      const { data: expiredItems } = await supabase
-        .from("PLCBookings")
-        .select("*")
-        .in("status", ["Approved", "Rejected"]) // Include Rejected here!
-        .or(`bookingDate.lt.${dateStr},and(bookingDate.eq.${dateStr},endTime.lte.${timeStr})`);
+      console.log(`[PLC Cleanup] Triggered at ${timeStr}. Date: ${dateStr}`);
 
-      if (expiredItems && expiredItems.length > 0) {
-          
-         // A. NOTIFICATIONS (Only notify for Approved items)
-         const approvedItems = expiredItems.filter(i => i.status === 'Approved');
-         if (approvedItems.length > 0) {
-             const notificationsToInsert = [];
-             const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      // Call the Database Function
+      const { data, error } = await supabase.rpc('cleanup_expired_bookings', {
+        check_date: dateStr,
+        check_time: timeStr
+      });
 
-             for (const b of approvedItems) {
-                 const title = `Your PLC session for "${b.subject}" has been completed.`;
-                 
-                 const { data: existing } = await supabase
-                    .from("UserNotifications")
-                    .select("id")
-                    .eq("user_id", b.studentId)
-                    .eq("title", title)
-                    .gte("created_at", yesterday) 
-                    .maybeSingle();
-
-                 if (!existing) {
-                     notificationsToInsert.push({
-                        user_id: b.studentId,
-                        title: title,
-                        type: 'system',
-                        is_read: false
-                     });
-                 }
-             }
-
-             if (notificationsToInsert.length > 0) {
-                 await supabase.from("UserNotifications").insert(notificationsToInsert);
-             }
-         }
-
-         // B. MANUAL ARCHIVE (Crucial Fix: Explicitly Insert into History)
-         // We map the items to match the History table structure
-         const historyPayload = expiredItems.map(item => ({
-             id: item.id,
-             bookingDate: item.bookingDate,
-             subject: item.subject,
-             studentId: item.studentId,
-             approvedBy: item.approvedBy,
-             startTime: item.startTime,
-             endTime: item.endTime,
-             status: item.status,
-             description: item.description,
-             createdAt: item.createdAt
-         }));
-
-         const { error: insertError } = await supabase
-            .from("PLCBookingHistory")
-            .upsert(historyPayload);
-
-         // C. DELETE FROM ACTIVE (Only if archive succeeded)
-         if (!insertError) {
-             const idsToDelete = expiredItems.map(i => i.id);
-             await supabase.from("PLCBookings").delete().in("id", idsToDelete);
-         }
+      if (error) {
+        console.error("❌ Cleanup RPC FAILED!");
+        console.error("Full Error:", JSON.stringify(error, null, 2));
+      } else {
+        console.log("✅ Cleanup RPC Success!", data);
+        refreshBookings(true);
       }
-
-      // --- STEP 2: DELETE EXPIRED PENDING ---
-      await supabase.from("PLCBookings")
-        .delete()
-        .eq("status", "Pending")
-        .or(`bookingDate.lt.${dateStr},and(bookingDate.eq.${dateStr},startTime.lte.${timeStr})`);
-
-      setTimeout(() => refreshBookings(true), 500);
-
     } catch (err) {
-      console.error("Cleanup error:", err);
+      console.error("❌ Unexpected Cleanup Error:", err);
     } finally {
       isCleaningUpRef.current = false;
     }

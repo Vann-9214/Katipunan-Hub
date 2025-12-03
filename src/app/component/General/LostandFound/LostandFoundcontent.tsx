@@ -136,6 +136,66 @@ export default function LostandFoundContent({ user }: { user: User | null }) {
     fetchPosts();
   }, []);
 
+  // --- NEW: Realtime Subscription for LostAndFoundPosts ---
+  useEffect(() => {
+    const channel = supabase
+      .channel("realtime-lost-and-found")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "LostAndFoundPosts" },
+        async (payload) => {
+          // 1. Handle DELETE
+          if (payload.eventType === "DELETE") {
+            setPosts((prev) => prev.filter((p) => p.id !== payload.old.id));
+            return;
+          }
+
+          // 2. Handle INSERT or UPDATE
+          // We must fetch the full row to get the joined 'Accounts' (author name)
+          const { data, error } = await supabase
+            .from("LostAndFoundPosts")
+            .select(`*, Accounts (fullName)`)
+            .eq("id", payload.new.id)
+            .single();
+
+          if (data && !error) {
+            const item = data as SupabasePostItem;
+            const newPost: Post = {
+              id: item.id,
+              userId: item.user_id,
+              type: item.type as "Lost" | "Found",
+              status: item.status as "Open" | "Resolved",
+              imageUrl:
+                item.image_url ||
+                (item.type === "Found" ? "/found.svg" : "/lost.svg"),
+              title: item.title,
+              postedBy: item.Accounts?.fullName || "Anonymous",
+              lostOn: item.lost_date || "",
+              location: item.location || "",
+              description: item.description || "",
+              category: (item.category as Category) || "Other",
+              createdAt: item.created_at,
+              inquiries: [],
+            };
+
+            setPosts((prev) => {
+              // If UPDATE, replace existing
+              if (payload.eventType === "UPDATE") {
+                return prev.map((p) => (p.id === newPost.id ? newPost : p));
+              }
+              // If INSERT, prepend to list
+              return [newPost, ...prev];
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   // --- FETCH POSTS FROM SUPABASE ---
   const fetchPosts = async () => {
     try {
@@ -318,7 +378,7 @@ export default function LostandFoundContent({ user }: { user: User | null }) {
 
       if (insertError) throw insertError;
 
-      fetchPosts();
+      // fetchPosts(); // Removed this because Realtime listener will handle the update
       setShowPostModal(false);
     } catch (error) {
       console.error("Error publishing post:", error);
@@ -338,11 +398,7 @@ export default function LostandFoundContent({ user }: { user: User | null }) {
 
       if (error) throw error;
 
-      setPosts((prevPosts) =>
-        prevPosts.map((post) =>
-          post.id === postId ? { ...post, status: newStatus } : post
-        )
-      );
+      // State update is handled by Realtime listener now
       setSelectedPost((prev) => (prev ? { ...prev, status: newStatus } : null));
     } catch (error) {
       console.error("Error updating status:", error);
