@@ -10,7 +10,6 @@ import ConversationHeader from "./conversationHeader";
 import MessageBubble from "./messageBubble";
 import MessageInput from "./messageInput";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2 } from "lucide-react"; // Optional: For a nicer loading icon if needed
 
 /* --- Helper: Date Formatter --- */
 const getDateLabel = (dateStr: string) => {
@@ -212,7 +211,11 @@ export default function ConversationWindow() {
           filter: `id=eq.${conversationId}`,
         },
         (payload) => {
-          const newData = payload.new as any;
+          const newData = payload.new as {
+            user_a_is_blocked_by_b: boolean;
+            user_b_is_blocked_by_a: boolean;
+          };
+
           if (newData) {
             const blocked =
               newData.user_a_is_blocked_by_b || newData.user_b_is_blocked_by_a;

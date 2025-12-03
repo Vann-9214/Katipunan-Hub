@@ -6,7 +6,6 @@ import {
   Target,
   Search,
   CheckCircle2,
-  MessageCircle,
   Calendar,
   Bell,
   Megaphone, // Added for the feed feature
