@@ -11,21 +11,21 @@ const TEAM_MEMBERS = [
     role: "Project Lead / Full Stack",
     bio: "As the driving force behind Katipunan Hub, Ivan leads the entire project development and oversees the full stack architecture, ensuring seamless integration from backend logic to the user interface.",
     skills: "Full Stack Dev • System Arch • Leadership",
-    image: "/Ivan.jpeg",
+    image: "/Ivan.jpg",
   },
   {
     name: "Clark Jaca",
     role: "Frontend Developer",
     bio: "Focused on the user interface design and implementation. Crafted the Landing Page and the visual layout for the Lost and Found feature.",
     skills: "React • UI Implementation • Frontend Design",
-    image: "/Clark.jpeg",
+    image: "/Clark.jpg",
   },
   {
     name: "Adriyanna Diana",
     role: "Frontend Developer",
     bio: "Specialized in the Calendar interface. Designed the visual elements and layout to ensure the scheduling features are intuitive and user-friendly.",
     skills: "React • UI Design • Calendar Interfaces",
-    image: "/DefaultAvatar.svg",
+    image: "/Adi.jpg",
   },
 ];
 
@@ -107,6 +107,7 @@ const TeamSection = () => {
                     alt={member.name}
                     fill
                     className="object-cover transition-transform duration-500 group-hover:scale-110"
+                    unoptimized={true}
                   />
                 ) : (
                   <div className="flex flex-col items-center gap-2 text-white/20 group-hover:text-white/40 transition-colors">
