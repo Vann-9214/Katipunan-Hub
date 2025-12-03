@@ -41,7 +41,7 @@ export default function CalendarContent() {
   const [showAddEvent, setShowAddEvent] = useState(false);
   const [viewMode, setViewMode] = useState<"month" | "year">("month");
 
-  // --- NEW STATE FOR MAXIMIZED VIEW ---
+  // --- STATE FOR MAXIMIZED VIEW ---
   const [maximizedPanel, setMaximizedPanel] = useState<PanelType | null>(null);
 
   // ---------------------
@@ -84,12 +84,6 @@ export default function CalendarContent() {
       const isUserAdmin = role.includes("Platform Administrator");
       setIsAdmin(isUserAdmin);
 
-      // We don't strictly need userCourse if we want Global to be visible to all
-      // const userCourse = user.course || "";
-
-      // CHANGE 1: Remove manual .or() filter.
-      // RLS policies on the database now handle security automatically.
-      // We just ask for everything ("*"), and the DB gives us what we are allowed to see.
       const { data, error } = await supabase.from("Events").select("*");
 
       if (error) throw error;
@@ -97,7 +91,7 @@ export default function CalendarContent() {
       if (data) {
         const dbEvents = data as DBEvent[];
 
-        // Filter Personal Events: Must match user ID (redundant with RLS but good for safety)
+        // Filter Personal Events: Must match user ID
         const pEvents: PersonalEvent[] = dbEvents
           .filter((e) => e.audience === "Personal" && e.user_id === user.id)
           .map((e) => ({
@@ -107,9 +101,7 @@ export default function CalendarContent() {
             day: e.day,
           }));
 
-        // CHANGE 2: Relaxed "Global" filtering.
-        // Previously, it hid events if the user's course didn't match.
-        // Now, if it says "Global", we show it to everyone.
+        // Global events - show to everyone
         const gEvents: PostedEvent[] = dbEvents
           .filter((e) => e.audience === "Global")
           .map((e) => ({
@@ -253,8 +245,9 @@ export default function CalendarContent() {
         onMenuSelect={handleMenuSelect}
       />
 
-      <div className="relative flex flex-col px-[66px] pt-[130px]">
-        <div className="flex items-center gap-4 mb-6">
+      {/* MAIN CONTAINER: Centered and Responsive with proper spacing */}
+      <div className="relative flex flex-col pt-[130px] w-full mx-auto px-4 sm:px-6 lg:px-8 pb-24">
+        <div className="flex items-center gap-4 mb-6 max-w-[1400px] mx-auto w-full">
           <div className="shadow-lg rounded-2xl">
             <Image
               src="/calendar icon.svg"
@@ -276,24 +269,92 @@ export default function CalendarContent() {
           </div>
         </div>
 
-        <CalendarViews
-          viewMode={viewMode}
-          currentDate={currentDate}
-          year={year}
-          monthName={monthName}
-          daysArray={daysArray}
-          holidaysForCurrentMonth={holidaysForCurrentMonth}
-          holidaysForYear={holidaysForYear}
-          personalEvents={personalEvents}
-          postedEvents={postedEvents}
-          selectedDay={selectedDay}
-          todayDate={todayDate}
-          isCurrentMonth={isCurrentMonth}
-          onPrevMonth={prevMonth}
-          onNextMonth={nextMonth}
-          onDayClick={setSelectedDay}
-          onMonthClick={handleMonthClick}
-        />
+        {/* FLEX CONTAINER for Calendar and Side Panels */}
+        <div className={`flex flex-col gap-8 w-full mx-auto transition-all duration-300 ${
+          maximizedPanel 
+            ? 'max-w-[1600px] lg:flex-row' 
+            : 'max-w-[1400px] lg:flex-row'
+        }`}>
+          
+          {/* Calendar View - responsive width based on maximization state */}
+          <div className={`w-full transition-all duration-300 ${
+            maximizedPanel 
+              ? 'lg:w-1/2' 
+              : 'lg:w-2/3'
+          }`}>
+            <CalendarViews
+              viewMode={viewMode}
+              currentDate={currentDate}
+              year={year}
+              monthName={monthName}
+              daysArray={daysArray}
+              holidaysForCurrentMonth={holidaysForCurrentMonth}
+              holidaysForYear={holidaysForYear}
+              personalEvents={personalEvents}
+              postedEvents={postedEvents}
+              selectedDay={selectedDay}
+              todayDate={todayDate}
+              isCurrentMonth={isCurrentMonth}
+              onPrevMonth={prevMonth}
+              onNextMonth={nextMonth}
+              onDayClick={setSelectedDay}
+              onMonthClick={handleMonthClick}
+            />
+          </div>
+
+          {/* Side Panels Container - responsive width with proper containment */}
+          <div className={`w-full transition-all duration-300 ${
+            maximizedPanel 
+              ? 'lg:w-1/2' 
+              : 'lg:w-1/3'
+          }`}>
+            {viewMode === "month" && renderReminderPanel && !isScheduleMaximized && (
+              <ReminderPanel
+                reminders={reminders}
+                setReminders={setReminders}
+                newReminder={newReminder}
+                setNewReminder={setNewReminder}
+                selectedDay={selectedDay}
+                monthName={monthName}
+                todayDate={todayDate}
+                year={year}
+                currentMonth={currentDate.getMonth()}
+                postedEvents={postedEvents}
+                personalEvents={personalEvents}
+                holidays={holidaysForCurrentMonth}
+                isAdmin={isAdmin}
+                onDeletePostedEvent={handleDeletePostedEvent}
+                setPersonalEvents={setPersonalEvents}
+                isMaximized={isReminderMaximized}
+                onMaximizeToggle={handleMaximizeToggle}
+                currentMaximizedPanel={maximizedPanel as PanelType}
+                onPanelSwitch={handlePanelSwitch}
+              />
+            )}
+
+            {viewMode === "month" && renderSchedulePanel && !isReminderMaximized && (
+              <SchedulePanel
+                holidaysForCurrentMonth={holidaysForCurrentMonth}
+                personalEvents={personalEvents}
+                setPersonalEvents={setPersonalEvents}
+                postedEvents={postedEvents}
+                year={year}
+                currentMonth={currentDate.getMonth()}
+                selectedDay={selectedDay}
+                todayDate={todayDate}
+                monthName={monthName}
+                isAdmin={isAdmin}
+                onDeletePostedEvent={handleDeletePostedEvent}
+                isMaximized={isScheduleMaximized}
+                onMaximizeToggle={handleMaximizeToggle}
+                currentMaximizedPanel={maximizedPanel as PanelType}
+                onPanelSwitch={handlePanelSwitch}
+              />
+            )}
+          </div>
+        </div>
+        {/* END of FLEX CONTAINER */}
+
       </div>
 
       <button
@@ -314,50 +375,7 @@ export default function CalendarContent() {
         setShowAddEvent={setShowAddEvent}
         onEventAdded={fetchEvents}
       />
-
-      {renderReminderPanel && !isScheduleMaximized && (
-        <ReminderPanel
-          reminders={reminders}
-          setReminders={setReminders}
-          newReminder={newReminder}
-          setNewReminder={setNewReminder}
-          selectedDay={selectedDay}
-          monthName={monthName}
-          todayDate={todayDate}
-          year={year}
-          currentMonth={currentDate.getMonth()}
-          postedEvents={postedEvents}
-          personalEvents={personalEvents}
-          holidays={holidaysForCurrentMonth}
-          isAdmin={isAdmin}
-          onDeletePostedEvent={handleDeletePostedEvent}
-          setPersonalEvents={setPersonalEvents}
-          isMaximized={isReminderMaximized}
-          onMaximizeToggle={handleMaximizeToggle}
-          currentMaximizedPanel={maximizedPanel as PanelType}
-          onPanelSwitch={handlePanelSwitch}
-        />
-      )}
-
-      {renderSchedulePanel && !isReminderMaximized && (
-        <SchedulePanel
-          holidaysForCurrentMonth={holidaysForCurrentMonth}
-          personalEvents={personalEvents}
-          setPersonalEvents={setPersonalEvents}
-          postedEvents={postedEvents}
-          year={year}
-          currentMonth={currentDate.getMonth()}
-          selectedDay={selectedDay}
-          todayDate={todayDate}
-          monthName={monthName}
-          isAdmin={isAdmin}
-          onDeletePostedEvent={handleDeletePostedEvent}
-          isMaximized={isScheduleMaximized}
-          onMaximizeToggle={handleMaximizeToggle}
-          currentMaximizedPanel={maximizedPanel as PanelType}
-          onPanelSwitch={handlePanelSwitch}
-        />
-      )}
+      
     </div>
   );
 }
