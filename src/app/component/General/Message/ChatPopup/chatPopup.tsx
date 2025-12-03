@@ -70,10 +70,12 @@ export default function ChatPopup() {
         // 1. Fetch conversations (top 5)
         const { data: convoData, error: convoError } = await supabase
           .from("Conversations")
-          .select(`id, user_a_id, user_b_id, last_message_at`)
+          .select(
+            `id, user_a_id, user_b_id, last_message_at, user_a_is_blocked_by_b, user_b_is_blocked_by_a`
+          )
           .or(`user_a_id.eq.${currentUserId},user_b_id.eq.${currentUserId}`)
           .order("last_message_at", { ascending: false })
-          .limit(5);
+          .limit(10); // Fetched slightly more to filter blocked
 
         if (convoError) {
           console.error("Error fetching popup conversations:", convoError);
@@ -81,8 +83,18 @@ export default function ChatPopup() {
           return;
         }
 
-        // 2. Extract other user IDs and fetch accounts
-        const otherUserIds = convoData.map((convo) =>
+        // 2. Filter blocked conversations
+        const visibleConversations = convoData.filter((convo) => {
+          const isUserA = currentUserId === convo.user_a_id;
+          // Filter if I BLOCKED THEM
+          const blockedByMe = isUserA
+            ? convo.user_b_is_blocked_by_a
+            : convo.user_a_is_blocked_by_b;
+          return !blockedByMe;
+        });
+
+        // 3. Extract other user IDs and fetch accounts
+        const otherUserIds = visibleConversations.map((convo) =>
           convo.user_a_id === currentUserId ? convo.user_b_id : convo.user_a_id
         );
         const { data: accountsData } = await supabase
@@ -93,8 +105,8 @@ export default function ChatPopup() {
           (accountsData || []).map((acc) => [acc.id, acc])
         );
 
-        // 3. Fetch last message content and unread count
-        const conversationPromises = convoData.map(async (convo) => {
+        // 4. Fetch last message content and unread count
+        const conversationPromises = visibleConversations.map(async (convo) => {
           const otherUserId =
             convo.user_a_id === currentUserId
               ? convo.user_b_id
@@ -131,6 +143,8 @@ export default function ChatPopup() {
 
           return {
             id: convo.id,
+            user_a_id: convo.user_a_id,
+            user_b_id: convo.user_b_id,
             otherUserName: otherUser.fullName,
             lastMessagePreview: lastMessage,
             avatarURL: otherUser.avatarURL,
@@ -140,7 +154,8 @@ export default function ChatPopup() {
         });
 
         const processedConversations = await Promise.all(conversationPromises);
-        setConversations(processedConversations);
+        // Take top 5 after filtering
+        setConversations(processedConversations.slice(0, 5));
       } catch (err) {
         console.error("Error processing conversation data:", err);
       } finally {
@@ -165,7 +180,13 @@ export default function ChatPopup() {
         "postgres_changes",
         { event: "*", schema: "public", table: "Messages" },
         () => {
-          // Call fetch with true to suppress the loading spinner
+          fetchConversationsData(true);
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "Conversations" },
+        () => {
           fetchConversationsData(true);
         }
       )
@@ -185,6 +206,10 @@ export default function ChatPopup() {
     setTimeout(() => {
       router.push(navPath);
     }, 50);
+  };
+
+  const handleUpdate = () => {
+    fetchConversationsData(true);
   };
 
   return (
@@ -268,6 +293,8 @@ export default function ChatPopup() {
                 key={item.id}
                 conversation={item}
                 variants={itemVariants}
+                currentUserId={currentUserId}
+                onUpdate={handleUpdate}
               />
             ))
           )}

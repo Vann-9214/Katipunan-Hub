@@ -2,16 +2,21 @@
 
 import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { MoreHorizontal, Star, Ban, Trash2 } from "lucide-react";
+import { MoreHorizontal, Star, Ban, Trash2, RotateCcw } from "lucide-react";
 import { Conversation } from "../Utils/types";
 import Avatar from "@/app/component/ReusableComponent/Avatar";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
 
 export default function ConversationItem({
   conversation,
+  onUpdate,
+  currentUserId,
 }: {
   conversation: Conversation;
+  onUpdate: () => void;
+  currentUserId: string | undefined;
 }) {
   const pathname = usePathname();
   const isActive = pathname === `/Message/${conversation.id}`;
@@ -26,24 +31,76 @@ export default function ConversationItem({
     setIsMenuOpen((prev) => !prev);
   };
 
-  const handleFavorite = (e: React.MouseEvent) => {
+  const handleFavorite = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log("Favorite clicked for:", conversation.id);
+    if (!currentUserId) return;
+
+    try {
+      const isUserA = currentUserId === conversation.user_a_id;
+      const updateField = isUserA ? "user_a_is_favorite" : "user_b_is_favorite";
+
+      const { error } = await supabase
+        .from("Conversations")
+        .update({ [updateField]: !conversation.is_favorite })
+        .eq("id", conversation.id);
+
+      if (error) throw error;
+      onUpdate();
+    } catch (err) {
+      console.error("Error toggling favorite:", err);
+    }
+
     setIsMenuOpen(false);
   };
 
-  const handleBlock = (e: React.MouseEvent) => {
+  const handleBlock = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log("Block clicked for:", conversation.id);
+    if (!currentUserId) return;
+
+    try {
+      const isUserA = currentUserId === conversation.user_a_id;
+      // If I am A, I block B -> user_b_is_blocked_by_a = true
+      // If I am B, I block A -> user_a_is_blocked_by_b = true
+      const updateField = isUserA
+        ? "user_b_is_blocked_by_a"
+        : "user_a_is_blocked_by_b";
+
+      const { error } = await supabase
+        .from("Conversations")
+        .update({ [updateField]: !conversation.is_blocked })
+        .eq("id", conversation.id);
+
+      if (error) throw error;
+      onUpdate();
+    } catch (err) {
+      console.error("Error toggling block:", err);
+    }
     setIsMenuOpen(false);
   };
 
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDelete = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log("Delete clicked for:", conversation.id);
+    if (!currentUserId) return;
+
+    if (!confirm("Are you sure? This will delete the chat for both users.")) {
+      setIsMenuOpen(false);
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("Conversations")
+        .delete()
+        .eq("id", conversation.id);
+
+      if (error) throw error;
+      onUpdate();
+    } catch (err) {
+      console.error("Error deleting conversation:", err);
+    }
     setIsMenuOpen(false);
   };
 
@@ -68,6 +125,7 @@ export default function ConversationItem({
         layout
         whileHover={{ scale: 1.01 }}
         whileTap={{ scale: 0.98 }}
+        style={{ zIndex: isMenuOpen ? 50 : 1 }}
         className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200 relative group border
           ${
             isActive
@@ -150,15 +208,28 @@ export default function ConversationItem({
                 onClick={handleFavorite}
                 className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-[#EFBF04]/10 hover:text-[#8B0E0E] cursor-pointer transition-colors"
               >
-                <Star size={14} />
-                <span>Favorite</span>
+                <Star
+                  size={14}
+                  className={
+                    conversation.is_favorite
+                      ? "fill-current text-[#EFBF04]"
+                      : ""
+                  }
+                />
+                <span>
+                  {conversation.is_favorite ? "Unfavorite" : "Favorite"}
+                </span>
               </li>
               <li
                 onClick={handleBlock}
                 className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-[#EFBF04]/10 hover:text-[#8B0E0E] cursor-pointer transition-colors"
               >
-                <Ban size={14} />
-                <span>Block</span>
+                {conversation.is_blocked ? (
+                  <RotateCcw size={14} />
+                ) : (
+                  <Ban size={14} />
+                )}
+                <span>{conversation.is_blocked ? "Unblock" : "Block"}</span>
               </li>
               <li
                 onClick={handleDelete}

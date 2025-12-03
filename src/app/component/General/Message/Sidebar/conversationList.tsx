@@ -10,9 +10,13 @@ import { motion, AnimatePresence } from "framer-motion";
 export default function ConversationList({
   title,
   conversations,
+  onUpdate,
+  currentUserId,
 }: {
   title: string;
   conversations: Conversation[];
+  onUpdate: () => void;
+  currentUserId: string | undefined;
 }) {
   const [isOpen, setIsOpen] = useState(true);
   if (conversations.length === 0) return null;
@@ -45,7 +49,12 @@ export default function ConversationList({
           >
             <div className="mt-2 space-y-1">
               {conversations.map((convo) => (
-                <ConversationItem key={convo.id} conversation={convo} />
+                <ConversationItem
+                  key={convo.id}
+                  conversation={convo}
+                  onUpdate={onUpdate}
+                  currentUserId={currentUserId}
+                />
               ))}
             </div>
           </motion.div>
