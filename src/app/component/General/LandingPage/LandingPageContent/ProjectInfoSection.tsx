@@ -6,9 +6,10 @@ import {
   Target,
   Search,
   CheckCircle2,
-  MessageCircle,
   Calendar,
   Bell,
+  Megaphone, // Added for the feed feature
+  PenSquare, // Added for the "post freely" concept
 } from "lucide-react";
 
 const ProjectInfoSection = () => {
@@ -39,7 +40,6 @@ const ProjectInfoSection = () => {
             <h2 className="text-[#8B0E0E] font-black font-montserrat text-[42px] lg:text-[56px] uppercase tracking-tighter mb-4 relative z-10">
               What is Katipunan Hub?
             </h2>
-            {/* Underline Decoration */}
             <div className="h-2 w-24 bg-[#EFBF04] mx-auto rounded-full" />
           </motion.div>
 
@@ -57,7 +57,7 @@ const ProjectInfoSection = () => {
 
         {/* --- CONTENT BLOCKS --- */}
         <div className="flex flex-col gap-32">
-          {/* BLOCK 1: THE OBJECTIVE */}
+          {/* BLOCK 1: THE OBJECTIVE & FREEDOM TO POST */}
           <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
             {/* Text Content */}
             <div className="w-full lg:w-1/2 order-2 lg:order-1">
@@ -85,20 +85,28 @@ const ProjectInfoSection = () => {
                 <p>
                   Our primary goal is to{" "}
                   <strong className="text-[#8B0E0E] bg-red-50 px-1 rounded">
-                    expose students to the Peer Learning Center (PLC)
+                    give every student a voice
                   </strong>
-                  . We realized that while the PLC is a vital resource, many
-                  students were missing out simply because they didn&apos;t know
-                  it existed or how to access it.
+                  . We realized the campus needed more than just a bulletin
+                  board; it needed a conversation.
                 </p>
                 <p>
-                  We also wanted to{" "}
+                  That&apos;s why we built the{" "}
+                  <strong className="text-[#8B0E0E]">Community Feed</strong>.
+                  Unlike traditional school sites,
+                  <span className="font-bold text-gray-800">
+                    {" "}
+                    everyone can post freely here
+                  </span>
+                  . Share updates, ask questions, or start discussions—this
+                  platform belongs to you.
+                </p>
+                <p>
+                  Of course, we also aim to{" "}
                   <strong className="text-[#8B0E0E] bg-red-50 px-1 rounded">
-                    centralize communication
+                    expose students to the Peer Learning Center (PLC)
                   </strong>
-                  . Whether you are looking for lost items, checking the latest
-                  announcements, or just scrolling through campus feeds, we
-                  wanted one place where it all happens.
+                  , ensuring academic help is just one click away.
                 </p>
               </motion.div>
             </div>
@@ -116,35 +124,53 @@ const ProjectInfoSection = () => {
 
                 {/* Mock UI Card - Feed Post */}
                 <div className="relative w-full max-w-sm bg-white rounded-2xl p-5 shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-gray-100 transform group-hover:-translate-y-2 transition-transform duration-500">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-2.5 bg-gray-200 rounded w-1/3" />
-                      <div className="h-2 bg-gray-100 rounded w-1/4" />
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-[#EFBF04] flex items-center justify-center text-[#8B0E0E] font-bold">
+                        U
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <div className="h-2.5 bg-gray-200 rounded w-24" />
+                        <div className="h-2 bg-gray-100 rounded w-16" />
+                      </div>
                     </div>
+                    <PenSquare size={16} className="text-gray-300" />
                   </div>
                   <div className="space-y-2 mb-4">
                     <div className="h-2 bg-gray-100 rounded w-full" />
                     <div className="h-2 bg-gray-100 rounded w-5/6" />
                     <div className="h-2 bg-gray-100 rounded w-4/6" />
                   </div>
-                  <div className="h-32 bg-gray-50 rounded-xl mb-4 flex items-center justify-center text-gray-300">
-                    <MessageCircle size={24} />
+
+                  {/* Interactive Buttons Mockup */}
+                  <div className="flex gap-4 pt-2 border-t border-gray-50">
+                    <div className="h-6 w-16 bg-red-50 rounded-lg flex items-center justify-center gap-1">
+                      <HeartIcon className="text-[#8B0E0E] w-3 h-3" />
+                    </div>
+                    <div className="h-6 w-16 bg-gray-50 rounded-lg" />
                   </div>
                 </div>
 
-                {/* Floating Badge */}
-                <div className="absolute bottom-10 right-10 bg-white/80 backdrop-blur-md p-4 rounded-2xl shadow-lg border border-white flex items-center gap-3 animate-bounce duration-[3000ms]">
-                  <div className="w-10 h-10 rounded-full bg-[#8B0E0E] flex items-center justify-center text-white">
-                    <MessageCircle size={20} />
+                {/* Floating Badge: Freedom to Post */}
+                <motion.div
+                  animate={{ y: [0, -10, 0] }}
+                  transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                  className="absolute bottom-12 right-6 bg-[#8B0E0E] text-white p-4 rounded-2xl shadow-xl border-2 border-[#EFBF04]/50 flex items-center gap-3 z-20"
+                >
+                  <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-[#EFBF04]">
+                    <Megaphone size={20} />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-gray-400 uppercase">
-                      Status
+                    <p className="text-[10px] font-bold opacity-80 uppercase">
+                      Community Feature
                     </p>
-                    <p className="text-sm font-bold text-gray-800">Connected</p>
+                    <p className="text-sm font-bold">Post Freely!</p>
                   </div>
-                </div>
+                </motion.div>
               </div>
             </motion.div>
           </div>
@@ -186,20 +212,16 @@ const ProjectInfoSection = () => {
                   It centralizes Announcements, Feeds, and Lost & Found. We also
                   integrated a{" "}
                   <strong className="text-[#8B0E0E]">Smart Calendar</strong>{" "}
-                  that lets students manage personal events, while Admins can
-                  push global updates like{" "}
-                  <strong className="text-[#8B0E0E]">
-                    &quot;No Class&quot;
-                  </strong>{" "}
-                  dates instantly.
+                  that lets students manage personal events.
                 </p>
               </motion.div>
 
               <ul className="space-y-4">
                 {[
                   "Exclusive for CIT Students",
+                  "Community Feed: Everyone can post freely", // NEW POINT
                   "Smart Calendar (Global & Personal)",
-                  "Integrated Lost & Found & Feeds",
+                  "Integrated Lost & Found",
                   "Direct PLC System Exposure",
                 ].map((item, idx) => (
                   <motion.li
@@ -249,7 +271,6 @@ const ProjectInfoSection = () => {
                   </div>
                   <div className="grid grid-cols-7 gap-2">
                     {[...Array(28)].map((_, i) => {
-                      // Subtle visual indicator for event days
                       const isEvent = i === 12 || i === 18;
                       return (
                         <div
@@ -262,7 +283,7 @@ const ProjectInfoSection = () => {
                     })}
                   </div>
 
-                  {/* Mock Notification Popup (Replaces the old tiny text) */}
+                  {/* Mock Notification Popup */}
                   <div className="mt-5 bg-[#2a2a2a] p-3 rounded-xl border border-white/10 flex items-center gap-3 shadow-lg">
                     <div className="w-8 h-8 rounded-full bg-[#8B0E0E] flex items-center justify-center text-white shrink-0">
                       <Bell size={14} />
@@ -281,5 +302,14 @@ const ProjectInfoSection = () => {
     </section>
   );
 };
+
+// Helper Icon for visual mockups
+function HeartIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="currentColor" viewBox="0 0 24 24">
+      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+    </svg>
+  );
+}
 
 export default ProjectInfoSection;

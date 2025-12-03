@@ -20,6 +20,8 @@ import PostViewModal from "./PostViewModal";
 
 import { useRouter } from "next/navigation";
 import { supabase } from "../../../../../supabase/Lib/General/supabaseClient";
+// --- NEW IMPORT ---
+import BackgroundGradient from "@/app/component/ReusableComponent/BackgroundGradient";
 
 // --- TYPE DEFINITIONS ---
 
@@ -427,20 +429,10 @@ export default function LostandFoundContent({ user }: { user: User | null }) {
   };
 
   return (
-    <div className="fixed inset-0 w-full h-full flex flex-col overflow-hidden bg-[#faf3e0]">
-      <div
-        className="fixed inset-0 z-0 pointer-events-none"
-        style={{
-          backgroundImage: "url('/backgroundimage.svg')",
-          backgroundAttachment: "fixed",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          filter: "blur(8px)",
-          transform: "scale(1.05)",
-        }}
-      />
-      <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-red-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob z-1" />
-      <div className="absolute top-1/2 right-1/4 w-48 h-48 bg-yellow-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000 z-1" />
+    // REPLACED OLD BACKGROUND WITH NEW GRADIENT
+    <div className="fixed inset-0 w-full h-full flex flex-col overflow-hidden">
+      {/* --- REPLACED: BackgroundGradient --- */}
+      <BackgroundGradient />
 
       <div className="relative z-10 flex flex-col h-full">
         <div className="shrink-0 pt-[80px] px-8 max-w-7xl w-full mx-auto">
