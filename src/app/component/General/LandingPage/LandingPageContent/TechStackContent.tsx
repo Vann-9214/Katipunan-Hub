@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 
 const TECH_STACK = [
-  { name: "Next.js 14", icon: <Code2 size={28} />, desc: "Framework" },
+  { name: "Next.js 15", icon: <Code2 size={28} />, desc: "Framework" },
   { name: "React", icon: <Layout size={28} />, desc: "UI Library" },
   { name: "TypeScript", icon: <ShieldCheck size={28} />, desc: "Type Safety" },
   { name: "Tailwind CSS", icon: <Zap size={28} />, desc: "Styling" },
