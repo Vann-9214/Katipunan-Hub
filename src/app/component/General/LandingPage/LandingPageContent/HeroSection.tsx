@@ -1,7 +1,8 @@
+"use client";
+
 import React from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import Button from "@/app/component/ReusableComponent/Buttons";
 import {
   containerVariants,
   itemVariants,
@@ -9,13 +10,8 @@ import {
   logoEntranceVariant,
   GlassCard,
 } from "./LandingPageTypesAndUtils";
-import { AuthMode } from "./LandingPageTypesAndUtils";
 
-interface HeroSectionProps {
-  setMode: React.Dispatch<React.SetStateAction<AuthMode>>;
-}
-
-const HeroSection: React.FC<HeroSectionProps> = ({ setMode }) => {
+const HeroSection = () => {
   return (
     <div className="relative min-h-screen w-full bg-[#EFBF04] overflow-hidden flex flex-col justify-center">
       {/* --- Background Elements --- */}
@@ -83,18 +79,6 @@ const HeroSection: React.FC<HeroSectionProps> = ({ setMode }) => {
             <span className="text-[#EFBF04] font-bold">Katipunan Hub</span>{" "}
             centralizes everything a Wildcat needs in one secure place.
           </motion.p>
-
-          <motion.div variants={itemVariants}>
-            <Button
-              text="JOIN THE HUB"
-              bg="bg-[#EFBF04]"
-              textcolor="text-[#8B0E0E]"
-              font="font-bold"
-              textSize="text-[18px]"
-              className="px-10 py-4 rounded-xl shadow-[0_10px_30px_rgba(239,191,4,0.3)] hover:shadow-[0_15px_40px_rgba(239,191,4,0.4)] hover:-translate-y-1 transition-all border-2 border-[#8B0E0E]"
-              onClick={() => setMode("signup")}
-            />
-          </motion.div>
         </motion.div>
 
         {/* Right Column: Visuals */}
