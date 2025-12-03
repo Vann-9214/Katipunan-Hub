@@ -102,15 +102,14 @@ const TeamSection = () => {
               {/* Image Area */}
               <div className="h-[240px] w-full bg-gradient-to-b from-gray-700/50 to-gray-900/50 relative flex items-center justify-center overflow-hidden group-hover:shadow-inner transition-all">
                 {member.image ? (
-                  <Image
+                  <img
                     src={member.image}
                     alt={member.name}
-                    fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-110"
-                    unoptimized={true}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
                 ) : (
                   <div className="flex flex-col items-center gap-2 text-white/20 group-hover:text-white/40 transition-colors">
+                    {/* ... keep your existing placeholder circle code here ... */}
                     <div className="w-20 h-20 rounded-full border-2 border-current flex items-center justify-center">
                       <span className="text-3xl font-bold">
                         {member.name.charAt(0)}
