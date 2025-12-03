@@ -2,7 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
-import { Instagram, Facebook, Linkedin, Mail } from "lucide-react";
+import { Instagram, Linkedin, Mail } from "lucide-react";
 
 // --- TEAM DATA ---
 const TEAM_MEMBERS = [

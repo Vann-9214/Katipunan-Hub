@@ -50,7 +50,7 @@ const ProjectInfoSection = () => {
                   they didn&apos;t know how to check schedules or book a tutor.
                 </p>
                 <p>
-                  On top of that, the student voice was fragmented. "Confession"
+                  On top of that, the student voice was fragmented. Confession
                   posts, rants, and community updates were scattered across
                   unofficial groups, making it hard to separate noise from
                   important information.
