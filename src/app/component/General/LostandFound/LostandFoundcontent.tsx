@@ -14,14 +14,22 @@ import {
   Book,
   Shirt,
   Blocks,
+  Search as SearchIcon, // Distinct alias for the header icon
 } from "lucide-react";
+import { Montserrat, PT_Sans } from "next/font/google";
 import PostItemModal, { ModalPostData } from "./PostItemModal";
 import PostViewModal from "./PostViewModal";
 
 import { useRouter } from "next/navigation";
 import { supabase } from "../../../../../supabase/Lib/General/supabaseClient";
-// --- NEW IMPORT ---
 import BackgroundGradient from "@/app/component/ReusableComponent/BackgroundGradient";
+
+// --- FONTS ---
+const montserrat = Montserrat({
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
+});
+const ptSans = PT_Sans({ subsets: ["latin"], weight: ["400", "700"] });
 
 // --- TYPE DEFINITIONS ---
 
@@ -64,10 +72,6 @@ export type Post = {
   inquiries: Inquiry[];
 };
 
-/**
- * Interface representing the raw shape of a post row returned from Supabase.
- * Added to resolve the "Unexpected any" error during data mapping.
- */
 interface SupabasePostItem {
   id: string;
   user_id: string;
@@ -138,7 +142,7 @@ export default function LostandFoundContent({ user }: { user: User | null }) {
     fetchPosts();
   }, []);
 
-  // --- NEW: Realtime Subscription for LostAndFoundPosts ---
+  // --- Realtime Subscription ---
   useEffect(() => {
     const channel = supabase
       .channel("realtime-lost-and-found")
@@ -146,14 +150,11 @@ export default function LostandFoundContent({ user }: { user: User | null }) {
         "postgres_changes",
         { event: "*", schema: "public", table: "LostAndFoundPosts" },
         async (payload) => {
-          // 1. Handle DELETE
           if (payload.eventType === "DELETE") {
             setPosts((prev) => prev.filter((p) => p.id !== payload.old.id));
             return;
           }
 
-          // 2. Handle INSERT or UPDATE
-          // We must fetch the full row to get the joined 'Accounts' (author name)
           const { data, error } = await supabase
             .from("LostAndFoundPosts")
             .select(`*, Accounts (fullName)`)
@@ -181,11 +182,9 @@ export default function LostandFoundContent({ user }: { user: User | null }) {
             };
 
             setPosts((prev) => {
-              // If UPDATE, replace existing
               if (payload.eventType === "UPDATE") {
                 return prev.map((p) => (p.id === newPost.id ? newPost : p));
               }
-              // If INSERT, prepend to list
               return [newPost, ...prev];
             });
           }
@@ -198,7 +197,6 @@ export default function LostandFoundContent({ user }: { user: User | null }) {
     };
   }, []);
 
-  // --- FETCH POSTS FROM SUPABASE ---
   const fetchPosts = async () => {
     try {
       setLoading(true);
@@ -217,15 +215,11 @@ export default function LostandFoundContent({ user }: { user: User | null }) {
       if (error) throw error;
 
       if (data) {
-        /* Using the SupabasePostItem interface here instead of 'any' 
-           to resolve the TypeScript error.
-        */
         const formattedPosts: Post[] = data.map((item: SupabasePostItem) => ({
           id: item.id,
           userId: item.user_id,
           type: item.type as "Lost" | "Found",
           status: item.status as "Open" | "Resolved",
-          // UPDATED: Proper default image logic
           imageUrl:
             item.image_url ||
             (item.type === "Found" ? "/found.svg" : "/lost.svg"),
@@ -329,6 +323,7 @@ export default function LostandFoundContent({ user }: { user: User | null }) {
       return selectedSort === "Latest" ? dateB - dateA : dateA - dateB;
     });
 
+  // --- Handlers ---
   const handlePublishPost = async (data: ModalPostData) => {
     if (!user) {
       alert("You must be logged in to post.");
@@ -356,9 +351,6 @@ export default function LostandFoundContent({ user }: { user: User | null }) {
         publicUrl = publicUrlData.publicUrl;
       }
 
-      /* Removed 'data: newPostData' from destructuring 
-         to resolve unused variable warning.
-      */
       const { error: insertError } = await supabase
         .from("LostAndFoundPosts")
         .insert({
@@ -380,7 +372,6 @@ export default function LostandFoundContent({ user }: { user: User | null }) {
 
       if (insertError) throw insertError;
 
-      // fetchPosts(); // Removed this because Realtime listener will handle the update
       setShowPostModal(false);
     } catch (error) {
       console.error("Error publishing post:", error);
@@ -399,8 +390,6 @@ export default function LostandFoundContent({ user }: { user: User | null }) {
         .eq("id", postId);
 
       if (error) throw error;
-
-      // State update is handled by Realtime listener now
       setSelectedPost((prev) => (prev ? { ...prev, status: newStatus } : null));
     } catch (error) {
       console.error("Error updating status:", error);
@@ -408,263 +397,340 @@ export default function LostandFoundContent({ user }: { user: User | null }) {
     }
   };
 
-  // --- UPDATED CHAT HANDLER ---
-  const handleOpenChat = () => {
-    if (selectedPost && selectedPost.userId) {
-      if (user && user.id === selectedPost.userId) {
-        alert("You cannot chat with yourself.");
+  // --- UPDATED SMART CHAT LOGIC ---
+  const handleOpenChat = async () => {
+    if (!selectedPost || !selectedPost.userId) return;
+
+    // Prevent chatting with self
+    if (user && user.id === selectedPost.userId) {
+      alert("You cannot chat with yourself.");
+      return;
+    }
+
+    if (!user) {
+      alert("Please log in to chat.");
+      return;
+    }
+
+    const targetId = selectedPost.userId;
+
+    try {
+      // 1. Fetch conversations where user is a participant
+      const { data: conversations, error } = await supabase
+        .from("Conversations")
+        .select("id, user_a_id, user_b_id")
+        .or(`user_a_id.eq.${user.id},user_b_id.eq.${user.id}`);
+
+      if (error) {
+        console.error("Error checking conversations:", error);
+        // Fallback: Just go to new message page
+        navigateToNewChat(targetId);
         return;
       }
 
-      // Construct an initial inquiry message
-      const inquiryMessage = `Hello, I'm inquiring about the "${selectedPost.title}" (${selectedPost.type}) you posted in Lost & Found.`;
-
-      // Redirect to message page with the pre-filled message in query params
-      router.push(
-        `/Message/new/${
-          selectedPost.userId
-        }?initialMessage=${encodeURIComponent(inquiryMessage)}`
+      // 2. Filter to find the one with the target user
+      const existingConv = conversations?.find(
+        (c) =>
+          (c.user_a_id === user.id && c.user_b_id === targetId) ||
+          (c.user_a_id === targetId && c.user_b_id === user.id)
       );
+
+      if (existingConv) {
+        // Conversation exists -> Go to it
+        router.push(`/Message/${existingConv.id}`);
+      } else {
+        // No conversation -> Go to New Message page
+        navigateToNewChat(targetId);
+      }
+    } catch (err) {
+      console.error("Unexpected error in chat redirect:", err);
+      navigateToNewChat(targetId);
     }
   };
 
+  // Helper to construct the new chat URL
+  const navigateToNewChat = (targetId: string) => {
+    if (!selectedPost) return;
+    const inquiryMessage = `Hello, I'm inquiring about the "${selectedPost.title}" (${selectedPost.type}) you posted in Lost & Found.`;
+    router.push(
+      `/Message/new/${targetId}?initialMessage=${encodeURIComponent(
+        inquiryMessage
+      )}`
+    );
+  };
+
   return (
-    // REPLACED OLD BACKGROUND WITH NEW GRADIENT
-    <div className="fixed inset-0 w-full h-full flex flex-col overflow-hidden">
-      {/* --- REPLACED: BackgroundGradient --- */}
+    <div className="min-h-screen w-full pb-12 relative flex flex-col">
       <BackgroundGradient />
 
-      <div className="relative z-10 flex flex-col h-full">
-        <div className="shrink-0 pt-[80px] px-8 max-w-7xl w-full mx-auto">
-          <div className="grid grid-cols-12 items-start gap-8 mt-5">
-            <div className="col-span-7">
-              <p className="font-light italic text-[#800000] text-xl mb-3">
-                Lost something? We may have it
-                <br />
-                Found something? Post it here
-              </p>
-              <h2 className="font-extrabold text-[#800000] text-[40px] tracking-wide mb-4">
-                FIND AND POST IT HERE!
-              </h2>
+      {/* --- Page Container --- */}
+      <div className="max-w-[1400px] mt-17 w-full mx-auto px-4 md:px-8 py-8 space-y-8 flex-1 flex flex-col">
+        {/* --- Header & Toolbar Section --- */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          {/* Title Area */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="flex items-center gap-4"
+          >
+            <div className="p-3 bg-gradient-to-br from-[#8B0E0E] to-[#5e0a0a] rounded-2xl shadow-lg shadow-red-900/20 text-white">
+              <SearchIcon size={32} />
             </div>
-            <div className="col-span-5 flex flex-col items-end">
-              <div
-                className="flex justify-end items-center w-full h-14 relative z-30"
-                ref={searchRef}
+            <div>
+              <h1
+                className={`${montserrat.className} text-[28px] md:text-[32px] font-extrabold text-[#1a1a1a] leading-tight`}
               >
-                <AnimatePresence mode="popLayout" initial={false}>
-                  {isSearchOpen ? (
-                    <motion.div
-                      key="search-bar"
-                      layoutId="search-container"
-                      style={{ originX: 0 }}
-                      className="relative w-full h-14 bg-white rounded-full shadow-lg ring-2 ring-[#fde68a] flex items-center overflow-hidden"
-                      transition={liquidSpring}
-                    >
-                      <motion.div
-                        className="w-full h-full flex items-center"
-                        variants={contentVariants}
-                        initial="hidden"
-                        animate="visible"
-                        exit="exit"
-                      >
-                        <input
-                          type="text"
-                          placeholder="Search items..."
-                          className="w-full h-full pl-12 pr-4 bg-transparent focus:outline-none text-gray-700"
-                          autoFocus
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                        <Search
-                          className="absolute left-4 text-gray-400"
-                          size={20}
-                        />
-                      </motion.div>
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="search-buttons"
-                      layoutId="search-container"
-                      style={{ originX: 0 }}
-                      className="flex justify-end items-center gap-4 w-fit h-14"
-                      transition={liquidSpring}
-                    >
-                      <motion.div
-                        className="flex justify-end items-center gap-4 w-full"
-                        variants={contentVariants}
-                        initial="hidden"
-                        animate="visible"
-                        exit="exit"
-                      >
-                        <div className="flex-grow flex justify-end">
-                          <button
-                            onClick={() => setIsSearchOpen(true)}
-                            className="p-3 bg-white text-gray-600 rounded-full shadow-lg ring-2 ring-[#fde68a] hover:bg-gray-50 flex items-center justify-center w-14 h-14 transition-transform duration-200 hover:scale-110"
-                          >
-                            <Search size={24} />
-                          </button>
-                        </div>
-                        <div className="flex items-center space-x-2 bg-white p-2 rounded-full shadow-lg ring-2 ring-[#fde68a]">
-                          <div className="relative" ref={sortRef}>
-                            <button
-                              className="flex items-center justify-between px-5 py-3 bg-white text-gray-600 rounded-full font-medium hover:bg-gray-50 w-32 transition-transform duration-200 hover:scale-105"
-                              onClick={() => {
-                                setShowSortDropdown(!showSortDropdown);
-                                setShowCategoryDropdown(false);
-                              }}
-                            >
-                              <span>{selectedSort}</span>
-                              <ChevronDown size={20} />
-                            </button>
-                            {showSortDropdown && (
-                              <div className="absolute top-0 right-0 w-56 bg-[#FFFBEB] rounded-2xl shadow-lg z-50 overflow-hidden p-3 animate-fadeIn">
-                                {sortOptions.map((op) => (
-                                  <button
-                                    key={op}
-                                    className={`flex items-center justify-center gap-2 w-full px-5 py-3 font-medium rounded-full mb-2 last:mb-0 transition-all ${
-                                      selectedSort === op
-                                        ? "bg-yellow-400 text-black"
-                                        : "bg-yellow-300 text-gray-700 hover:bg-yellow-400"
-                                    }`}
-                                    onClick={() => {
-                                      setSelectedSort(op);
-                                      setShowSortDropdown(false);
-                                    }}
-                                  >
-                                    {selectedSort === op && <Check size={18} />}
-                                    {op} First
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                          <div className="relative" ref={categoryRef}>
-                            <button
-                              className="flex items-center justify-between px-5 py-3 bg-white text-gray-600 rounded-full font-medium hover:bg-gray-50 w-48 transition-transform duration-200 hover:scale-105"
-                              onClick={() => {
-                                setShowCategoryDropdown(!showCategoryDropdown);
-                                setShowSortDropdown(false);
-                              }}
-                            >
-                              <span className="truncate">
-                                {selectedCategory}
-                              </span>
-                              <ChevronDown size={20} />
-                            </button>
-                            {showCategoryDropdown && (
-                              <div className="absolute top-0 right-0 w-56 bg-[#FFFBEB] rounded-2xl shadow-lg z-50 overflow-hidden p-3 animate-fadeIn">
-                                {categories.map((cat) => (
-                                  <button
-                                    key={cat}
-                                    className={`flex items-center gap-2 w-full px-5 py-3 font-medium rounded-full mb-2 last:mb-0 transition-all ${
-                                      cat !== "All Categories"
-                                        ? "justify-start pl-6"
-                                        : "justify-center"
-                                    } ${
-                                      selectedCategory === cat
-                                        ? "bg-yellow-400 text-black"
-                                        : "bg-yellow-300 text-gray-700 hover:bg-yellow-400"
-                                    }`}
-                                    onClick={() => {
-                                      setSelectedCategory(cat);
-                                      setShowCategoryDropdown(false);
-                                    }}
-                                  >
-                                    {cat !== "All Categories" &&
-                                      (categoryIcons[cat] || (
-                                        <Blocks size={18} />
-                                      ))}
-                                    {cat}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </motion.div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-              <div
-                className="flex items-center justify-end gap-4 mt-6 relative z-20"
-                ref={starRef}
+                Lost & Found
+              </h1>
+              <p
+                className={`${ptSans.className} text-gray-500 font-medium text-sm md:text-base`}
               >
-                <AnimatePresence>
-                  {showStarOptions && (
+                Report lost items or help return found ones to their owners.
+              </p>
+            </div>
+          </motion.div>
+
+          {/* Controls Toolbar */}
+          <div className="flex flex-col items-end">
+            <div
+              className="flex justify-end items-center w-full h-12 relative z-30"
+              ref={searchRef}
+            >
+              <AnimatePresence mode="popLayout" initial={false}>
+                {isSearchOpen ? (
+                  <motion.div
+                    key="search-bar"
+                    layoutId="search-container"
+                    style={{ originX: 0 }}
+                    className="relative w-full md:w-[400px] h-12 bg-white rounded-2xl shadow-lg ring-1 ring-gray-200 flex items-center overflow-hidden"
+                    transition={liquidSpring}
+                  >
                     <motion.div
-                      className="flex justify-end gap-4"
-                      variants={buttonContainerVariants}
+                      className="w-full h-full flex items-center"
+                      variants={contentVariants}
                       initial="hidden"
                       animate="visible"
                       exit="exit"
                     >
-                      {["All", "Found", "Lost"].map((filter) => (
-                        <motion.button
-                          key={filter}
-                          variants={buttonVariants}
-                          onClick={() => setActiveStarFilter(filter)}
-                          className={`px-8 py-3 rounded-full font-semibold shadow-md ${
-                            activeStarFilter === filter
-                              ? "bg-yellow-400 text-black scale-105"
-                              : "bg-white text-gray-700"
-                          }`}
-                        >
-                          {filter}
-                        </motion.button>
-                      ))}
+                      <input
+                        type="text"
+                        placeholder="Search items..."
+                        className={`${ptSans.className} w-full h-full pl-12 pr-4 bg-transparent focus:outline-none text-gray-700 placeholder-gray-400`}
+                        autoFocus
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                      />
+                      <Search
+                        className="absolute left-4 text-gray-400"
+                        size={20}
+                      />
                     </motion.div>
-                  )}
-                </AnimatePresence>
-                <div className="relative">
-                  <button
-                    className="p-3 bg-[#800000] text-white rounded-full hover:bg-red-900 w-14 h-14 flex items-center justify-center flex-shrink-0 transition-transform duration-100 ease-out active:scale-90 hover:scale-110"
-                    onClick={() => setShowStarOptions(!showStarOptions)}
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="search-buttons"
+                    layoutId="search-container"
+                    style={{ originX: 0 }}
+                    className="flex justify-end items-center gap-3 w-fit h-12"
+                    transition={liquidSpring}
                   >
-                    <Star size={24} fill="white" />
-                  </button>
-                </div>
+                    <motion.div
+                      className="flex justify-end items-center gap-3 w-full"
+                      variants={contentVariants}
+                      initial="hidden"
+                      animate="visible"
+                      exit="exit"
+                    >
+                      {/* Search Trigger */}
+                      <button
+                        onClick={() => setIsSearchOpen(true)}
+                        className="p-3 bg-white text-gray-600 rounded-xl shadow-sm border border-gray-200 hover:bg-gray-50 flex items-center justify-center w-12 h-12 transition-transform duration-200 hover:scale-105"
+                      >
+                        <Search size={22} />
+                      </button>
+
+                      {/* Filter Controls Container */}
+                      <div className="flex items-center space-x-1 bg-white p-1 rounded-2xl shadow-sm border border-gray-200 h-12">
+                        {/* Sort Dropdown */}
+                        <div className="relative h-full" ref={sortRef}>
+                          <button
+                            className={`${ptSans.className} flex items-center justify-between px-4 h-full rounded-xl hover:bg-gray-50 text-gray-600 font-bold text-sm transition-colors min-w-[110px]`}
+                            onClick={() => {
+                              setShowSortDropdown(!showSortDropdown);
+                              setShowCategoryDropdown(false);
+                            }}
+                          >
+                            <span>{selectedSort}</span>
+                            <ChevronDown size={16} />
+                          </button>
+                          {showSortDropdown && (
+                            <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-xl ring-1 ring-black/5 z-50 overflow-hidden p-1.5 animate-fadeIn">
+                              {sortOptions.map((op) => (
+                                <button
+                                  key={op}
+                                  className={`flex items-center justify-between w-full px-4 py-2.5 font-bold text-sm rounded-lg mb-0.5 last:mb-0 transition-colors ${
+                                    selectedSort === op
+                                      ? "bg-[#8B0E0E] text-white"
+                                      : "text-gray-600 hover:bg-gray-50"
+                                  }`}
+                                  onClick={() => {
+                                    setSelectedSort(op);
+                                    setShowSortDropdown(false);
+                                  }}
+                                >
+                                  {op}
+                                  {selectedSort === op && <Check size={16} />}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="w-[1px] h-6 bg-gray-200" />
+
+                        {/* Category Dropdown */}
+                        <div className="relative h-full" ref={categoryRef}>
+                          <button
+                            className={`${ptSans.className} flex items-center justify-between px-4 h-full rounded-xl hover:bg-gray-50 text-gray-600 font-bold text-sm transition-colors min-w-[140px]`}
+                            onClick={() => {
+                              setShowCategoryDropdown(!showCategoryDropdown);
+                              setShowSortDropdown(false);
+                            }}
+                          >
+                            <span className="truncate max-w-[100px]">
+                              {selectedCategory === "Category"
+                                ? "Category"
+                                : selectedCategory}
+                            </span>
+                            <ChevronDown size={16} />
+                          </button>
+                          {showCategoryDropdown && (
+                            <div className="absolute top-full right-0 mt-2 w-56 bg-white rounded-xl shadow-xl ring-1 ring-black/5 z-50 overflow-hidden p-1.5 animate-fadeIn">
+                              {categories.map((cat) => (
+                                <button
+                                  key={cat}
+                                  className={`flex items-center gap-3 w-full px-4 py-2.5 font-bold text-sm rounded-lg mb-0.5 last:mb-0 transition-colors ${
+                                    cat !== "All Categories"
+                                      ? "pl-4"
+                                      : "justify-center"
+                                  } ${
+                                    selectedCategory === cat
+                                      ? "bg-[#8B0E0E] text-white"
+                                      : "text-gray-600 hover:bg-gray-50"
+                                  }`}
+                                  onClick={() => {
+                                    setSelectedCategory(cat);
+                                    setShowCategoryDropdown(false);
+                                  }}
+                                >
+                                  {cat !== "All Categories" &&
+                                    (categoryIcons[cat] || (
+                                      <Blocks size={16} />
+                                    ))}
+                                  {cat}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Type Filters (All / Found / Lost) */}
+            <div
+              className="flex items-center justify-end gap-3 mt-4 relative z-20"
+              ref={starRef}
+            >
+              <AnimatePresence>
+                {showStarOptions && (
+                  <motion.div
+                    className="flex justify-end gap-3"
+                    variants={buttonContainerVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                  >
+                    {["All", "Found", "Lost"].map((filter) => (
+                      <motion.button
+                        key={filter}
+                        variants={buttonVariants}
+                        onClick={() => setActiveStarFilter(filter)}
+                        className={`${
+                          montserrat.className
+                        } px-6 py-2.5 rounded-full text-sm font-bold shadow-sm border border-gray-100 transition-all ${
+                          activeStarFilter === filter
+                            ? "bg-[#8B0E0E] text-white scale-105"
+                            : "bg-white text-gray-600 hover:bg-gray-50"
+                        }`}
+                      >
+                        {filter}
+                      </motion.button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <div className="relative">
+                <button
+                  className="p-3 bg-[#8B0E0E] text-white rounded-2xl shadow-lg shadow-red-900/30 hover:bg-[#720b0b] w-12 h-12 flex items-center justify-center flex-shrink-0 transition-all active:scale-95 hover:scale-105"
+                  onClick={() => setShowStarOptions(!showStarOptions)}
+                >
+                  <Star size={22} fill="white" />
+                </button>
               </div>
             </div>
           </div>
-          <hr className="w-full max-w-7xl mx-auto border-t border-gray-400 my-4" />
         </div>
 
-        <div className="flex-1 overflow-y-auto px-8 pb-20 w-full relative z-0">
-          <div className="max-w-7xl mx-auto">
-            {loading ? (
-              <div className="flex items-center justify-center h-40">
-                <p className="text-gray-600 text-lg">Loading posts...</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-items-center mt-4">
-                {filteredPosts.length > 0 ? (
-                  filteredPosts.map((post) => (
-                    <PostCard
-                      key={post.id}
-                      post={post}
-                      onClick={() => setSelectedPost(post)}
-                    />
-                  ))
-                ) : (
-                  <p className="text-gray-500 text-lg">No posts found.</p>
-                )}
-              </div>
-            )}
-          </div>
+        {/* --- Content Grid --- */}
+        <div className="flex-1 relative z-0">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center h-64 gap-4">
+              <div className="w-10 h-10 border-4 border-gray-200 border-t-[#8B0E0E] rounded-full animate-spin" />
+              <p className={`${ptSans.className} text-gray-500 font-medium`}>
+                Loading posts...
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-20">
+              {filteredPosts.length > 0 ? (
+                filteredPosts.map((post) => (
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    onClick={() => setSelectedPost(post)}
+                  />
+                ))
+              ) : (
+                <div className="col-span-full flex flex-col items-center justify-center h-64 text-gray-400">
+                  <div className="p-4 bg-gray-100 rounded-full mb-4">
+                    <Search size={32} />
+                  </div>
+                  <p className={`${ptSans.className} text-lg font-medium`}>
+                    No items found matching your filters.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
+        {/* --- FAB --- */}
         <motion.button
           layoutId="post-item-modal"
           transition={{ type: "spring", stiffness: 300, damping: 25 }}
-          className="fixed bottom-10 right-10 bg-[#800000] text-white rounded-full w-20 h-20 flex items-center justify-center shadow-lg hover:bg-red-900 transition-all z-40 hover:scale-110"
+          className="fixed bottom-10 right-10 bg-[#8B0E0E] text-white rounded-2xl w-16 h-16 flex items-center justify-center shadow-xl shadow-red-900/40 hover:bg-[#720b0b] transition-all z-40 hover:scale-105"
           onClick={() => setShowPostModal(true)}
         >
-          <Plus size={40} />
+          <Plus size={32} />
         </motion.button>
       </div>
 
+      {/* --- Modals --- */}
       {mounted &&
         createPortal(
           <>
@@ -683,9 +749,6 @@ export default function LostandFoundContent({ user }: { user: User | null }) {
                   post={selectedPost}
                   isOwner={user ? user.id === selectedPost.userId : false}
                   onClose={() => setSelectedPost(null)}
-                  /* Removed 'id as any' cast. 
-                     Passed parameters directly as they are compatible.
-                  */
                   onStatusChange={(id, status) =>
                     handleStatusUpdate(id, status)
                   }

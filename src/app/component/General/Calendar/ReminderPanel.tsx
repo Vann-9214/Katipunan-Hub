@@ -1,9 +1,8 @@
-// ReminderPanel.tsx
 "use client";
 
 import React from "react";
 import Image from "next/image";
-import { PT_Sans } from "next/font/google";
+import { PT_Sans, Montserrat } from "next/font/google";
 import {
   PostedEvent,
   PersonalEvent,
@@ -14,6 +13,11 @@ import PanelToggleSwitch from "./PanelToggleSwitch";
 const ptSans = PT_Sans({
   subsets: ["latin"],
   weight: ["400", "700"],
+});
+
+const montserrat = Montserrat({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
 });
 
 type PanelType = "Schedule" | "Reminder";
@@ -34,11 +38,10 @@ interface ReminderPanelProps {
   isAdmin: boolean;
   onDeletePostedEvent?: (eventId: string) => void;
   setPersonalEvents?: React.Dispatch<React.SetStateAction<PersonalEvent[]>>;
-  // State control from parent
-  isMaximized: boolean; // Use prop to control maximized state
-  onMaximizeToggle: (panel: PanelType | null) => void; // Function to notify parent of minimize/maximize
-  currentMaximizedPanel: PanelType; // Only needed if maximized, but included for completeness
-  onPanelSwitch: (panel: PanelType) => void; // Function to switch panels when maximized
+  isMaximized: boolean;
+  onMaximizeToggle: (panel: PanelType | null) => void;
+  currentMaximizedPanel: PanelType;
+  onPanelSwitch: (panel: PanelType) => void;
 }
 
 export default function ReminderPanel({
@@ -57,14 +60,11 @@ export default function ReminderPanel({
   isAdmin,
   onDeletePostedEvent,
   setPersonalEvents,
-  isMaximized, // Now controlled by prop
-  onMaximizeToggle, // Function from parent
+  isMaximized,
+  onMaximizeToggle,
   currentMaximizedPanel,
   onPanelSwitch,
 }: ReminderPanelProps) {
-  // Local state isMaximized removed, controlled by prop
-
-  // Simplified maximize handler that communicates with the parent
   const handleToggleMaximize = () => {
     onMaximizeToggle(isMaximized ? null : "Reminder");
   };
@@ -97,22 +97,19 @@ export default function ReminderPanel({
   };
 
   const displayDay = selectedDay || todayDate;
-  const formattedDate = `${displayDay} ${monthName.slice(0, 3)}`;
+  const formattedDate = `${displayDay} ${monthName}`; // Cleaned up formatting slightly
 
   const postedEventsForDay = postedEvents.filter(
     (e) =>
       e.year === year && e.month === currentMonth + 1 && e.day === displayDay
   );
-
   const personalEventsForDay = personalEvents.filter(
     (e) =>
       e.year === year && e.month === currentMonth + 1 && e.day === displayDay
   );
-
   const holidaysForDay = holidays.filter(
     (h) => h.month === currentMonth + 1 && h.day === displayDay
   );
-
   const totalEvents =
     postedEventsForDay.length +
     personalEventsForDay.length +
@@ -150,123 +147,82 @@ export default function ReminderPanel({
 
   const panelContent = (
     <div
-      className={`${ptSans.className} ${
-        isMaximized ? "" : "absolute"
-      } flex flex-col overflow-hidden`}
+      className={`${ptSans.className} flex flex-col bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100 transition-all duration-300`}
       style={
         isMaximized
-          ? {
-              width: "800px",
-              height: "80vh",
-              maxHeight: "900px",
-              backgroundColor: "#F4F4F4",
-              borderRadius: "25px",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
-              padding: "30px",
-            }
-          : {
-              left: "1000px",
-              top: "230px",
-              width: "440px",
-              height: "650px",
-              backgroundColor: "#F4F4F4",
-              borderRadius: "25px",
-              boxShadow: "0 4px 10px rgba(0,0,0,0.2)",
-              padding: "20px",
-            }
+          ? { width: "100%", height: "100%", maxHeight: "900px" }
+          : { width: "100%", height: "650px" }
       }
     >
-      {/* Header */}
-      <div className="flex justify-between items-center mb-4 flex-shrink-0">
-        <h2
-          className={`font-bold text-[#800000] ${
-            isMaximized ? "text-[32px]" : "text-[25px]"
-          }`}
-        >
-          Reminders
-        </h2>
-
-        {/* === MAXIMIZED TOGGLE SWITCH === */}
-        {isMaximized && (
-          <PanelToggleSwitch
-            currentPanel={currentMaximizedPanel}
-            onPanelChange={onPanelSwitch}
-          />
-        )}
-        {/* =============================== */}
+      {/* Header - Maroon Gradient */}
+      <div className="bg-gradient-to-r from-[#8B0E0E] to-[#4e0505] p-5 flex justify-between items-center text-white shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+            <Image
+              src="/Bellplus.svg"
+              alt="Bell Icon"
+              width={20}
+              height={20}
+              className="brightness-0 invert"
+            />
+          </div>
+          <h2 className={`${montserrat.className} text-xl font-bold`}>
+            Reminders
+          </h2>
+        </div>
 
         <div className="flex gap-2 items-center">
+          {/* Maximize Toggle */}
+          {isMaximized && (
+            <PanelToggleSwitch
+              currentPanel={currentMaximizedPanel}
+              onPanelChange={onPanelSwitch}
+            />
+          )}
+
           <button
-            onClick={handleToggleMaximize} // Use parent handler
-            className="flex items-center justify-center rounded-full bg-[#800000] hover:bg-[#A52A2A] transition"
-            style={{ width: "43px", height: "40px" }}
+            onClick={handleToggleMaximize}
+            className="flex items-center justify-center rounded-full hover:bg-white/10 w-10 h-10 transition text-white"
             title={isMaximized ? "Minimize" : "Maximize"}
           >
-            <span className="text-white text-[20px] font-bold">
+            <span className="text-[20px] font-bold pb-1">
               {isMaximized ? "−" : "⛶"}
             </span>
           </button>
-          <div
-            className="flex items-center justify-center rounded-full bg-[#800000] cursor-pointer hover:bg-[#A52A2A] transition"
-            style={{ width: "43px", height: "40px" }}
-            onClick={handleAddReminder}
-          >
-            <Image src="/Bellplus.svg" alt="Bell Icon" width={30} height={30} />
-          </div>
         </div>
       </div>
 
-      {/* Date + Event count label */}
-      <div className="flex justify-between items-center mb-3 flex-shrink-0">
+      {/* Subheader: Date & Count */}
+      <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0">
         <span
-          className={`text-gray-700 font-semibold ${
-            isMaximized ? "text-[24px]" : "text-[20px]"
-          }`}
+          className={`${montserrat.className} text-gray-700 font-bold text-lg`}
         >
           {formattedDate}
         </span>
-        <div
-          className="flex items-center justify-center font-semibold text-black rounded-full"
-          style={{
-            backgroundColor: "#D9D9D9",
-            width: isMaximized ? "140px" : "120px",
-            height: isMaximized ? "32px" : "26px",
-            fontSize: isMaximized ? "20px" : "18px",
-          }}
-        >
-          {totalEvents} event{totalEvents !== 1 ? "s" : ""}
-        </div>
+        <span className="bg-[#8B0E0E]/10 text-[#8B0E0E] px-3 py-1 rounded-full text-xs font-bold">
+          {totalEvents} {totalEvents === 1 ? "event" : "events"}
+        </span>
       </div>
 
-      {/* Scrollable events/reminders list */}
-      <div className="flex-1 overflow-y-auto space-y-2 pr-2">
+      {/* Content Body */}
+      <div className="flex-1 overflow-y-auto p-5 space-y-4">
         {totalEvents > 0 && (
-          <div className="mb-4">
-            <h3
-              className={`font-bold text-[#800000] mb-2 ${
-                isMaximized ? "text-[20px]" : "text-[16px]"
-              }`}
-            >
-              Events on this day:
+          <div className="space-y-3">
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">
+              Events on this day
             </h3>
 
             {/* Holidays */}
             {holidaysForDay.map((event, i) => (
               <div
                 key={`holiday-${i}`}
-                className={`bg-[#FFE5B4] px-3 py-2 rounded-lg mb-2 flex justify-between items-start ${
-                  isMaximized ? "text-[18px] py-3" : "text-[16px]"
-                }`}
+                className="bg-amber-50 border border-amber-100 p-3 rounded-xl flex justify-between items-start hover:shadow-sm transition-shadow"
               >
                 <div className="flex-1">
-                  <div className="font-semibold text-[#800000]">
+                  <div className="font-bold text-amber-800 text-sm">
                     {getEventLabel(event)}
                   </div>
-                  <div
-                    className={`text-gray-600 mt-1 ${
-                      isMaximized ? "text-[16px]" : "text-[14px]"
-                    }`}
-                  >
+                  <div className="text-amber-600 text-xs mt-1">
                     {getEventType(event)}
                   </div>
                 </div>
@@ -277,27 +233,20 @@ export default function ReminderPanel({
             {postedEventsForDay.map((event, i) => (
               <div
                 key={`posted-${i}`}
-                className={`bg-[#C4E1A4] px-3 py-2 rounded-lg mb-2 flex justify-between items-start ${
-                  isMaximized ? "text-[18px] py-3" : "text-[16px]"
-                }`}
+                className="bg-red-50 border border-red-100 p-3 rounded-xl flex justify-between items-start hover:shadow-sm transition-shadow"
               >
                 <div className="flex-1">
-                  <div className="font-semibold text-[#800000]">
+                  <div className="font-bold text-[#8B0E0E] text-sm">
                     {getEventLabel(event)}
                   </div>
-                  <div
-                    className={`text-gray-600 mt-1 ${
-                      isMaximized ? "text-[16px]" : "text-[14px]"
-                    }`}
-                  >
+                  <div className="text-red-600 text-xs mt-1">
                     {getEventType(event)}
                   </div>
                 </div>
                 {isAdmin && event.id && onDeletePostedEvent && (
                   <button
                     onClick={() => onDeletePostedEvent(event.id!)}
-                    className="text-red-500 hover:text-red-700 font-bold text-[20px] transition-colors ml-2"
-                    title="Delete event"
+                    className="text-red-400 hover:text-red-600 font-bold text-lg ml-2"
                   >
                     ×
                   </button>
@@ -309,27 +258,20 @@ export default function ReminderPanel({
             {personalEventsForDay.map((event, i) => (
               <div
                 key={`personal-${i}`}
-                className={`bg-[#F6B6B6] px-3 py-2 rounded-lg mb-2 flex justify-between items-start ${
-                  isMaximized ? "text-[18px] py-3" : "text-[16px]"
-                }`}
+                className="bg-gray-50 border border-gray-100 p-3 rounded-xl flex justify-between items-start hover:shadow-sm transition-shadow"
               >
                 <div className="flex-1">
-                  <div className="font-semibold text-[#800000]">
+                  <div className="font-bold text-gray-800 text-sm">
                     {getEventLabel(event)}
                   </div>
-                  <div
-                    className={`text-gray-600 mt-1 ${
-                      isMaximized ? "text-[16px]" : "text-[14px]"
-                    }`}
-                  >
+                  <div className="text-gray-500 text-xs mt-1">
                     {getEventType(event)}
                   </div>
                 </div>
                 {setPersonalEvents && (
                   <button
                     onClick={() => handleDeletePersonalEvent(event)}
-                    className="text-red-500 hover:text-red-700 font-bold text-[20px] transition-colors ml-2"
-                    title="Delete event"
+                    className="text-gray-400 hover:text-red-500 font-bold text-lg ml-2"
                   >
                     ×
                   </button>
@@ -339,36 +281,27 @@ export default function ReminderPanel({
           </div>
         )}
 
-        {/* Custom reminders */}
-        <div>
-          <h3
-            className={`font-bold text-[#800000] mb-2 ${
-              isMaximized ? "text-[18px]" : "text-[13px]"
-            }`}
-          >
-            Custom Reminders:
+        {/* Reminders List */}
+        <div className="space-y-3">
+          <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">
+            Custom Reminders
           </h3>
           {reminders.length === 0 ? (
-            <div
-              className={`text-gray-500 italic ${
-                isMaximized ? "text-[16px]" : "text-[14px]"
-              }`}
-            >
+            <div className="text-gray-400 italic text-sm ml-1">
               No custom reminders
             </div>
           ) : (
             reminders.map((r, i) => (
               <div
                 key={i}
-                className={`flex items-center justify-between bg-[#D9D9D9] px-3 py-2 rounded-full font-medium text-[#800000] mb-2 ${
-                  isMaximized ? "text-[16px]" : "text-[14px]"
-                }`}
+                className="flex items-center justify-between bg-white border border-gray-200 p-3 rounded-xl shadow-sm hover:shadow-md transition-all"
               >
-                <span className="truncate">{r}</span>
+                <span className="text-gray-700 font-medium text-sm truncate">
+                  {r}
+                </span>
                 <button
                   onClick={() => handleDeleteReminder(i)}
-                  className="text-[#800000] hover:text-red-600 font-bold text-[16px] ml-2"
-                  suppressHydrationWarning
+                  className="text-gray-400 hover:text-red-500 font-bold ml-2"
                 >
                   ×
                 </button>
@@ -378,41 +311,24 @@ export default function ReminderPanel({
         </div>
       </div>
 
-      {/* Add input */}
-      <div
-        className="flex items-center justify-between bg-[#D9D9D9] rounded-full px-3 mt-3 flex-shrink-0"
-        style={{
-          width: "100%",
-          height: isMaximized ? "44px" : "36px",
-        }}
-      >
-        <input
-          type="text"
-          value={newReminder}
-          onChange={(e) => setNewReminder(e.target.value)}
-          onKeyPress={(e) => e.key === "Enter" && handleAddReminder()}
-          placeholder={`Add reminder on ${formattedDate}`}
-          className={`flex-1 text-gray-700 outline-none bg-transparent ${
-            isMaximized ? "text-[16px]" : "text-[14px]"
-          }`}
-          suppressHydrationWarning
-        />
-        <button
-          onClick={handleAddReminder}
-          className="flex items-center justify-center rounded-full bg-gray-300 hover:bg-gray-400 transition"
-          style={{
-            width: isMaximized ? 36 : 32,
-            height: isMaximized ? 36 : 32,
-          }}
-          suppressHydrationWarning
-        >
-          <Image
-            src="/Bellplus.svg"
-            alt="Add Reminder"
-            width={isMaximized ? 20 : 18}
-            height={isMaximized ? 20 : 18}
+      {/* Input Area */}
+      <div className="p-4 border-t border-gray-100 bg-white shrink-0">
+        <div className="flex items-center bg-gray-100 rounded-xl p-2 pl-4 transition-all focus-within:ring-2 focus-within:ring-[#8B0E0E]/20">
+          <input
+            type="text"
+            value={newReminder}
+            onChange={(e) => setNewReminder(e.target.value)}
+            onKeyPress={(e) => e.key === "Enter" && handleAddReminder()}
+            placeholder={`Add task for ${formattedDate}...`}
+            className="flex-1 bg-transparent outline-none text-sm font-medium text-gray-700 placeholder:text-gray-400"
           />
-        </button>
+          <button
+            onClick={handleAddReminder}
+            className="p-2 bg-white rounded-lg shadow-sm text-[#8B0E0E] hover:scale-105 transition-transform"
+          >
+            <Image src="/Bellplus.svg" alt="Add" width={16} height={16} />
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -420,11 +336,15 @@ export default function ReminderPanel({
   if (isMaximized) {
     return (
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center"
-        style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
-        onClick={() => onMaximizeToggle(null)} // Minimize when clicking outside
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-8"
+        onClick={() => onMaximizeToggle(null)}
       >
-        <div onClick={(e) => e.stopPropagation()}>{panelContent}</div>
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="w-full max-w-4xl h-full"
+        >
+          {panelContent}
+        </div>
       </div>
     );
   }

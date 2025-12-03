@@ -10,7 +10,16 @@ import {
   Shirt,
   Blocks,
   UploadCloud,
+  Check,
 } from "lucide-react";
+import { Montserrat, PT_Sans } from "next/font/google";
+
+const montserrat = Montserrat({
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
+});
+// FIXED: PT Sans only supports 400 and 700
+const ptSans = PT_Sans({ subsets: ["latin"], weight: ["400", "700"] });
 
 // --- Type definitions ---
 export type ModalCategory =
@@ -21,22 +30,21 @@ export type ModalCategory =
   | "Other"
   | "Select Category";
 
-// Define the shape of the data this modal produces
 export interface ModalPostData {
   itemName: string;
   itemDescription: string;
   itemType: "Lost" | "Found";
   itemLocation: string;
   itemCategory: ModalCategory;
-  attachment: File | null; // Changed to allow null
+  attachment: File | null;
 }
 
 // --- Icon Helper ---
 const modalCategoryIcons: { [key in ModalCategory]?: React.ReactNode } = {
-  Electronics: <Laptop size={18} />,
-  Books: <Book size={18} />,
-  Clothing: <Shirt size={18} />,
-  Other: <Blocks size={18} />,
+  Electronics: <Laptop size={16} />,
+  Books: <Book size={16} />,
+  Clothing: <Shirt size={16} />,
+  Other: <Blocks size={16} />,
 };
 
 interface PostItemModalProps {
@@ -51,11 +59,10 @@ export default function PostItemModal({
   // --- State for Modal Inputs ---
   const [itemName, setItemName] = useState<string>("");
   const [itemDescription, setItemDescription] = useState<string>("");
-  // REMOVED itemType state since we are defaulting to "Lost"
   const [itemLocation, setItemLocation] = useState<string>("");
   const [attachment, setAttachment] = useState<File | null>(null);
 
-  // --- State for Category Dropdown in Modal ---
+  // --- State for Category Dropdown ---
   const [showModalCategoryDropdown, setShowModalCategoryDropdown] =
     useState<boolean>(false);
   const [selectedModalCategory, setSelectedModalCategory] =
@@ -68,7 +75,6 @@ export default function PostItemModal({
     "Other",
   ];
 
-  // --- Ref for Modal Click-Away ---
   const modalRef = useRef<HTMLDivElement>(null);
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -110,7 +116,6 @@ export default function PostItemModal({
 
   // --- Publish Handler ---
   const handlePublishClick = () => {
-    // validate fields (Removed !attachment check)
     if (
       !itemName ||
       !itemDescription ||
@@ -121,11 +126,10 @@ export default function PostItemModal({
       return;
     }
 
-    // Construct the data object matches the interface
     const postData: ModalPostData = {
       itemName,
       itemDescription,
-      itemType: "Lost", // Hardcoded to "Lost"
+      itemType: "Lost",
       itemLocation,
       itemCategory: selectedModalCategory,
       attachment,
@@ -140,9 +144,8 @@ export default function PostItemModal({
     <motion.div
       className="fixed inset-0 flex items-center justify-center z-50"
       style={{
-        backgroundColor: "rgba(0, 0, 0, 0.3)",
-        backdropFilter: "blur(10px)",
-        WebkitBackdropFilter: "blur(10px)",
+        backgroundColor: "rgba(0, 0, 0, 0.4)",
+        backdropFilter: "blur(4px)",
       }}
       onClick={onClose}
       initial={{ opacity: 0 }}
@@ -156,18 +159,12 @@ export default function PostItemModal({
           stiffness: 300,
           damping: 25,
         }}
-        className="relative rounded-3xl w-[600px] max-h-[95vh] overflow-y-auto"
+        className="relative rounded-3xl w-[600px] max-h-[90vh] overflow-y-auto bg-white shadow-2xl"
         ref={modalRef}
         onClick={(e) => e.stopPropagation()}
-        style={{
-          backgroundColor: "rgba(255, 250, 245, 0.75)",
-          border: "1px solid rgba(255, 255, 255, 0.3)",
-          boxShadow:
-            "0 4px 60px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.2)",
-        }}
       >
         <motion.div
-          className="w-full p-6"
+          className="w-full p-8"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1, transition: { delay: 0.15, duration: 0.2 } }}
           exit={{ opacity: 0, transition: { duration: 0.05 } }}
@@ -175,21 +172,28 @@ export default function PostItemModal({
           {/* Close Button */}
           <button
             onClick={onClose}
-            className="absolute top-6 right-6 p-2 rounded-full bg-gray-100/50 hover:bg-gray-200/70 text-gray-800 z-10"
+            className="absolute top-6 right-6 p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors z-10"
           >
             <X size={20} />
           </button>
 
-          <h2 className="text-3xl font-extrabold text-[#800000] mb-4">
-            Post Item
+          <h2
+            className={`${montserrat.className} text-3xl font-extrabold text-[#1a1a1a] mb-6`}
+          >
+            Report Lost Item
           </h2>
 
           {/* Input: Item Name */}
           <div className="mb-4">
+            <label
+              className={`${ptSans.className} text-sm font-bold text-gray-700 block mb-1.5`}
+            >
+              Item Name
+            </label>
             <input
               type="text"
               placeholder="Enter name of the item..."
-              className="w-full p-4 bg-[#800000] text-white rounded-xl focus:outline-none placeholder-white placeholder-opacity-70"
+              className={`${ptSans.className} w-full p-3.5 bg-gray-50 border border-gray-200 text-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8B0E0E]/10 focus:border-[#8B0E0E] placeholder-gray-400 transition-all`}
               value={itemName}
               onChange={(e) => setItemName(e.target.value)}
             />
@@ -197,52 +201,52 @@ export default function PostItemModal({
 
           {/* Input: Detailed Information */}
           <div className="mb-4">
+            <label
+              className={`${ptSans.className} text-sm font-bold text-gray-700 block mb-1.5`}
+            >
+              Description
+            </label>
             <textarea
-              placeholder="Enter detailed information to be shared with the community..."
-              className="w-full p-4 bg-[#800000] text-white rounded-xl focus:outline-none placeholder-white placeholder-opacity-70 resize-none"
+              placeholder="Enter detailed information..."
+              className={`${ptSans.className} w-full p-3.5 bg-gray-50 border border-gray-200 text-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8B0E0E]/10 focus:border-[#8B0E0E] placeholder-gray-400 transition-all resize-none`}
               rows={4}
               value={itemDescription}
               onChange={(e) => setItemDescription(e.target.value)}
             ></textarea>
           </div>
 
-          {/* --- CATEGORY DROPDOWN (Full Width) --- */}
+          {/* --- CATEGORY DROPDOWN --- */}
           <div className="mb-4 relative" ref={categoryDropdownRef}>
+            <label
+              className={`${ptSans.className} text-sm font-bold text-gray-700 block mb-1.5`}
+            >
+              Category
+            </label>
             <button
-              className="flex items-center justify-between px-5 py-3 bg-[#800000] text-white rounded-full font-medium hover:bg-red-900 w-full"
+              className={`${ptSans.className} flex items-center justify-between w-full p-3.5 bg-gray-50 border border-gray-200 text-gray-800 rounded-xl focus:outline-none hover:bg-gray-100 transition-colors text-left`}
               onClick={() =>
                 setShowModalCategoryDropdown(!showModalCategoryDropdown)
               }
             >
               <span className="truncate">{selectedModalCategory}</span>
-              <ChevronDown size={20} />
+              <ChevronDown size={18} className="text-gray-400" />
             </button>
             {showModalCategoryDropdown && (
-              <div
-                className="absolute top-full left-0 w-full rounded-xl shadow-lg z-50 overflow-hidden p-2 mt-1 animate-fadeIn"
-                style={{
-                  backgroundColor: "rgba(255, 250, 245, 0.95)",
-                  border: "1px solid rgba(255, 255, 255, 0.3)",
-                  boxShadow:
-                    "0 4px 60px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.2)",
-                  backdropFilter: "blur(10px)",
-                  WebkitBackdropFilter: "blur(10px)",
-                }}
-              >
+              <div className="absolute top-full left-0 w-full rounded-xl shadow-xl border border-gray-100 bg-white z-50 overflow-hidden p-1 mt-1 animate-fadeIn">
                 {modalCategories.map((category) => (
                   <button
                     key={category}
-                    className={`flex items-center justify-start gap-2 w-full px-5 pl-6 py-3 font-medium rounded-full mb-1 last:mb-0 transition-all ${
+                    className={`flex items-center justify-start gap-2 w-full px-4 py-2.5 text-sm font-medium rounded-lg mb-0.5 last:mb-0 transition-all ${
                       selectedModalCategory === category
-                        ? "bg-yellow-400 text-black"
-                        : "bg-yellow-300 text-gray-700 hover:bg-yellow-400"
+                        ? "bg-[#8B0E0E] text-white"
+                        : "text-gray-600 hover:bg-gray-50"
                     }`}
                     onClick={() => {
                       setSelectedModalCategory(category);
                       setShowModalCategoryDropdown(false);
                     }}
                   >
-                    {modalCategoryIcons[category] || <Blocks size={18} />}
+                    {modalCategoryIcons[category] || <Blocks size={16} />}
                     {category}
                   </button>
                 ))}
@@ -252,13 +256,15 @@ export default function PostItemModal({
 
           {/* Input: Location */}
           <div className="mb-4">
-            <span className="text-lg font-semibold text-gray-700 block mb-2">
+            <span
+              className={`${ptSans.className} text-sm font-bold text-gray-700 block mb-1.5`}
+            >
               Location
             </span>
             <input
               type="text"
-              placeholder="Enter location where it was lost..."
-              className="w-full p-4 bg-[#800000] text-white rounded-xl focus:outline-none placeholder-white placeholder-opacity-70"
+              placeholder="Enter location..."
+              className={`${ptSans.className} w-full p-3.5 bg-gray-50 border border-gray-200 text-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8B0E0E]/10 focus:border-[#8B0E0E] placeholder-gray-400 transition-all`}
               value={itemLocation}
               onChange={(e) => setItemLocation(e.target.value)}
             />
@@ -266,21 +272,28 @@ export default function PostItemModal({
 
           {/* Attachment */}
           <div className="mb-6">
-            <span className="text-lg font-semibold text-gray-700 block mb-2">
+            <span
+              className={`${ptSans.className} text-sm font-bold text-gray-700 block mb-1.5`}
+            >
               Attachment (Optional)
             </span>
             <div
-              className="w-full h-32 bg-[#800000] rounded-xl flex items-center justify-center border-2 border-dashed border-white text-white p-4 text-center cursor-pointer relative"
+              className="w-full h-28 bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:border-gray-400 cursor-pointer transition-all"
               onDragOver={handleDragOver}
               onDrop={handleDrop}
               onClick={() => document.getElementById("fileInput")?.click()}
             >
               {attachment ? (
-                <p>{attachment.name}</p>
+                <div className="flex items-center gap-2 text-[#8B0E0E] font-medium">
+                  <Check size={18} />
+                  <span className="truncate max-w-[200px]">
+                    {attachment.name}
+                  </span>
+                </div>
               ) : (
-                <div className="flex flex-col items-center">
-                  <UploadCloud size={30} className="mb-2" />
-                  <p>Drag & drop or click to upload an image.</p>
+                <div className="flex flex-col items-center gap-1">
+                  <UploadCloud size={24} className="text-gray-400" />
+                  <p className="text-sm">Click or drag to upload</p>
                 </div>
               )}
               <input
@@ -294,16 +307,16 @@ export default function PostItemModal({
           </div>
 
           {/* --- BUTTONS --- */}
-          <div className="flex justify-end space-x-4">
+          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
             <button
               onClick={onClose}
-              className="px-8 py-3 bg-[#800000] text-white rounded-full font-semibold hover:bg-red-900 transition-all"
+              className={`${montserrat.className} px-6 py-2.5 text-gray-500 font-bold hover:text-gray-800 transition-colors`}
             >
               Cancel
             </button>
             <button
               onClick={handlePublishClick}
-              className="px-8 py-3 bg-[#800000] text-white rounded-full font-semibold hover:bg-red-900 transition-all"
+              className={`${montserrat.className} px-8 py-2.5 bg-[#8B0E0E] text-white rounded-xl font-bold shadow-lg shadow-red-900/20 hover:bg-[#720b0b] hover:shadow-red-900/30 transition-all`}
             >
               Publish
             </button>

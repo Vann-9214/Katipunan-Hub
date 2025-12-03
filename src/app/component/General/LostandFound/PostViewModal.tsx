@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import {
@@ -9,16 +9,25 @@ import {
   CheckCircle2,
   RefreshCcw,
   Lock,
-  ChevronLeft,
+  MapPin,
+  Calendar,
+  Tag,
   User as UserIcon,
 } from "lucide-react";
+import { Montserrat, PT_Sans } from "next/font/google";
 import { Post } from "./LostandFoundcontent";
+
+// --- Font Configuration ---
+const montserrat = Montserrat({
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
+});
+const ptSans = PT_Sans({ subsets: ["latin"], weight: ["400", "700"] });
 
 interface PostViewModalProps {
   post: Post;
   isOwner: boolean;
   onClose: () => void;
-  // CHANGED: postId type from number to string
   onStatusChange: (postId: string, newStatus: "Open" | "Resolved") => void;
   onChat: () => void;
 }
@@ -30,15 +39,17 @@ export default function PostViewModal({
   onStatusChange,
   onChat,
 }: PostViewModalProps) {
-  const [view, setView] = useState<"details" | "inquiries">("details");
+  // Helper for status badges
+  const isResolved = post.status === "Resolved";
+  const isFoundType = post.type === "Found";
 
   return (
     <motion.div
-      className="fixed inset-0 flex items-center justify-center z-[9000]"
+      className="fixed inset-0 flex items-center justify-center z-[9000] p-4"
       style={{
-        backgroundColor: "rgba(0, 0, 0, 0.3)",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
+        backgroundColor: "rgba(0, 0, 0, 0.4)",
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
       }}
       onClick={onClose}
       initial={{ opacity: 0 }}
@@ -47,218 +58,192 @@ export default function PostViewModal({
     >
       <motion.div
         layoutId={`post-card-${post.id}`}
-        initial={{ opacity: 0, scale: 0.8, y: 50 }}
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.8, y: 50 }}
-        transition={{ type: "spring", stiffness: 400, damping: 30, mass: 0.8 }}
-        className="w-full max-w-4xl h-[600px] rounded-[32px] shadow-2xl overflow-hidden flex relative"
-        style={{
-          backgroundColor: "rgba(255, 251, 242, 0.95)",
-          backdropFilter: "blur(20px)",
-          border: "1px solid rgba(255, 255, 255, 0.5)",
-          boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.15)",
-        }}
+        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+        transition={{ type: "spring", stiffness: 350, damping: 30 }}
+        className="w-full max-w-4xl h-[650px] md:h-[600px] bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row relative"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Close Button - Only show in Details view */}
-        {view === "details" && (
-          <button
-            onClick={onClose}
-            className="absolute top-6 left-6 p-2 rounded-full bg-black/5 hover:bg-black/10 transition-colors z-20"
-          >
-            <X size={20} className="text-gray-700" />
-          </button>
-        )}
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 left-4 md:top-6 md:left-6 p-2.5 rounded-full bg-white/20 backdrop-blur-md hover:bg-white/40 text-white md:text-gray-800 md:bg-black/5 md:hover:bg-black/10 transition-all z-30 shadow-sm"
+        >
+          <X size={20} />
+        </button>
 
-        {/* --- VIEW 1: DETAILS --- */}
-        {view === "details" && (
-          <div className="flex w-full h-full">
-            <div className="w-1/2 h-full bg-gray-100 relative overflow-hidden">
-              <div className="absolute top-6 right-6 z-10">
-                {post.status === "Resolved" ? (
-                  <span className="px-4 py-2 rounded-full bg-green-600 text-yellow-200 font-bold text-sm shadow-md flex items-center gap-2">
-                    <CheckCircle2 size={16} /> Resolved
-                  </span>
-                ) : (
-                  <span
-                    className={`px-4 py-2 rounded-full font-bold text-sm shadow-md ${
-                      post.type === "Found"
-                        ? "bg-[#E6C200] text-black"
-                        : "bg-[#800000] text-white"
-                    }`}
-                  >
-                    {post.type}
-                  </span>
-                )}
+        {/* --- LEFT SIDE: IMAGE --- */}
+        <div className="w-full md:w-[45%] h-64 md:h-full relative bg-gray-100">
+          {/* Status Badge */}
+          <div className="absolute top-6 right-6 z-20">
+            {isResolved ? (
+              <div
+                className={`px-4 py-1.5 rounded-full bg-green-600 text-white font-bold text-xs shadow-lg flex items-center gap-2 ${montserrat.className}`}
+              >
+                <CheckCircle2 size={14} strokeWidth={3} />
+                <span className="tracking-wide uppercase">Resolved</span>
               </div>
-
-              {/* REPLACED <img> WITH <Image /> */}
-              <Image
-                src={post.imageUrl}
-                alt={post.title}
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, 50vw"
-              />
-            </div>
-
-            <div className="w-1/2 h-full p-10 flex flex-col relative">
-              <div className="mb-8 mt-4">
-                <h2 className="text-4xl font-extrabold text-gray-900 leading-tight mb-4">
-                  {post.title}
-                </h2>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-xl shadow-inner">
-                    👤
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">
-                      Posted By
-                    </p>
-                    <p className="text-sm font-bold text-gray-800">
-                      {post.postedBy}
-                    </p>
-                  </div>
-                </div>
+            ) : (
+              <div
+                className={`px-4 py-1.5 rounded-full font-bold text-xs shadow-lg uppercase tracking-wide text-white ${
+                  isFoundType ? "bg-[#F59E0B]" : "bg-[#8B0E0E]"
+                } ${montserrat.className}`}
+              >
+                {post.type}
               </div>
+            )}
+          </div>
 
-              <div className="space-y-6 flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                <div>
-                  <p className="text-[#800000] font-bold text-sm mb-1">
-                    Category:
-                  </p>
-                  <p className="text-gray-700 text-lg">{post.category}</p>
-                </div>
-                <div>
-                  <p className="text-[#800000] font-bold text-sm mb-1">
-                    Location:
-                  </p>
-                  <p className="text-gray-700 text-lg">{post.location}</p>
-                </div>
-                <div>
-                  <p className="text-[#800000] font-bold text-sm mb-1">
-                    {post.type === "Lost" ? "Lost on:" : "Found on:"}
-                  </p>
-                  <p className="text-gray-700 text-lg">{post.lostOn}</p>
-                </div>
-                <div>
-                  <p className="text-[#800000] font-bold text-sm mb-1">
-                    Description:
-                  </p>
-                  <p className="text-gray-600 leading-relaxed whitespace-pre-line">
-                    {post.description}
-                  </p>
-                </div>
+          <Image
+            src={post.imageUrl}
+            alt={post.title}
+            fill
+            className="object-cover"
+            priority
+          />
+
+          {/* Gradient Overlay for visual depth on mobile */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent md:hidden" />
+        </div>
+
+        {/* --- RIGHT SIDE: DETAILS --- */}
+        <div className="flex-1 h-full flex flex-col p-6 md:p-8 overflow-hidden">
+          {/* Header */}
+          <div className="flex-shrink-0 mb-6">
+            <h2
+              className={`${montserrat.className} text-2xl md:text-3xl font-extrabold text-[#1a1a1a] leading-tight mb-3`}
+            >
+              {post.title}
+            </h2>
+
+            {/* User Info Row */}
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-400">
+                <UserIcon size={14} />
               </div>
-
-              <div className="mt-6 pt-6 border-t border-gray-200/60">
-                {isOwner ? (
-                  <div className="flex flex-col gap-3">
-                    <button
-                      onClick={() => setView("inquiries")}
-                      className="w-full py-3 bg-white border-2 border-[#800000] text-[#800000] rounded-xl font-bold transition-all hover:bg-red-50 flex items-center justify-center gap-2"
-                    >
-                      <MessageCircle size={20} />
-                      View Inquiries ({post.inquiries?.length || 0})
-                    </button>
-
-                    {post.status === "Open" ? (
-                      <button
-                        onClick={() => onStatusChange(post.id, "Resolved")}
-                        className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2"
-                      >
-                        <CheckCircle2 size={20} />
-                        Mark as Found / Resolved
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => onStatusChange(post.id, "Open")}
-                        className="w-full py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
-                      >
-                        <RefreshCcw size={20} />
-                        Re-open Post
-                      </button>
-                    )}
-                  </div>
-                ) : post.status === "Resolved" ? (
-                  <div className="w-full py-4 bg-gray-300 text-gray-500 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 cursor-not-allowed">
-                    <Lock size={24} />
-                    <span>Already Resolved / Found</span>
-                  </div>
-                ) : (
-                  <button
-                    onClick={onChat}
-                    className="w-full py-4 bg-[#800000] hover:bg-[#660000] text-white rounded-2xl font-bold text-lg transition-all shadow-lg flex items-center justify-center gap-2"
-                  >
-                    <MessageCircle size={24} />
-                    Chat with the Uploader
-                  </button>
-                )}
+              <div className="flex flex-col">
+                <p
+                  className={`${ptSans.className} text-[10px] text-gray-400 font-bold uppercase tracking-wider`}
+                >
+                  Posted By
+                </p>
+                <p
+                  className={`${montserrat.className} text-sm font-bold text-gray-700`}
+                >
+                  {post.postedBy}
+                </p>
               </div>
             </div>
           </div>
-        )}
 
-        {/* --- VIEW 2: INQUIRIES LIST --- */}
-        {view === "inquiries" && (
-          <div className="w-full h-full p-8 flex flex-col bg-white">
-            <div className="flex items-center gap-4 mb-6 border-b pb-4 pt-2">
-              <button
-                onClick={() => setView("details")}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-700"
-              >
-                <ChevronLeft size={28} />
-              </button>
-              <div>
-                <h2 className="text-2xl font-bold text-[#800000]">Inquiries</h2>
-                <p className="text-sm text-gray-500">
-                  Messages for {post.title}
+          {/* Scrollable Content Wrapper */}
+          <div className="flex-1 overflow-y-auto pr-2 space-y-6 custom-scrollbar">
+            {/* Metadata Grid */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                <div className="flex items-center gap-2 text-[#8B0E0E] mb-1">
+                  <Tag size={14} />
+                  <span
+                    className={`${ptSans.className} text-xs font-bold uppercase`}
+                  >
+                    Category
+                  </span>
+                </div>
+                <p
+                  className={`${montserrat.className} text-sm font-semibold text-gray-800 truncate`}
+                >
+                  {post.category}
+                </p>
+              </div>
+
+              <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                <div className="flex items-center gap-2 text-[#8B0E0E] mb-1">
+                  <Calendar size={14} />
+                  <span
+                    className={`${ptSans.className} text-xs font-bold uppercase`}
+                  >
+                    Date
+                  </span>
+                </div>
+                <p
+                  className={`${montserrat.className} text-sm font-semibold text-gray-800 truncate`}
+                >
+                  {post.lostOn}
+                </p>
+              </div>
+
+              <div className="col-span-2 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                <div className="flex items-center gap-2 text-[#8B0E0E] mb-1">
+                  <MapPin size={14} />
+                  <span
+                    className={`${ptSans.className} text-xs font-bold uppercase`}
+                  >
+                    Location
+                  </span>
+                </div>
+                <p
+                  className={`${montserrat.className} text-sm font-semibold text-gray-800`}
+                >
+                  {post.location}
                 </p>
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
-              {post.inquiries && post.inquiries.length > 0 ? (
-                post.inquiries.map((inquiry) => (
-                  <div
-                    key={inquiry.id}
-                    className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 hover:shadow-md transition-all"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-[#800000]/10 rounded-full flex items-center justify-center text-[#800000]">
-                        <UserIcon size={20} />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-gray-800">
-                          {inquiry.userName}
-                        </h4>
-                        <p className="text-sm text-gray-500 truncate max-w-[200px]">
-                          {inquiry.messagePreview}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-2">
-                      <span className="text-xs text-gray-400">
-                        {inquiry.time}
-                      </span>
-                      <button
-                        onClick={onChat}
-                        className="px-4 py-2 bg-[#800000] text-white text-xs font-bold rounded-lg hover:bg-red-900 transition-colors"
-                      >
-                        Reply
-                      </button>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                  <MessageCircle size={48} className="mb-2 opacity-20" />
-                  <p>No inquiries yet.</p>
-                </div>
-              )}
+            {/* Description Box (Now with Scroll) */}
+            <div>
+              <h3
+                className={`${montserrat.className} text-sm font-bold text-gray-900 mb-2`}
+              >
+                Description
+              </h3>
+              {/* Added max-h-[200px] and overflow-y-auto here */}
+              <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 text-sm text-gray-600 leading-relaxed whitespace-pre-line max-h-[200px] overflow-y-auto custom-scrollbar">
+                <p className={ptSans.className}>{post.description}</p>
+              </div>
             </div>
           </div>
-        )}
+
+          {/* Footer Actions */}
+          <div className="flex-shrink-0 mt-6 pt-6 border-t border-gray-100">
+            {isOwner ? (
+              <div className="w-full">
+                {post.status === "Open" ? (
+                  <button
+                    onClick={() => onStatusChange(post.id, "Resolved")}
+                    className={`${montserrat.className} w-full py-3.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2`}
+                  >
+                    <CheckCircle2 size={18} />
+                    Mark as Resolved
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => onStatusChange(post.id, "Open")}
+                    className={`${montserrat.className} w-full py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition-all flex items-center justify-center gap-2`}
+                  >
+                    <RefreshCcw size={18} />
+                    Re-open Post
+                  </button>
+                )}
+              </div>
+            ) : isResolved ? (
+              <div
+                className={`${montserrat.className} w-full py-3.5 bg-gray-100 text-gray-400 rounded-xl font-bold text-sm flex items-center justify-center gap-2 cursor-not-allowed border border-gray-200`}
+              >
+                <Lock size={16} />
+                <span>This post has been resolved</span>
+              </div>
+            ) : (
+              <button
+                onClick={onChat}
+                className={`${montserrat.className} w-full py-3.5 bg-[#8B0E0E] hover:bg-[#720b0b] text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-red-900/20 flex items-center justify-center gap-2 transform active:scale-[0.98]`}
+              >
+                <MessageCircle size={20} />
+                Chat with Uploader
+              </button>
+            )}
+          </div>
+        </div>
       </motion.div>
     </motion.div>
   );
