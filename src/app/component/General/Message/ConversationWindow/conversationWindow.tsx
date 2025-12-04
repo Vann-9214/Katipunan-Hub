@@ -69,6 +69,10 @@ export default function ConversationWindow() {
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [otherUser, setOtherUser] = useState<OtherUser | null>(null);
+
+  // --- CHANGE 1: ADD STATE FOR BLOCKED STATUS ---
+  const [isCommunicationBlocked, setIsCommunicationBlocked] = useState(false);
+
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
 
   // --- File State ---
@@ -101,14 +105,22 @@ export default function ConversationWindow() {
 
     const fetchConversationData = async () => {
       try {
+        // --- CHANGE 2: SELECT BLOCKED COLUMNS ---
         const { data: convoData, error: convoError } = await supabase
           .from("Conversations")
-          .select("user_a_id, user_b_id")
+          .select(
+            "user_a_id, user_b_id, user_a_is_blocked_by_b, user_b_is_blocked_by_a"
+          )
           .eq("id", conversationId)
           .single();
 
         if (convoError) throw convoError;
         if (!convoData) throw new Error("Conversation not found");
+
+        // Calculate Blocked Status immediately
+        const blocked =
+          convoData.user_a_is_blocked_by_b || convoData.user_b_is_blocked_by_a;
+        setIsCommunicationBlocked(blocked);
 
         const otherUserId =
           convoData.user_a_id === currentUser.id
@@ -187,6 +199,28 @@ export default function ConversationWindow() {
             // New message (INSERT case)
             return [...current, newMsg];
           });
+        }
+      )
+      // Added listener to update block status in real-time
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "Conversations",
+          filter: `id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const newData = payload.new as {
+            user_a_is_blocked_by_b: boolean;
+            user_b_is_blocked_by_a: boolean;
+          };
+
+          if (newData) {
+            const blocked =
+              newData.user_a_is_blocked_by_b || newData.user_b_is_blocked_by_a;
+            setIsCommunicationBlocked(blocked);
+          }
         }
       )
       .subscribe();
@@ -375,16 +409,26 @@ export default function ConversationWindow() {
           </motion.div>
         )}
 
-        <MessageInput
-          newMessage={newMessage}
-          setNewMessage={setNewMessage}
-          onSubmit={handleSendMessage}
-          selectedFile={selectedFile}
-          setSelectedFile={setSelectedFile}
-          isUploading={isUploading}
-          replyingTo={replyingTo}
-          setReplyingTo={setReplyingTo}
-        />
+        {/* --- CHANGE 3: CONDITIONAL INPUT RENDERING --- */}
+        {isCommunicationBlocked ? (
+          <div className="p-4 bg-white border-t border-gray-200">
+            <div className="p-4 text-center text-gray-500 bg-gray-50 rounded-xl border border-gray-200 font-montserrat text-sm font-medium flex flex-col items-center gap-2">
+              <span className="text-xl">🚫</span>
+              <span>You cannot reply to this conversation.</span>
+            </div>
+          </div>
+        ) : (
+          <MessageInput
+            newMessage={newMessage}
+            setNewMessage={setNewMessage}
+            onSubmit={handleSendMessage}
+            selectedFile={selectedFile}
+            setSelectedFile={setSelectedFile}
+            isUploading={isUploading}
+            replyingTo={replyingTo}
+            setReplyingTo={setReplyingTo}
+          />
+        )}
       </div>
     </div>
   );

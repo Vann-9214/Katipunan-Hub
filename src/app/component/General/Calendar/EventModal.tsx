@@ -7,7 +7,7 @@ import { supabase } from "../../../../../supabase/Lib/General/supabaseClient";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
-  weight: ["500", "600"],
+  weight: ["500", "600", "700"],
 });
 
 // --- CORRECTED PROGRAMS LIST ---
@@ -78,6 +78,18 @@ export default function EventModal({
   const [pendingEvents, setPendingEvents] = useState<PostedEvent[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // --- NEW: Automatically set default date to Today when modal opens ---
+  useEffect(() => {
+    if (showAddEvent) {
+      const today = new Date();
+      // Format: YYYY-MM-DD
+      const y = today.getFullYear();
+      const m = String(today.getMonth() + 1).padStart(2, "0");
+      const d = String(today.getDate()).padStart(2, "0");
+      setSelectedDate(`${y}-${m}-${d}`);
+    }
+  }, [showAddEvent]);
+
   // Fetch current user role on mount
   useEffect(() => {
     let isMounted = true;
@@ -124,7 +136,7 @@ export default function EventModal({
   // Handle audience change - automatically set courses based on selection
   const handleAudienceChange = (type: string) => {
     setAudience(type);
-    
+
     // If Global is selected, automatically select all courses
     if (type === "Global") {
       setSelectedCourses(programs.map((p) => p.value));
@@ -136,19 +148,15 @@ export default function EventModal({
   };
 
   const createAndAddPostedEvent = () => {
-    // Validate event title
     if (!eventTitle.trim()) {
       alert("Please enter an event title");
       return;
     }
-
-    // Validate date
     if (!selectedDate) {
       alert("Please select a date");
       return;
     }
 
-    // Manually split date string to avoid timezone issues
     const [yearStr, monthStr, dayStr] = selectedDate.split("-");
     const year = parseInt(yearStr);
     const month = parseInt(monthStr);
@@ -156,7 +164,6 @@ export default function EventModal({
 
     const newEvent: PostedEvent = {
       title: eventTitle.trim(),
-      // Store the raw VALUES comma separated for the pending view
       course: selectedCourses.join(", "),
       audience,
       date: selectedDate,
@@ -165,7 +172,6 @@ export default function EventModal({
       day,
     };
 
-    // Add to pending events
     setPendingEvents((prev) => [...prev, newEvent]);
     setEventTitle("");
   };
@@ -175,24 +181,18 @@ export default function EventModal({
       alert("Please add at least one event before posting");
       return;
     }
-
     setIsSubmitting(true);
 
     try {
-      // Transform pending events to DB format
       const dbPayloads = pendingEvents.map((evt) => {
-        // Convert the comma-separated string back to an array of values
         let coursesArray: string[] | null = null;
-
         if (evt.audience === "Global") {
-          // If courses are selected, split the string back to array
           if (evt.course) {
             coursesArray = evt.course.split(", ");
           } else {
             coursesArray = [];
           }
         }
-
         return {
           user_id: userId,
           title: evt.title,
@@ -208,24 +208,10 @@ export default function EventModal({
       });
 
       const { error } = await supabase.from("Events").insert(dbPayloads);
-
       if (error) throw error;
-
-      // Refresh parent
       onEventAdded();
-
-      // Close modal
-      setShowAddEvent(false);
-
-      // Reset form
-      setEventTitle("");
-      setSelectedCourses([]);
-      setSelectedDate("");
-      setAudience("Personal");
-      setPendingEvents([]);
+      handleClose();
     } catch (err: unknown) {
-      const message = "Unknown error";
-      console.error("Error posting events:", message);
       console.error(err);
       alert("Failed to save events. Please try again.");
     } finally {
@@ -246,139 +232,153 @@ export default function EventModal({
 
   return (
     <>
-      {/* Dim background */}
       <div
-        className="fixed inset-0 bg-black/50 z-40"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
         onClick={handleClose}
-      ></div>
+      />
 
-      {/* Modal content */}
       <div
-        className="fixed z-50 bg-[#f9f9f9] rounded-2xl shadow-2xl p-10 flex flex-col"
-        style={{
-          width: "800px",
-          height: "700px",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          fontFamily: montserrat.style.fontFamily,
-        }}
+        className={`fixed z-[101] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95%] max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col ${montserrat.className}`}
+        style={{ height: "700px" }}
       >
-        {/* Header */}
-        <h2 className="text-3xl font-bold mb-6">Create New Event</h2>
-
-        {/* DATE PICKER */}
-        <div className="mb-4">
-          <label className="block text-lg font-semibold mb-2">
-            Select Date
-          </label>
-          <input
-            type="date"
-            className="w-full border border-gray-300 rounded-lg p-3 text-base focus:ring-2 focus:ring-yellow-400"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-          />
-        </div>
-
-        {/* AUDIENCE SELECTOR - TWO BUTTONS */}
-        <div className="flex gap-4 mb-4">
-          {audienceOptions.map((type) => (
-            <button
-              key={type}
-              onClick={() => handleAudienceChange(type)}
-              className={`px-6 py-2 rounded-full border font-medium transition-all ${
-                audience === type
-                  ? "bg-yellow-400 text-black border-yellow-400"
-                  : "border-gray-300 text-gray-600 hover:border-yellow-400 cursor-pointer"
-              }`}
-            >
-              {type}
-            </button>
-          ))}
-        </div>
-
-        {/* EVENT TITLE */}
-        <div className="mb-4 relative">
-          <label className="block text-lg font-semibold mb-2">
-            Event Title
-          </label>
-          <input
-            type="text"
-            className="w-full border border-gray-300 rounded-lg p-3 text-base focus:ring-2 focus:ring-yellow-400 pr-10"
-            value={eventTitle}
-            onChange={(e) => setEventTitle(e.target.value)}
-            placeholder="Enter event title"
-            onKeyPress={(e) => {
-              if (e.key === "Enter") {
-                createAndAddPostedEvent();
-              }
-            }}
-          />
-
-          {eventTitle.trim() && (
-            <button
-              onClick={createAndAddPostedEvent}
-              className="absolute right-3 top-[42px] text-green-500 hover:text-green-600 text-2xl"
-              title="Add to event list"
-            >
-              ✓
-            </button>
-          )}
-        </div>
-
-        {/* Event List */}
-        <div className="flex-1 overflow-y-auto border-t border-gray-200 mt-4 pt-4">
-          <h3 className="font-semibold mb-2 text-lg">Pending Events</h3>
-          {pendingEvents.length === 0 ? (
-            <p className="text-gray-500 italic">
-              No events yet. Add events using the checkmark button above.
-            </p>
-          ) : (
-            pendingEvents.map((evt, idx) => (
-              <div
-                key={idx}
-                className="flex items-center justify-between bg-gray-100 rounded-lg p-3 mb-2"
-              >
-                <div>
-                  <p className="font-semibold">{evt.title}</p>
-                  <p className="text-sm text-gray-600">
-                    {evt.audience} | {evt.date}
-                    {evt.audience === "Global" && evt.course && (
-                      <span className="block text-xs text-gray-500 mt-1 max-w-md truncate">
-                        All courses
-                      </span>
-                    )}
-                  </p>
-                </div>
-                <button
-                  onClick={() =>
-                    setPendingEvents((prev) => prev.filter((_, i) => i !== idx))
-                  }
-                  title="Remove event"
-                >
-                  <span className="text-red-500 font-bold text-xl hover:text-red-700">
-                    ×
-                  </span>
-                </button>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Buttons */}
-        <div className="flex justify-end gap-4 mt-6">
+        {/* Maroon Gradient Header */}
+        <div className="bg-gradient-to-r from-[#8B0E0E] to-[#4e0505] p-6 flex justify-between items-center text-white shadow-md">
+          <h2 className="text-2xl font-bold tracking-wide">Create New Event</h2>
           <button
             onClick={handleClose}
-            className="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+            className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/90 hover:text-white"
+          >
+            <span className="text-2xl leading-none">×</span>
+          </button>
+        </div>
+
+        {/* Content Body */}
+        <div className="flex-1 overflow-y-auto p-8 space-y-6">
+          {/* Audience Selector */}
+          <div className="grid grid-cols-2 gap-3 p-1 bg-gray-100 rounded-xl">
+            {audienceOptions.map((type) => (
+              <button
+                key={type}
+                onClick={() => handleAudienceChange(type)}
+                className={`py-3 rounded-lg font-bold text-sm transition-all duration-300 ${
+                  audience === type
+                    ? "bg-white text-[#8B0E0E] shadow-sm scale-[1.02] border border-gray-100"
+                    : "text-gray-500 hover:bg-white/50"
+                }`}
+              >
+                {type}
+              </button>
+            ))}
+          </div>
+
+          <div className="space-y-4">
+            {/* Date Picker */}
+            <div className="relative">
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 block ml-1">
+                Date
+              </label>
+              <input
+                type="date"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 font-medium focus:ring-2 focus:ring-[#8B0E0E] focus:border-transparent outline-none transition-all"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+              />
+            </div>
+
+            {/* Title Input */}
+            <div className="relative">
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 block ml-1">
+                Event Title
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  className="flex-1 bg-gray-50 border border-gray-200 rounded-xl p-4 font-medium focus:ring-2 focus:ring-[#8B0E0E] focus:border-transparent outline-none transition-all placeholder:text-gray-400"
+                  value={eventTitle}
+                  onChange={(e) => setEventTitle(e.target.value)}
+                  placeholder="Enter event title..."
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter") {
+                      createAndAddPostedEvent();
+                    }
+                  }}
+                />
+                {/* Add Button */}
+                <button
+                  onClick={createAndAddPostedEvent}
+                  className="bg-[#8B0E0E] hover:bg-[#a01212] text-white px-6 rounded-xl shadow-lg transition-all flex items-center justify-center font-bold text-xl"
+                  title="Add to pending list"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Pending Events List */}
+          <div className="pt-4 border-t border-gray-100">
+            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 ml-1">
+              Pending Events ({pendingEvents.length})
+            </h3>
+
+            <div className="space-y-3 min-h-[100px]">
+              {pendingEvents.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-[100px] text-gray-400 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50">
+                  <p className="text-sm font-medium">No events added yet</p>
+                </div>
+              ) : (
+                pendingEvents.map((evt, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all"
+                  >
+                    <div>
+                      <p className="font-bold text-[#1a1a1a]">{evt.title}</p>
+                      <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+                        <span
+                          className={`px-2 py-0.5 rounded text-xs font-bold ${
+                            evt.audience === "Global"
+                              ? "bg-red-100 text-red-700"
+                              : "bg-yellow-100 text-yellow-700"
+                          }`}
+                        >
+                          {evt.audience}
+                        </span>
+                        <span>{evt.date}</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() =>
+                        setPendingEvents((prev) =>
+                          prev.filter((_, i) => i !== idx)
+                        )
+                      }
+                      className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-all text-xl font-bold"
+                      title="Remove"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer Buttons */}
+        <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+          <button
+            onClick={handleClose}
+            className="px-6 py-3 rounded-xl font-bold text-gray-600 hover:bg-gray-200 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handlePost}
-            disabled={isSubmitting}
-            className="px-6 py-2 bg-yellow-400 text-black font-semibold rounded-lg hover:bg-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isSubmitting || pendingEvents.length === 0}
+            className="px-8 py-3 bg-[#8B0E0E] text-white rounded-xl font-bold hover:bg-[#700b0b] shadow-lg shadow-red-900/20 disabled:opacity-50 disabled:shadow-none transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
-            {isSubmitting ? "Posting..." : "Post"}
+            {isSubmitting ? "Saving..." : "Save Events"}
           </button>
         </div>
       </div>

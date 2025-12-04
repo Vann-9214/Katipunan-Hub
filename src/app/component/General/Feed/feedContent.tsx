@@ -26,6 +26,8 @@ import LoadingScreen from "@/app/component/ReusableComponent/LoadingScreen";
 import AddPosts from "../Announcement/AddPosts/addPosts";
 import Posts from "../Announcement/Posts/Posts";
 import formatPostDate from "../Announcement/Utils/formatDate";
+// --- NEW IMPORT ---
+import BackgroundGradient from "@/app/component/ReusableComponent/BackgroundGradient";
 
 const DEFAULT_FILTERS: FilterState = {
   sort: "Newest First",
@@ -297,7 +299,11 @@ export default function FeedsContent() {
   if (!user) return <LoadingScreen />;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    // Replaced min-h-screen bg-gray-50 with relative positioning for BackgroundGradient
+    <div className="relative min-h-screen">
+      {/* --- ADDED BACKGROUND GRADIENT --- */}
+      <BackgroundGradient />
+
       <HomepageTab user={user} />
       <FeedsLeftBar
         activeTab={activeTab}

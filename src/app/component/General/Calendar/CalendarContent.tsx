@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect, useCallback } from "react";
 import Image from "next/image";
-import { Montserrat } from "next/font/google";
+import { Montserrat, PT_Sans } from "next/font/google";
 import {
   PostedEvent,
   PersonalEvent,
@@ -18,10 +18,18 @@ import CalendarViews from "@/app/component/General/Calendar/CalendarViews";
 import { getPhilippineHolidays } from "@/app/component/General/Calendar/calendarUtils";
 import { supabase } from "../../../../../supabase/Lib/General/supabaseClient";
 import { getCurrentUserDetails } from "../../../../../supabase/Lib/General/getUser";
+import BackgroundGradient from "@/app/component/ReusableComponent/BackgroundGradient";
+import { Calendar as CalendarIcon, LayoutGrid } from "lucide-react";
+import { motion } from "framer-motion";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
-  weight: ["500", "600"],
+  weight: ["500", "600", "700", "800"],
+});
+
+const ptSans = PT_Sans({
+  subsets: ["latin"],
+  weight: ["400", "700"],
 });
 
 type PanelType = "Schedule" | "Reminder";
@@ -41,7 +49,7 @@ export default function CalendarContent() {
   const [showAddEvent, setShowAddEvent] = useState(false);
   const [viewMode, setViewMode] = useState<"month" | "year">("month");
 
-  // --- NEW STATE FOR MAXIMIZED VIEW ---
+  // --- STATE FOR MAXIMIZED VIEW ---
   const [maximizedPanel, setMaximizedPanel] = useState<PanelType | null>(null);
 
   // ---------------------
@@ -84,12 +92,6 @@ export default function CalendarContent() {
       const isUserAdmin = role.includes("Platform Administrator");
       setIsAdmin(isUserAdmin);
 
-      // We don't strictly need userCourse if we want Global to be visible to all
-      // const userCourse = user.course || "";
-
-      // CHANGE 1: Remove manual .or() filter.
-      // RLS policies on the database now handle security automatically.
-      // We just ask for everything ("*"), and the DB gives us what we are allowed to see.
       const { data, error } = await supabase.from("Events").select("*");
 
       if (error) throw error;
@@ -97,7 +99,7 @@ export default function CalendarContent() {
       if (data) {
         const dbEvents = data as DBEvent[];
 
-        // Filter Personal Events: Must match user ID (redundant with RLS but good for safety)
+        // Filter Personal Events: Must match user ID
         const pEvents: PersonalEvent[] = dbEvents
           .filter((e) => e.audience === "Personal" && e.user_id === user.id)
           .map((e) => ({
@@ -107,9 +109,7 @@ export default function CalendarContent() {
             day: e.day,
           }));
 
-        // CHANGE 2: Relaxed "Global" filtering.
-        // Previously, it hid events if the user's course didn't match.
-        // Now, if it says "Global", we show it to everyone.
+        // Global events - show to everyone
         const gEvents: PostedEvent[] = dbEvents
           .filter((e) => e.audience === "Global")
           .map((e) => ({
@@ -234,16 +234,7 @@ export default function CalendarContent() {
 
   return (
     <div className="relative min-h-screen flex flex-col">
-      <div className="fixed inset-0 -z-10">
-        <Image
-          src="/backgroundimage.svg"
-          alt="Background"
-          fill
-          className="object-cover"
-          priority
-          quality={100}
-        />
-      </div>
+      <BackgroundGradient />
 
       <CalendarMenu
         menuOpen={menuOpen}
@@ -253,111 +244,196 @@ export default function CalendarContent() {
         onMenuSelect={handleMenuSelect}
       />
 
-      <div className="relative flex flex-col px-[66px] pt-[130px]">
-        <div className="flex items-center gap-4 mb-6">
-          <div className="shadow-lg rounded-2xl">
-            <Image
-              src="/calendar icon.svg"
-              alt="Calendar"
-              width={65}
-              height={65}
+      {/* --- Main Content Area --- */}
+      <div className="relative flex flex-col pt-[130px] w-full mx-auto px-4 md:px-8 pb-24 max-w-[1400px]">
+        {/* --- Header & Controls --- */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+          {/* Title Area */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="flex items-center gap-4"
+          >
+            <div className="p-3 bg-gradient-to-br from-[#8B0E0E] to-[#5e0a0a] rounded-2xl shadow-lg shadow-red-900/20 text-white">
+              <CalendarIcon size={32} />
+            </div>
+            <div>
+              <h1
+                className={`${montserrat.className} text-[28px] md:text-[32px] font-extrabold text-[#1a1a1a] leading-tight`}
+              >
+                Event Board
+              </h1>
+              <p
+                className={`${ptSans.className} text-gray-500 font-medium text-sm md:text-base`}
+              >
+                Manage your academic schedule and reminders.
+              </p>
+            </div>
+          </motion.div>
+
+          {/* Controls Toolbar */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
+            className="flex items-center gap-3 bg-white/80 backdrop-blur-md p-1.5 rounded-2xl shadow-sm border border-gray-200/60"
+          >
+            {/* View Switcher Container */}
+            <div className="relative flex items-center bg-gray-100/50 rounded-xl p-1 h-[44px]">
+              {/* Sliding Background */}
+              <motion.div
+                className="absolute top-1 bottom-1 w-[50px] bg-white rounded-lg shadow-sm border border-black/5 z-0"
+                initial={false}
+                animate={{
+                  x: viewMode === "month" ? 0 : 50,
+                }}
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              />
+
+              {/* Month Button */}
+              <button
+                onClick={() => handleMenuSelect("Month")}
+                className={`relative z-10 w-[50px] h-full flex items-center justify-center cursor-pointer transition-colors rounded-lg ${
+                  viewMode === "month"
+                    ? "text-[#8B0E0E]"
+                    : "text-gray-400 hover:text-gray-600"
+                }`}
+                title="Month View"
+              >
+                <CalendarIcon size={18} />
+              </button>
+
+              {/* Year Button */}
+              <button
+                onClick={() => handleMenuSelect("Year")}
+                className={`relative z-10 w-[50px] h-full flex items-center justify-center cursor-pointer transition-colors rounded-lg ${
+                  viewMode === "year"
+                    ? "text-[#8B0E0E]"
+                    : "text-gray-400 hover:text-gray-600"
+                }`}
+                title="Year View"
+              >
+                <LayoutGrid size={18} />
+              </button>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* --- Content Flex Layout --- */}
+        <div
+          // UPDATED: Changed gap-8 to gap-12 for more separation
+          className={`flex flex-col gap-12 w-full mx-auto transition-all duration-300 ${
+            maximizedPanel
+              ? "max-w-[1600px] lg:flex-row"
+              : "max-w-[1400px] lg:flex-row"
+          }`}
+        >
+          {/* Calendar View */}
+          <div
+            className={`w-full transition-all duration-300 ${
+              maximizedPanel ? "lg:w-1/2" : "lg:w-2/3"
+            }`}
+          >
+            <CalendarViews
+              viewMode={viewMode}
+              currentDate={currentDate}
+              year={year}
+              monthName={monthName}
+              daysArray={daysArray}
+              holidaysForCurrentMonth={holidaysForCurrentMonth}
+              holidaysForYear={holidaysForYear}
+              personalEvents={personalEvents}
+              postedEvents={postedEvents}
+              selectedDay={selectedDay}
+              todayDate={todayDate}
+              isCurrentMonth={isCurrentMonth}
+              onPrevMonth={prevMonth}
+              onNextMonth={nextMonth}
+              onDayClick={setSelectedDay}
+              onMonthClick={handleMonthClick}
             />
           </div>
 
-          <div className="flex flex-col">
-            <h1
-              className={`${montserrat.className} text-[#800000] text-[32px] font-extrabold leading-tight`}
-            >
-              Event Board
-            </h1>
-            <p className="text-gray-600 text-[16px] mt-1">
-              Everything you need to stay on top of your schedule.
-            </p>
+          {/* Side Panels (Schedule / Reminders) */}
+          <div
+            className={`w-full transition-all duration-300 ${
+              maximizedPanel ? "lg:w-1/2" : "lg:w-1/3"
+            }`}
+          >
+            {viewMode === "month" &&
+              renderReminderPanel &&
+              !isScheduleMaximized && (
+                <ReminderPanel
+                  reminders={reminders}
+                  setReminders={setReminders}
+                  newReminder={newReminder}
+                  setNewReminder={setNewReminder}
+                  selectedDay={selectedDay}
+                  monthName={monthName}
+                  todayDate={todayDate}
+                  year={year}
+                  currentMonth={currentDate.getMonth()}
+                  postedEvents={postedEvents}
+                  personalEvents={personalEvents}
+                  holidays={holidaysForCurrentMonth}
+                  isAdmin={isAdmin}
+                  onDeletePostedEvent={handleDeletePostedEvent}
+                  setPersonalEvents={setPersonalEvents}
+                  isMaximized={isReminderMaximized}
+                  onMaximizeToggle={handleMaximizeToggle}
+                  currentMaximizedPanel={maximizedPanel as PanelType}
+                  onPanelSwitch={handlePanelSwitch}
+                />
+              )}
+
+            {viewMode === "month" &&
+              renderSchedulePanel &&
+              !isReminderMaximized && (
+                <SchedulePanel
+                  holidaysForCurrentMonth={holidaysForCurrentMonth}
+                  personalEvents={personalEvents}
+                  setPersonalEvents={setPersonalEvents}
+                  postedEvents={postedEvents}
+                  year={year}
+                  currentMonth={currentDate.getMonth()}
+                  selectedDay={selectedDay}
+                  todayDate={todayDate}
+                  monthName={monthName}
+                  isAdmin={isAdmin}
+                  onDeletePostedEvent={handleDeletePostedEvent}
+                  isMaximized={isScheduleMaximized}
+                  onMaximizeToggle={handleMaximizeToggle}
+                  currentMaximizedPanel={maximizedPanel as PanelType}
+                  onPanelSwitch={handlePanelSwitch}
+                />
+              )}
           </div>
         </div>
-
-        <CalendarViews
-          viewMode={viewMode}
-          currentDate={currentDate}
-          year={year}
-          monthName={monthName}
-          daysArray={daysArray}
-          holidaysForCurrentMonth={holidaysForCurrentMonth}
-          holidaysForYear={holidaysForYear}
-          personalEvents={personalEvents}
-          postedEvents={postedEvents}
-          selectedDay={selectedDay}
-          todayDate={todayDate}
-          isCurrentMonth={isCurrentMonth}
-          onPrevMonth={prevMonth}
-          onNextMonth={nextMonth}
-          onDayClick={setSelectedDay}
-          onMonthClick={handleMonthClick}
-        />
       </div>
 
-      <button
+      {/* Add Event Floating Button */}
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
         onClick={() => setShowAddEvent(true)}
-        className="fixed bottom-6 right-6 z-[99999] cursor-pointer bg-transparent"
+        className="fixed bottom-8 right-8 z-[50]"
       >
-        <Image
-          src="/Plus Sign.svg"
-          alt="Add Event"
-          width={103}
-          height={101}
-          className="pointer-events-none"
-        />
-      </button>
+        <div className="relative w-[80px] h-[80px] drop-shadow-2xl">
+          <Image
+            src="/Plus Sign.svg"
+            alt="Add Event"
+            fill
+            className="object-contain"
+          />
+        </div>
+      </motion.button>
 
       <EventModal
         showAddEvent={showAddEvent}
         setShowAddEvent={setShowAddEvent}
         onEventAdded={fetchEvents}
       />
-
-      {renderReminderPanel && !isScheduleMaximized && (
-        <ReminderPanel
-          reminders={reminders}
-          setReminders={setReminders}
-          newReminder={newReminder}
-          setNewReminder={setNewReminder}
-          selectedDay={selectedDay}
-          monthName={monthName}
-          todayDate={todayDate}
-          year={year}
-          currentMonth={currentDate.getMonth()}
-          postedEvents={postedEvents}
-          personalEvents={personalEvents}
-          holidays={holidaysForCurrentMonth}
-          isAdmin={isAdmin}
-          onDeletePostedEvent={handleDeletePostedEvent}
-          setPersonalEvents={setPersonalEvents}
-          isMaximized={isReminderMaximized}
-          onMaximizeToggle={handleMaximizeToggle}
-          currentMaximizedPanel={maximizedPanel as PanelType}
-          onPanelSwitch={handlePanelSwitch}
-        />
-      )}
-
-      {renderSchedulePanel && !isReminderMaximized && (
-        <SchedulePanel
-          holidaysForCurrentMonth={holidaysForCurrentMonth}
-          personalEvents={personalEvents}
-          setPersonalEvents={setPersonalEvents}
-          postedEvents={postedEvents}
-          year={year}
-          currentMonth={currentDate.getMonth()}
-          selectedDay={selectedDay}
-          todayDate={todayDate}
-          monthName={monthName}
-          isAdmin={isAdmin}
-          onDeletePostedEvent={handleDeletePostedEvent}
-          isMaximized={isScheduleMaximized}
-          onMaximizeToggle={handleMaximizeToggle}
-          currentMaximizedPanel={maximizedPanel as PanelType}
-          onPanelSwitch={handlePanelSwitch}
-        />
-      )}
     </div>
   );
 }

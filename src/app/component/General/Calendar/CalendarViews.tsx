@@ -14,12 +14,7 @@ import EventDetailsModal from "@/app/component/General/Calendar/EventDetailsModa
 
 const montserrat = Montserrat({
   subsets: ["latin"],
-  weight: ["500", "600"],
-});
-
-const ptSans = PT_Sans({
-  subsets: ["latin"],
-  weight: ["400", "700"],
+  weight: ["500", "600", "700"],
 });
 
 interface CalendarViewsProps {
@@ -73,7 +68,6 @@ export default function CalendarViews({
     e: React.MouseEvent
   ) => {
     e.stopPropagation();
-
     const rect = (e.target as HTMLElement).getBoundingClientRect();
     setPopupPosition({
       x: rect.right + 10,
@@ -83,7 +77,7 @@ export default function CalendarViews({
   };
 
   const handleEventLeave = () => {
-    // Don't close immediately, let the modal handle it
+    // Modal handles closing
   };
 
   const handleClosePopup = () => {
@@ -94,57 +88,64 @@ export default function CalendarViews({
   return (
     <>
       <div
-        className={`relative mt-[20px] bg-white rounded-lg border-4 border-[#5C0000] shadow-xl transition-all duration-300 ${
+        className={`relative flex flex-col bg-white rounded-[24px] shadow-2xl transition-all duration-300 overflow-hidden ${
           viewMode === "year" ? "w-[1272px]" : "w-[922px]"
         }`}
       >
-        {/* Calendar Header */}
+        {/* === Redesigned Header (Matches Posts/PLC Gradient) === */}
         <div
-          className={`${montserrat.className} flex justify-between items-center px-10 py-3 bg-[#5C0000] text-white text-[24px] font-semibold rounded-t-md`}
+          className={`${montserrat.className} flex justify-between items-center px-8 py-5 bg-gradient-to-r from-[#8B0E0E] to-[#5e0a0a] text-white`}
         >
           <button
             onClick={onPrevMonth}
-            className="hover:text-[#FFD700] transition"
+            className="p-2 hover:bg-white/10 rounded-full transition-all text-white/90 hover:text-[#FFD700]"
           >
             <ChevronLeft size={28} />
           </button>
-          <span>{viewMode === "month" ? `${monthName} ${year}` : year}</span>
+
+          <div className="flex flex-col items-center">
+            <span className="text-[24px] font-bold tracking-wide">
+              {viewMode === "month" ? monthName : year}
+            </span>
+            {viewMode === "month" && (
+              <span className="text-[14px] font-medium opacity-80">{year}</span>
+            )}
+          </div>
+
           <button
             onClick={onNextMonth}
-            className="hover:text-[#FFD700] transition"
+            className="p-2 hover:bg-white/10 rounded-full transition-all text-white/90 hover:text-[#FFD700]"
           >
             <ChevronRight size={28} />
           </button>
         </div>
 
-        {/* Month View */}
+        {/* === Month View Grid === */}
         {viewMode === "month" && (
-          <>
+          <div className="p-6">
+            {/* Days Header */}
             <div
-              className={`${ptSans.className} grid grid-cols-7 text-center font-bold text-gray-700 mt-3 text-[15px] px-6`}
+              className={`${montserrat.className} grid grid-cols-7 text-center mb-4`}
             >
-              {[
-                "Sunday",
-                "Monday",
-                "Tuesday",
-                "Wednesday",
-                "Thursday",
-                "Friday",
-                "Saturday",
-              ].map((d, i) => (
-                <div key={i}>{d}</div>
+              {["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map((d, i) => (
+                <div
+                  key={i}
+                  className="text-[12px] font-bold text-gray-400 tracking-widest"
+                >
+                  {d}
+                </div>
               ))}
             </div>
 
-            <div className="grid grid-cols-7 gap-4 mt-3 px-6 pb-6">
+            {/* Dates Grid */}
+            <div className="grid grid-cols-7 gap-4">
               {daysArray.map((day, index) => {
                 if (!day) {
-                  return (
-                    <div key={index} className="w-[85px] h-[85px] opacity-30" />
-                  );
+                  return <div key={index} className="w-[85px] h-[85px]" />;
                 }
 
                 const isToday = isCurrentMonth && day === todayDate;
+                const isSelected = selectedDay === day;
 
                 const dayHolidays = holidaysForCurrentMonth.filter(
                   (h) => h.day === day
@@ -169,36 +170,48 @@ export default function CalendarViews({
                 return (
                   <div
                     key={index}
-                    className={`relative w-[85px] h-[85px] flex flex-col items-center p-1 cursor-pointer`}
+                    className={`group relative w-[85px] h-[85px] flex flex-col items-center p-1 cursor-pointer rounded-2xl transition-all duration-200 border border-transparent hover:border-gray-100 hover:shadow-lg hover:-translate-y-1 ${
+                      isSelected ? "bg-red-50" : "bg-white"
+                    }`}
                     onClick={() => onDayClick(day)}
                   >
+                    {/* Today Ring Indicator */}
                     {isToday && (
-                      <div className="absolute inset-0 border-4 border-[#FFD700] rounded-md pointer-events-none" />
+                      <div className="absolute inset-0 rounded-2xl ring-2 ring-[#FFD700] ring-offset-2 z-0" />
                     )}
-                    <Image
-                      src="/Date Box.svg"
-                      alt="Date Box"
-                      width={85}
-                      height={85}
-                      className="absolute top-0 left-0 select-none"
-                    />
+
+                    {/* Date Box Image (Optional Background decoration) */}
+                    <div className="absolute top-0 left-0 w-full h-full opacity-0 group-hover:opacity-10 transition-opacity">
+                      <Image
+                        src="/Date Box.svg"
+                        alt="bg"
+                        width={85}
+                        height={85}
+                        className="opacity-50"
+                      />
+                    </div>
+
+                    {/* Date Number */}
                     <span
                       className={`${
-                        ptSans.className
-                      } text-[14px] font-bold absolute top-[6px] left-1/2 -translate-x-1/2 ${
-                        selectedDay === day
+                        montserrat.className
+                      } text-[16px] font-bold z-10 mt-1 transition-colors ${
+                        isToday
                           ? "text-[#FFD700]"
-                          : "text-[#5C0000]"
+                          : isSelected
+                          ? "text-[#8B0E0E]"
+                          : "text-gray-700 group-hover:text-[#8B0E0E]"
                       }`}
                     >
                       {day}
                     </span>
 
-                    <div className="absolute top-[25px] w-[75px] h-[50px] flex flex-col gap-[2px] overflow-hidden">
-                      {allDayEvents.map((event, i) => (
+                    {/* Events List */}
+                    <div className="w-full flex flex-col gap-[2px] mt-1 overflow-hidden z-10 px-1">
+                      {allDayEvents.slice(0, 3).map((event, i) => (
                         <div
                           key={i}
-                          className="text-[10px] text-center rounded-md px-[2px] py-[1px] text-black truncate cursor-pointer hover:brightness-90 hover:scale-105 transition-all"
+                          className="text-[9px] font-semibold text-center rounded-[4px] py-[1px] text-black truncate shadow-sm transition-transform hover:scale-105"
                           style={{ backgroundColor: getEventColor(event, i) }}
                           onMouseEnter={(e) => handleEventHover(event, e)}
                           onMouseLeave={handleEventLeave}
@@ -206,17 +219,22 @@ export default function CalendarViews({
                           {getEventLabel(event)}
                         </div>
                       ))}
+                      {allDayEvents.length > 3 && (
+                        <div className="text-[8px] text-center text-gray-400">
+                          +{allDayEvents.length - 3} more
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
               })}
             </div>
-          </>
+          </div>
         )}
 
-        {/* Year View */}
+        {/* === Year View Grid === */}
         {viewMode === "year" && (
-          <div className="grid grid-cols-3 gap-6 p-8 pb-10">
+          <div className="grid grid-cols-3 gap-x-8 gap-y-10 p-10 bg-gray-50/50">
             {Array.from({ length: 12 }, (_, monthIndex) => {
               const monthDate = new Date(year, monthIndex, 1);
               const thisMonthName = monthDate.toLocaleString("default", {
@@ -233,6 +251,7 @@ export default function CalendarViews({
                 return day > 0 && day <= daysInThisMonth ? day : null;
               });
 
+              // (Filter logic same as before...)
               const monthHolidays = holidaysForYear.filter(
                 (h) => h.month === monthIndex + 1
               );
@@ -248,31 +267,28 @@ export default function CalendarViews({
               return (
                 <div
                   key={monthIndex}
-                  className={`${ptSans.className} bg-white rounded-lg shadow-md p-4 cursor-pointer hover:shadow-xl transition-all hover:scale-105 border-2 border-[#FFD700]`}
+                  className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer border border-transparent hover:border-[#FFD700]/30 hover:-translate-y-1"
                   onClick={() => onMonthClick(monthIndex)}
                 >
-                  <h3 className="text-center font-bold text-[#5C0000] mb-3 text-[16px]">
+                  <h3
+                    className={`${montserrat.className} text-center font-bold text-[#8B0E0E] mb-3`}
+                  >
                     {thisMonthName}
                   </h3>
-                  <div className="grid grid-cols-7 gap-[3px] mb-2">
+
+                  {/* Mini Grid */}
+                  <div className="grid grid-cols-7 gap-1">
                     {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
                       <div
                         key={i}
-                        className="text-[11px] text-center text-gray-600 font-semibold"
+                        className="text-[9px] text-center text-gray-400 font-bold mb-1"
                       >
                         {d}
                       </div>
                     ))}
-                  </div>
-                  <div className="grid grid-cols-7 gap-[3px]">
                     {monthDays.map((day, i) => {
-                      if (!day)
-                        return (
-                          <div
-                            key={i}
-                            className="text-[11px] text-center py-1"
-                          />
-                        );
+                      if (!day) return <div key={i} />;
+
                       const dayHasHoliday = monthHolidays.some(
                         (h) => h.day === day
                       );
@@ -287,12 +303,12 @@ export default function CalendarViews({
                       return (
                         <div
                           key={i}
-                          className={`text-[11px] text-center py-1 rounded ${
+                          className={`text-[10px] h-6 w-6 flex items-center justify-center mx-auto rounded-full ${
                             isToday
-                              ? "bg-[#FFD700] font-bold text-black"
+                              ? "bg-[#FFD700] text-white font-bold shadow-md"
                               : dayHasHoliday || dayHasEvent
-                              ? "bg-[#5C0000] text-white font-semibold"
-                              : "text-gray-700 hover:bg-gray-100"
+                              ? "bg-[#8B0E0E] text-white"
+                              : "text-gray-600 hover:bg-gray-100"
                           }`}
                         >
                           {day}
@@ -307,7 +323,6 @@ export default function CalendarViews({
         )}
       </div>
 
-      {/* Event Details Popup */}
       <EventDetailsModal
         event={selectedEvent}
         position={popupPosition}

@@ -116,6 +116,9 @@ export default function ChatSidebar() {
         avatarURL: null,
       };
 
+      const is_communication_blocked =
+        convo.user_a_is_blocked_by_b || convo.user_b_is_blocked_by_a;
+
       const is_favorite = isCurrentUserA
         ? convo.user_a_is_favorite
         : convo.user_b_is_favorite;
@@ -135,7 +138,10 @@ export default function ChatSidebar() {
         : 0;
 
       return {
+        is_communication_blocked: is_communication_blocked,
         id: convo.id,
+        user_a_id: convo.user_a_id,
+        user_b_id: convo.user_b_id,
         last_message_at: convo.last_message_at,
         is_favorite: is_favorite,
         is_blocked: isCurrentUserA
@@ -207,6 +213,14 @@ export default function ChatSidebar() {
           fetchConversations(currentUserId);
         }
       )
+      // Added listener for Conversations table updates to reflect block/favorite changes immediately
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "Conversations" },
+        () => {
+          fetchConversations(currentUserId);
+        }
+      )
       .subscribe();
 
     return () => {
@@ -259,8 +273,18 @@ export default function ChatSidebar() {
     convo.otherUser.fullName.toLowerCase().includes(search.toLowerCase())
   );
 
-  const favorites = filteredConversations.filter((c) => c.is_favorite);
-  const chats = filteredConversations.filter((c) => !c.is_favorite);
+  // Split into categories
+  const blocked = filteredConversations.filter((c) => c.is_blocked);
+  const favorites = filteredConversations.filter(
+    (c) => c.is_favorite && !c.is_blocked
+  );
+  const chats = filteredConversations.filter(
+    (c) => !c.is_favorite && !c.is_blocked
+  );
+
+  const handleUpdate = () => {
+    if (currentUserId) fetchConversations(currentUserId);
+  };
 
   if (!currentUser && !loading) {
     return (
@@ -380,11 +404,29 @@ export default function ChatSidebar() {
                     <ConversationList
                       title="Favorites"
                       conversations={favorites}
+                      onUpdate={handleUpdate}
+                      currentUserId={currentUserId}
                     />
                   </motion.div>
                   <motion.div variants={itemVariants}>
-                    <ConversationList title="All Chats" conversations={chats} />
+                    <ConversationList
+                      title="All Chats"
+                      conversations={chats}
+                      onUpdate={handleUpdate}
+                      currentUserId={currentUserId}
+                    />
                   </motion.div>
+                  {/* ADDED: Blocked Section */}
+                  {blocked.length > 0 && (
+                    <motion.div variants={itemVariants}>
+                      <ConversationList
+                        title="Blocked"
+                        conversations={blocked}
+                        onUpdate={handleUpdate}
+                        currentUserId={currentUserId}
+                      />
+                    </motion.div>
+                  )}
 
                   {filteredConversations.length === 0 && search.length > 0 && (
                     <motion.div

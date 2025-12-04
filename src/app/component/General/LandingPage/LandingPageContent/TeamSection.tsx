@@ -2,32 +2,56 @@
 
 import React from "react";
 import Image from "next/image";
-import { Instagram, Linkedin, Mail } from "lucide-react";
+import { motion, Variants } from "framer-motion";
 
-// --- TEAM DATA ---
+/* --- TEAM DATA --- */
 const TEAM_MEMBERS = [
   {
     name: "Ivan Cañete",
-    role: "Project Lead / Backend",
-    bio: "Building the secure core of Katipunan Hub. ensuring seamless data flow and robust API integrations for the community.",
-    skills: "Node.js • Supabase • Database Design",
-    image: null, // Add image path when available
+    role: "Project Lead / Full Stack",
+    bio: "As the driving force behind Katipunan Hub, Ivan leads the entire project development and oversees the full stack architecture, ensuring seamless integration from backend logic to the user interface.",
+    skills: "Full Stack Dev • System Arch • Leadership",
+    image: "/Ivan.jpg",
   },
   {
-    name: "Member Name 2",
-    role: "UI/UX & Frontend",
-    bio: "Crafting intuitive interfaces and translating designs into responsive, interactive experiences that students love.",
-    skills: "React • Tailwind • Framer Motion",
-    image: null,
+    name: "Clark Jaca",
+    role: "Frontend Developer",
+    bio: "Focused on the user interface design and implementation. Crafted the Landing Page and the visual layout for the Lost and Found feature.",
+    skills: "React • UI Implementation • Frontend Design",
+    image: "/Clark.jpg",
   },
   {
-    name: "Member Name 3",
-    role: "Full Stack Developer",
-    bio: "Bridging the gap between server and client, ensuring functionality is seamless across the entire platform.",
-    skills: "TypeScript • SQL • System Arch",
-    image: null,
+    name: "Adriyanna Diana",
+    role: "Frontend Developer",
+    bio: "Specialized in the Calendar interface. Designed the visual elements and layout to ensure the scheduling features are intuitive and user-friendly.",
+    skills: "React • UI Design • Calendar Interfaces",
+    image: "/Adi.jpg",
   },
 ];
+
+// Animation Variants - Explicitly typed to fix TypeScript error
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.3,
+    },
+  },
+};
+
+const cardVariants: Variants = {
+  hidden: { opacity: 0, y: 50 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 50,
+      damping: 20,
+    },
+  },
+};
 
 const TeamSection = () => {
   return (
@@ -44,33 +68,48 @@ const TeamSection = () => {
 
       <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
         {/* Header */}
-        <div className="mb-20 text-center space-y-4">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="mb-20 text-center space-y-4"
+        >
           <h2 className="text-white font-montserrat font-bold text-[48px] lg:text-[56px] drop-shadow-xl tracking-tight">
             Meet the Builders
           </h2>
           <p className="text-gray-300 font-montserrat text-lg max-w-2xl mx-auto leading-relaxed">
-            The student developers turning the Katipunan Hub vision into reality.
+            The student developers turning the Katipunan Hub vision into
+            reality.
           </p>
-        </div>
+        </motion.div>
 
-        {/* 3-Column Static Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 lg:gap-12 items-stretch justify-center">
+        {/* 3-Column Grid with Animation */}
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-10 lg:gap-12 items-stretch justify-center"
+        >
           {TEAM_MEMBERS.map((member, index) => (
-            <div
+            <motion.div
               key={index}
-              className="group relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-[30px] overflow-hidden hover:bg-white/10 hover:border-white/20 hover:-translate-y-2 transition-all duration-300 shadow-2xl flex flex-col"
+              variants={cardVariants}
+              whileHover={{ y: -10, transition: { duration: 0.3 } }}
+              className="group relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-[30px] overflow-hidden hover:bg-white/10 hover:border-white/20 transition-colors duration-300 shadow-2xl flex flex-col"
             >
               {/* Image Area */}
               <div className="h-[240px] w-full bg-gradient-to-b from-gray-700/50 to-gray-900/50 relative flex items-center justify-center overflow-hidden group-hover:shadow-inner transition-all">
                 {member.image ? (
-                  <Image
+                  <img
                     src={member.image}
                     alt={member.name}
-                    fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-110"
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
                 ) : (
                   <div className="flex flex-col items-center gap-2 text-white/20 group-hover:text-white/40 transition-colors">
+                    {/* ... keep your existing placeholder circle code here ... */}
                     <div className="w-20 h-20 rounded-full border-2 border-current flex items-center justify-center">
                       <span className="text-3xl font-bold">
                         {member.name.charAt(0)}
@@ -95,7 +134,7 @@ const TeamSection = () => {
                   </h3>
                 </div>
 
-                <p className="text-gray-400 text-sm leading-relaxed font-ptsans mb-6 line-clamp-3">
+                <p className="text-gray-400 text-sm leading-relaxed font-ptsans mb-6">
                   {member.bio}
                 </p>
 
@@ -106,24 +145,11 @@ const TeamSection = () => {
                   <p className="text-gray-300 text-sm font-medium font-mono">
                     {member.skills}
                   </p>
-
-                  {/* Social Icons */}
-                  <div className="flex gap-4 mt-6">
-                    <button className="text-gray-400 hover:text-[#EFBF04] transition-colors">
-                      <Linkedin size={20} />
-                    </button>
-                    <button className="text-gray-400 hover:text-[#EFBF04] transition-colors">
-                      <Instagram size={20} />
-                    </button>
-                    <button className="text-gray-400 hover:text-[#EFBF04] transition-colors">
-                      <Mail size={20} />
-                    </button>
-                  </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );

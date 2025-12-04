@@ -1,10 +1,14 @@
-// SchedulePanel.tsx
 "use client";
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { PT_Sans } from "next/font/google";
-import { Holiday, PersonalEvent, PostedEvent, FilterType } from "@/app/component/General/Calendar/types";
+import { PT_Sans, Montserrat } from "next/font/google";
+import {
+  Holiday,
+  PersonalEvent,
+  PostedEvent,
+  FilterType,
+} from "@/app/component/General/Calendar/types";
 import ScheduleFilterSwitch from "@/app/component/General/Calendar/ScheduleFilterSwitch";
 import ScheduleEventsList from "@/app/component/General/Calendar/ScheduleEventsList";
 import PanelToggleSwitch from "./PanelToggleSwitch";
@@ -12,6 +16,11 @@ import PanelToggleSwitch from "./PanelToggleSwitch";
 const ptSans = PT_Sans({
   subsets: ["latin"],
   weight: ["400", "700"],
+});
+
+const montserrat = Montserrat({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
 });
 
 type PanelType = "Schedule" | "Reminder";
@@ -28,11 +37,10 @@ interface SchedulePanelProps {
   monthName: string;
   isAdmin: boolean;
   onDeletePostedEvent?: (eventId: string) => void;
-  // State control from parent
-  isMaximized: boolean; // Use prop to control maximized state
-  onMaximizeToggle: (panel: PanelType | null) => void; // Function to notify parent of minimize/maximize
-  currentMaximizedPanel: PanelType; // Only needed if maximized, but included for completeness
-  onPanelSwitch: (panel: PanelType) => void; // Function to switch panels when maximized
+  isMaximized: boolean;
+  onMaximizeToggle: (panel: PanelType | null) => void;
+  currentMaximizedPanel: PanelType;
+  onPanelSwitch: (panel: PanelType) => void;
 }
 
 export default function SchedulePanel({
@@ -47,15 +55,14 @@ export default function SchedulePanel({
   monthName,
   isAdmin,
   onDeletePostedEvent,
-  isMaximized, // Now controlled by prop
-  onMaximizeToggle, // Function from parent
+  isMaximized,
+  onMaximizeToggle,
   currentMaximizedPanel,
   onPanelSwitch,
 }: SchedulePanelProps) {
   const [selectedFilter, setSelectedFilter] = useState<FilterType>("Global");
   const [newEvent, setNewEvent] = useState("");
 
-  // Simplified maximize handler that communicates with the parent
   const handleToggleMaximize = () => {
     onMaximizeToggle(isMaximized ? null : "Schedule");
   };
@@ -76,10 +83,12 @@ export default function SchedulePanel({
     }
   };
 
+  // Keep delete event logic for lists
   const handleDeleteEvent = (index: number) => {
     setPersonalEvents((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // Keep prompt logic just in case, though we have an input
   const handlePromptAddEvent = () => {
     const ev = prompt("Enter new event:");
     if (ev && ev.trim()) {
@@ -99,11 +108,9 @@ export default function SchedulePanel({
   const filteredPersonalEvents = personalEvents.filter(
     (e) => e.year === year && e.month === currentMonth + 1
   );
-
   const filteredPostedEvents = postedEvents.filter(
     (e) => e.year === year && e.month === currentMonth + 1
   );
-
   const globalPostedEvents = filteredPostedEvents.filter(
     (e) => e.audience === "Global"
   );
@@ -113,74 +120,67 @@ export default function SchedulePanel({
 
   const panelContent = (
     <div
-      className={`${ptSans.className} ${
-        isMaximized ? "" : "absolute"
-      } flex flex-col overflow-hidden`}
+      className={`${ptSans.className} flex flex-col bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100 transition-all duration-300`}
       style={
         isMaximized
-          ? {
-              width: "800px",
-              height: "80vh",
-              maxHeight: "900px",
-              backgroundColor: "#F4F4F4",
-              borderRadius: "25px",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
-              padding: "30px",
-            }
-          : {
-              left: "1000px",
-              top: "230px",
-              width: "440px",
-              height: "650px",
-              backgroundColor: "#F4F4F4",
-              borderRadius: "25px",
-              boxShadow: "0 4px 10px rgba(0,0,0,0.2)",
-              padding: "20px",
-            }
+          ? { width: "100%", height: "100%", maxHeight: "900px" }
+          : { width: "100%", height: "650px" }
       }
     >
-      {/* Header */}
-      <div className="flex justify-between items-center mb-4 flex-shrink-0">
-        <h2
-          className={`font-bold text-[#800000] ${
-            isMaximized ? "text-[32px]" : "text-[25px]"
-          }`}
-        >
-          Schedule
-        </h2>
-        
-        {/* === MAXIMIZED TOGGLE SWITCH === */}
-        {isMaximized && (
-            <PanelToggleSwitch
-                currentPanel={currentMaximizedPanel}
-                onPanelChange={onPanelSwitch}
+      {/* Header - Maroon Gradient */}
+      <div className="bg-gradient-to-r from-[#8B0E0E] to-[#4e0505] p-5 flex justify-between items-center text-white shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+            <Image
+              src="/Schedule.svg"
+              alt="Schedule Icon"
+              width={20}
+              height={20}
+              className="brightness-0 invert"
             />
-        )}
-        {/* =============================== */}
+          </div>
+          <h2 className={`${montserrat.className} text-xl font-bold`}>
+            Schedule
+          </h2>
+        </div>
 
         <div className="flex gap-2 items-center">
+          {/* Maximize Toggle */}
+          {isMaximized && (
+            <PanelToggleSwitch
+              currentPanel={currentMaximizedPanel}
+              onPanelChange={onPanelSwitch}
+            />
+          )}
+
           <button
-            onClick={handleToggleMaximize} // Use parent handler
-            className="flex items-center justify-center rounded-full bg-[#800000] hover:bg-[#A52A2A] transition"
-            style={{ width: "43px", height: "40px" }}
+            onClick={handleToggleMaximize}
+            className="flex items-center justify-center rounded-full hover:bg-white/10 w-10 h-10 transition text-white"
             title={isMaximized ? "Minimize" : "Maximize"}
           >
-            <span className="text-white text-[20px] font-bold">
+            <span className="text-[20px] font-bold pb-1">
               {isMaximized ? "−" : "⛶"}
             </span>
           </button>
-          <div
-            className="flex items-center justify-center rounded-full bg-[#800000] cursor-pointer hover:bg-[#A52A2A] transition"
-            style={{ width: "43px", height: "40px" }}
+
+          {/* Plus Button in Header (Optional alias to prompt) */}
+          <button
             onClick={handlePromptAddEvent}
+            className="flex items-center justify-center rounded-full hover:bg-white/10 w-10 h-10 transition text-white"
           >
-            <Image src="/Bellplus.svg" alt="Add Event" width={30} height={30} />
-          </div>
+            <Image
+              src="/Bellplus.svg"
+              alt="Add"
+              width={20}
+              height={20}
+              className="brightness-0 invert"
+            />
+          </button>
         </div>
       </div>
 
       {/* Filter Switch */}
-      <div className="mb-4">
+      <div className="p-4 bg-gray-50 border-b border-gray-100 shrink-0">
         <ScheduleFilterSwitch
           selectedFilter={selectedFilter}
           onFilterChange={setSelectedFilter}
@@ -188,7 +188,7 @@ export default function SchedulePanel({
       </div>
 
       {/* Events List */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-y-auto p-2">
         <ScheduleEventsList
           selectedFilter={selectedFilter}
           holidaysForCurrentMonth={holidaysForCurrentMonth}
@@ -203,37 +203,27 @@ export default function SchedulePanel({
         />
       </div>
 
-      {/* Add event row */}
+      {/* Quick Add Row */}
       {(selectedFilter === "Personal" || selectedFilter === "All") && (
-        <div
-          className="mt-4 flex items-center justify-between w-full bg-gray-100 rounded-full px-4 text-gray-600 shadow-sm"
-          style={{ height: isMaximized ? "44px" : "36px" }}
-        >
-          <input
-            type="text"
-            placeholder={`Add event on ${
-              selectedDay
-                ? `${selectedDay} ${monthName.slice(0, 3)}`
-                : `${todayDate} ${monthName.slice(0, 3)}`
-            }`}
-            value={newEvent}
-            onChange={(e) => setNewEvent(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && handleAddEvent()}
-            className={`bg-transparent outline-none w-full text-gray-700 ${
-              isMaximized ? "text-[16px]" : "text-[14px]"
-            }`}
-          />
-          <button
-            onClick={handleAddEvent}
-            className="p-1 hover:opacity-80 transition"
-          >
-            <Image
-              src="/Bellplus.svg"
-              alt="Add"
-              width={isMaximized ? 20 : 18}
-              height={isMaximized ? 20 : 18}
+        <div className="p-4 border-t border-gray-100 bg-white shrink-0">
+          <div className="flex items-center bg-gray-100 rounded-xl p-2 pl-4 transition-all focus-within:ring-2 focus-within:ring-[#8B0E0E]/20">
+            <input
+              type="text"
+              value={newEvent}
+              onChange={(e) => setNewEvent(e.target.value)}
+              onKeyPress={(e) => e.key === "Enter" && handleAddEvent()}
+              placeholder={`Add event on ${
+                selectedDay || todayDate
+              } ${monthName.slice(0, 3)}...`}
+              className="flex-1 bg-transparent outline-none text-sm font-medium text-gray-700 placeholder:text-gray-400"
             />
-          </button>
+            <button
+              onClick={handleAddEvent}
+              className="p-2 bg-white rounded-lg shadow-sm text-[#8B0E0E] hover:scale-105 transition-transform"
+            >
+              <Image src="/Bellplus.svg" alt="Add" width={16} height={16} />
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -242,11 +232,15 @@ export default function SchedulePanel({
   if (isMaximized) {
     return (
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center"
-        style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
-        onClick={() => onMaximizeToggle(null)} // Minimize when clicking outside
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-8"
+        onClick={() => onMaximizeToggle(null)}
       >
-        <div onClick={(e) => e.stopPropagation()}>{panelContent}</div>
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="w-full max-w-4xl h-full"
+        >
+          {panelContent}
+        </div>
       </div>
     );
   }

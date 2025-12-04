@@ -1,71 +1,208 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { usePathname } from "next/navigation";
-import { MoreHorizontal, Star, Ban, Trash2 } from "lucide-react";
+import { createPortal } from "react-dom"; // Import Portal
+import { usePathname, useRouter } from "next/navigation";
+import { MoreHorizontal, Star, Ban, Trash2, RotateCcw } from "lucide-react";
 import { Conversation } from "../Utils/types";
 import Avatar from "@/app/component/ReusableComponent/Avatar";
 import { motion } from "framer-motion";
-import Link from "next/link";
+import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
 
 export default function ConversationItem({
   conversation,
+  onUpdate,
+  currentUserId,
 }: {
   conversation: Conversation;
+  onUpdate: () => void;
+  currentUserId: string | undefined;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const isActive = pathname === `/Message/${conversation.id}`;
   const isUnread = conversation.unreadCount > 0;
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const [menuCoords, setMenuCoords] = useState({ top: 0, left: 0 });
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  const handleItemClick = () => {
+    router.push(`/Message/${conversation.id}`);
+  };
 
   const handleMenuClick = (e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent Link navigation
-    e.stopPropagation(); // Stop event bubbling
-    setIsMenuOpen((prev) => !prev);
-  };
-
-  const handleFavorite = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log("Favorite clicked for:", conversation.id);
-    setIsMenuOpen(false);
+
+    if (isMenuOpen) {
+      setIsMenuOpen(false);
+      return;
+    }
+
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const menuHeight = 130; // Approximate height of the menu
+      const menuWidth = 144; // Width of w-36 (9rem)
+
+      // Check space below
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const showAbove = spaceBelow < menuHeight;
+
+      setMenuCoords({
+        // Align right edge of menu with right edge of button
+        left: rect.right - menuWidth,
+        // If showing above, position above button, else below
+        top: showAbove ? rect.top - menuHeight - 8 : rect.bottom + 8,
+      });
+
+      setIsMenuOpen(true);
+    }
   };
 
-  const handleBlock = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    console.log("Block clicked for:", conversation.id);
-    setIsMenuOpen(false);
-  };
-
-  const handleDelete = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    console.log("Delete clicked for:", conversation.id);
-    setIsMenuOpen(false);
-  };
-
+  // Close menu on scroll or resize
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsMenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
+    const handleScroll = () => setIsMenuOpen(false);
+    window.addEventListener("scroll", handleScroll, true);
+    window.addEventListener("resize", handleScroll);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("scroll", handleScroll, true);
+      window.removeEventListener("resize", handleScroll);
     };
-  }, [menuRef]);
+  }, []);
+
+  const handleFavorite = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!currentUserId) return;
+
+    try {
+      const isUserA = currentUserId === conversation.user_a_id;
+      const updateField = isUserA ? "user_a_is_favorite" : "user_b_is_favorite";
+
+      const { error } = await supabase
+        .from("Conversations")
+        .update({ [updateField]: !conversation.is_favorite })
+        .eq("id", conversation.id);
+
+      if (error) throw error;
+      onUpdate();
+    } catch (err) {
+      console.error("Error toggling favorite:", err);
+    }
+    setIsMenuOpen(false);
+  };
+
+  const handleBlock = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!currentUserId) return;
+
+    try {
+      const isUserA = currentUserId === conversation.user_a_id;
+      const updateField = isUserA
+        ? "user_b_is_blocked_by_a"
+        : "user_a_is_blocked_by_b";
+
+      const { error } = await supabase
+        .from("Conversations")
+        .update({ [updateField]: !conversation.is_blocked })
+        .eq("id", conversation.id);
+
+      if (error) throw error;
+      onUpdate();
+    } catch (err) {
+      console.error("Error toggling block:", err);
+    }
+    setIsMenuOpen(false);
+  };
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!currentUserId) return;
+
+    if (!confirm("Are you sure? This will delete the chat for both users.")) {
+      setIsMenuOpen(false);
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("Conversations")
+        .delete()
+        .eq("id", conversation.id);
+
+      if (error) throw error;
+      if (isActive) router.push("/Message");
+      onUpdate();
+    } catch (err) {
+      console.error("Error deleting conversation:", err);
+    }
+    setIsMenuOpen(false);
+  };
+
+  // Define the Menu Component
+  const MenuContent = (
+    <div
+      className="fixed inset-0 z-[9999] flex items-start justify-start"
+      onClick={(e) => {
+        e.stopPropagation();
+        setIsMenuOpen(false);
+      }}
+    >
+      {/* Invisible backdrop to catch clicks */}
+
+      <div
+        className="absolute bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden"
+        style={{
+          top: menuCoords.top,
+          left: menuCoords.left,
+          width: "144px", // w-36
+        }}
+        onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
+      >
+        <ul className="py-1">
+          <li
+            onClick={handleFavorite}
+            className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-[#EFBF04]/10 hover:text-[#8B0E0E] cursor-pointer transition-colors"
+          >
+            <Star
+              size={14}
+              className={
+                conversation.is_favorite ? "fill-current text-[#EFBF04]" : ""
+              }
+            />
+            <span>{conversation.is_favorite ? "Unfavorite" : "Favorite"}</span>
+          </li>
+          <li
+            onClick={handleBlock}
+            className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-[#EFBF04]/10 hover:text-[#8B0E0E] cursor-pointer transition-colors"
+          >
+            {conversation.is_blocked ? (
+              <RotateCcw size={14} />
+            ) : (
+              <Ban size={14} />
+            )}
+            <span>{conversation.is_blocked ? "Unblock" : "Block"}</span>
+          </li>
+          <li
+            onClick={handleDelete}
+            className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 cursor-pointer transition-colors border-t border-gray-100"
+          >
+            <Trash2 size={14} />
+            <span>Delete Chat</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  );
 
   return (
-    <Link
-      href={`/Message/${conversation.id}`}
-      className="block w-full text-inherit no-underline"
-    >
+    <>
       <motion.div
         layout
+        onClick={handleItemClick}
         whileHover={{ scale: 1.01 }}
         whileTap={{ scale: 0.98 }}
         className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200 relative group border
@@ -76,7 +213,6 @@ export default function ConversationItem({
           }
         `}
       >
-        {/* Active Indicator Stripe */}
         {isActive && (
           <div className="absolute left-0 top-2 bottom-2 w-[3px] bg-[#8B0E0E] rounded-r-full" />
         )}
@@ -126,6 +262,7 @@ export default function ConversationItem({
                 })}
               </span>
               <button
+                ref={buttonRef}
                 onClick={handleMenuClick}
                 className="hidden group-hover:flex items-center justify-center w-6 h-6 cursor-pointer hover:bg-gray-200 rounded-full transition-colors"
                 aria-label="Conversation options"
@@ -138,39 +275,12 @@ export default function ConversationItem({
             </>
           )}
         </div>
-
-        {isMenuOpen && (
-          <div
-            ref={menuRef}
-            className="absolute top-10 right-2 w-36 bg-white border border-gray-200 rounded-xl shadow-xl z-20 overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <ul className="py-1">
-              <li
-                onClick={handleFavorite}
-                className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-[#EFBF04]/10 hover:text-[#8B0E0E] cursor-pointer transition-colors"
-              >
-                <Star size={14} />
-                <span>Favorite</span>
-              </li>
-              <li
-                onClick={handleBlock}
-                className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-[#EFBF04]/10 hover:text-[#8B0E0E] cursor-pointer transition-colors"
-              >
-                <Ban size={14} />
-                <span>Block</span>
-              </li>
-              <li
-                onClick={handleDelete}
-                className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 cursor-pointer transition-colors border-t border-gray-100"
-              >
-                <Trash2 size={14} />
-                <span>Delete Chat</span>
-              </li>
-            </ul>
-          </div>
-        )}
       </motion.div>
-    </Link>
+
+      {/* Render the menu in a Portal (teleport to body) */}
+      {isMenuOpen &&
+        typeof document !== "undefined" &&
+        createPortal(MenuContent, document.body)}
+    </>
   );
 }

@@ -11,7 +11,7 @@ import {
 
 const montserrat = Montserrat({
   subsets: ["latin"],
-  weight: ["400", "600"],
+  weight: ["400", "600", "700"],
 });
 
 interface EventDetailsModalProps {
@@ -39,12 +39,11 @@ export default function EventDetailsModal({
     ? (event as PostedEvent).title
     : (event as PersonalEvent).name;
 
-  // Get year - holidays don't have year property, use current year
-  const eventYear = "year" in event && event.year ? event.year : new Date().getFullYear();
+  const eventYear =
+    "year" in event && event.year ? event.year : new Date().getFullYear();
   const eventDate = `${event.month}/${event.day}/${eventYear}`;
 
   const handleCardClick = (e: React.MouseEvent) => {
-    // Prevent closing when clicking inside the card
     e.stopPropagation();
     setIsExpanded(!isExpanded);
   };
@@ -55,116 +54,96 @@ export default function EventDetailsModal({
     onClose();
   };
 
+  // Theme colors based on type
+  const accentColor = isHoliday
+    ? "bg-amber-400"
+    : isPostedEvent
+    ? "bg-[#8B0E0E]"
+    : "bg-gray-400";
+
+  const badgeStyle = isHoliday
+    ? "bg-amber-100 text-amber-700"
+    : isPostedEvent
+    ? "bg-red-100 text-[#8B0E0E]"
+    : "bg-gray-100 text-gray-700";
+
   return (
     <>
-      {/* Backdrop - only show when expanded */}
+      {/* Backdrop when expanded */}
       {isExpanded && (
-        <div
-          className="fixed inset-0 bg-black/50 z-[9998]"
-          onClick={onClose}
-        />
+        <div className="fixed inset-0 bg-black/20 z-[9998]" onClick={onClose} />
       )}
 
-      {/* Popup Card - Changes size based on expanded state */}
+      {/* Popup Card */}
       <div
-        className={`fixed z-[9999] bg-white rounded-xl shadow-2xl border-2 border-[#800000] cursor-pointer transition-all duration-300 ${
-          isExpanded ? "p-6" : "p-4"
-        }`}
+        className={`fixed z-[9999] bg-white rounded-2xl shadow-xl ring-1 ring-black/5 cursor-pointer transition-all duration-300 origin-top-left overflow-hidden ${montserrat.className}`}
         style={{
           left: `${position.x}px`,
           top: `${position.y}px`,
-          width: isExpanded ? "400px" : "280px",
-          fontFamily: montserrat.style.fontFamily,
+          width: isExpanded ? "340px" : "260px",
+          transform: isExpanded ? "scale(1.02)" : "scale(1)",
         }}
         onClick={handleCardClick}
       >
-        {/* Close Button */}
-        <button
-          onClick={handleClose}
-          className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors z-10"
-        >
-          <X size={isExpanded ? 22 : 18} />
-        </button>
+        {/* Color Accent Bar */}
+        <div className={`h-2 w-full ${accentColor}`} />
 
-        {/* Event Type Badge */}
-        <div className="mb-2">
-          <span
-            className={`inline-block px-2 py-1 rounded-full font-semibold transition-all ${
-              isExpanded ? "text-sm" : "text-xs"
-            } ${
-              isHoliday
-                ? "bg-red-100 text-red-700"
-                : isPostedEvent
-                ? "bg-blue-100 text-blue-700"
-                : "bg-green-100 text-green-700"
+        <div className="p-4">
+          {/* Header Row */}
+          <div className="flex justify-between items-start mb-2">
+            <span
+              className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${badgeStyle}`}
+            >
+              {isHoliday ? "Holiday" : isPostedEvent ? "Event" : "Personal"}
+            </span>
+            <button
+              onClick={handleClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          {/* Title */}
+          <h3
+            className={`font-bold text-gray-900 leading-tight mb-1 ${
+              isExpanded ? "text-lg" : "text-base"
             }`}
           >
-            {isHoliday ? "Holiday" : isPostedEvent ? "Event" : "Personal"}
-          </span>
-        </div>
+            {eventTitle}
+          </h3>
 
-        {/* Event Title */}
-        <h3
-          className={`font-bold text-[#800000] mb-2 pr-6 transition-all ${
-            isExpanded ? "text-xl" : "text-base"
-          }`}
-        >
-          {eventTitle}
-        </h3>
+          {/* Date */}
+          <p className="text-sm text-gray-500 mb-2">📅 {eventDate}</p>
 
-        {/* Event Date */}
-        <p
-          className={`text-gray-600 mb-2 transition-all ${
-            isExpanded ? "text-base" : "text-sm"
-          }`}
-        >
-          📅 {eventDate}
-        </p>
-
-        {/* Additional Details - Always show when expanded */}
-        {isExpanded && (
-          <div className="mt-4 pt-3 border-t border-gray-200 space-y-2 animate-fadeIn">
-            {isPostedEvent && (event as PostedEvent).course && (
-              <div className="text-sm text-gray-700">
-                <span className="font-semibold">Course:</span>{" "}
-                {(event as PostedEvent).course}
+          {/* Expanded Details */}
+          {isExpanded && (
+            <div className="mt-3 pt-3 border-t border-gray-100 space-y-2 animate-in slide-in-from-top-1 fade-in duration-200">
+              {isPostedEvent && (event as PostedEvent).course && (
+                <div className="text-sm text-gray-700">
+                  <span className="font-semibold text-gray-900">Course:</span>{" "}
+                  {(event as PostedEvent).course}
+                </div>
+              )}
+              {isPostedEvent && (event as PostedEvent).audience && (
+                <div className="text-sm text-gray-700">
+                  <span className="font-semibold text-gray-900">Audience:</span>{" "}
+                  {(event as PostedEvent).audience}
+                </div>
+              )}
+              <div className="text-[10px] text-gray-400 italic mt-3 text-right">
+                Click to minimize
               </div>
-            )}
-            {isPostedEvent && (event as PostedEvent).audience && (
-              <div className="text-sm text-gray-700">
-                <span className="font-semibold">Audience:</span>{" "}
-                {(event as PostedEvent).audience}
-              </div>
-            )}
-            <div className="text-xs text-gray-500 italic mt-3">
-              Click again to minimize
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Hint text when not expanded */}
-        {!isExpanded && (
-          <p className="text-xs text-gray-400 italic mt-2">
-            Click to see more details
-          </p>
-        )}
+          {!isExpanded && (
+            <p className="text-[10px] text-gray-400 italic mt-2">
+              Click for details
+            </p>
+          )}
+        </div>
       </div>
-
-      <style jsx>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(-5px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-fadeIn {
-          animation: fadeIn 0.3s ease-out;
-        }
-      `}</style>
     </>
   );
 }
