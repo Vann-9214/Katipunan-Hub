@@ -43,6 +43,6 @@ export const config = {
      * - .svg (all svg image files)
      * - auth/callback (The verification route - ADDED THIS)
      */
-    "/((?!api|_next/static|_next/image|favicon.ico|signin|signup|auth/callback|AboutUs|Features|.*\\.svg$|$).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|signin|signup|auth/callback|AboutUs|Features|.*\\.svg$|.*\\.jpg$|$).*)",
   ],
 };
