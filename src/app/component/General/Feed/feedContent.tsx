@@ -26,7 +26,6 @@ import LoadingScreen from "@/app/component/ReusableComponent/LoadingScreen";
 import AddPosts from "../Announcement/AddPosts/addPosts";
 import Posts from "../Announcement/Posts/Posts";
 import formatPostDate from "../Announcement/Utils/formatDate";
-// --- NEW IMPORT ---
 import BackgroundGradient from "@/app/component/ReusableComponent/BackgroundGradient";
 
 const DEFAULT_FILTERS: FilterState = {
@@ -225,7 +224,7 @@ export default function FeedsContent() {
 
   const handleEdit = (feedId: string) => {
     const postToEdit = posts.find((p) => p.id === feedId);
-    if (!postToEdit) return;
+    if (!postToEdit || !postToEdit.author) return;
     const uiPost: PostUI = {
       id: postToEdit.id,
       title: "",
@@ -270,7 +269,7 @@ export default function FeedsContent() {
       result = result.filter(
         (p) =>
           p.content.toLowerCase().includes(lower) ||
-          p.author.fullName.toLowerCase().includes(lower)
+          p.author?.fullName?.toLowerCase().includes(lower) // Added safety check for author
       );
     }
     const dateRange = getDateRange(filters.date);
@@ -345,15 +344,21 @@ export default function FeedsContent() {
                     description={post.content}
                     images={post.images}
                     date={formatPostDate(post.created_at)}
-                    author={{
-                      id: post.author.id,
-                      fullName: post.author.fullName,
-                      avatarURL: post.author.avatarURL,
-                      role: post.author.role,
-                    }}
+                    // Safely handle missing author (prevents the crash)
+                    author={
+                      post.author
+                        ? {
+                            id: post.author.id,
+                            fullName: post.author.fullName,
+                            avatarURL: post.author.avatarURL,
+                            role: post.author.role,
+                          }
+                        : undefined
+                    }
                     onEdit={() => handleEdit(post.id)}
                     onDelete={
-                      post.author.id === user.id
+                      // Safety check for author before accessing ID
+                      post.author?.id === user.id
                         ? async () => {
                             if (confirm("Delete this post?")) {
                               await supabase
@@ -364,7 +369,8 @@ export default function FeedsContent() {
                           }
                         : undefined
                     }
-                    canEdit={post.author.id === user.id}
+                    // Safety check for author before accessing ID
+                    canEdit={post.author?.id === user.id}
                   />
                 ))}
 
