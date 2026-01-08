@@ -5,7 +5,7 @@ import ImageAttachments from "../Announcement/ImageAttachment/ImageAttachments";
 import Avatar from "@/app/component/ReusableComponent/Avatar";
 import { getCurrentUserDetails } from "../../../../../supabase/Lib/General/getUser";
 import { useState, useEffect } from "react";
-import Link from "next/link"; // 1. Import Link
+import Link from "next/link"; 
 
 // --- IMPORTS FROM YOUR ANNOUNCEMENT FOLDER ---
 import ReactionButton from "../Announcement/Posts/reactButton";
@@ -25,7 +25,6 @@ function timeAgo(dateStr: string) {
 }
 
 export default function FeedCard({ post }: { post: FeedPost }) {
-  // We need the current user ID to handle reactions
   const [currentUserId, setCurrentUserId] = useState<string>("");
 
   useEffect(() => {
@@ -34,7 +33,6 @@ export default function FeedCard({ post }: { post: FeedPost }) {
     });
   }, []);
 
-  // Use the hook for logic
   const {
     selectedReactionId,
     reactionCount,
@@ -48,29 +46,56 @@ export default function FeedCard({ post }: { post: FeedPost }) {
     userId: currentUserId,
   });
 
+  // --- SAFE ACCESS HELPERS ---
+  // If post.author is null (due to RLS or deletion), these fallbacks prevent the crash.
+  const author = post.author;
+  const authorId = author?.id;
+  const authorName = author?.fullName || "Unknown User";
+  const authorRole = author?.role || "Member";
+  const authorAvatar = author?.avatarURL;
+
   return (
     <div className="w-[590px] bg-maroon rounded-[15px] border border-gray-200 shadow-md overflow-hidden mb-6">
       {/* Header */}
       <div className="flex items-center p-4 pb-2">
-        {/* 2. Wrapped Avatar and details in Link */}
-        <Link
-          href={`/Profile/${post.author.id}`}
-          className="flex items-center group cursor-pointer"
-        >
-          <Avatar
-            avatarURL={post.author.avatarURL}
-            altText={post.author.fullName}
-            className="w-10 h-10 mr-3 transition-opacity group-hover:opacity-80"
-          />
-          <div>
-            <h3 className="font-bold text-black font-montserrat text-[16px] group-hover:underline decoration-1 underline-offset-2">
-              {post.author.fullName}
-            </h3>
-            <p className="text-gray-500 text-xs font-medium">
-              {post.author.role} • {timeAgo(post.created_at)}
-            </p>
+        {/* CHECK: Only render Link if we have a valid Author ID */}
+        {authorId ? (
+          <Link
+            href={`/Profile/${authorId}`}
+            className="flex items-center group cursor-pointer"
+          >
+            <Avatar
+              avatarURL={authorAvatar}
+              altText={authorName}
+              className="w-10 h-10 mr-3 transition-opacity group-hover:opacity-80"
+            />
+            <div>
+              <h3 className="font-bold text-black font-montserrat text-[16px] group-hover:underline decoration-1 underline-offset-2">
+                {authorName}
+              </h3>
+              <p className="text-gray-500 text-xs font-medium">
+                {authorRole} • {timeAgo(post.created_at)}
+              </p>
+            </div>
+          </Link>
+        ) : (
+          // FALLBACK: If author is missing/null, render without Link to prevent crash
+          <div className="flex items-center">
+            <Avatar
+              avatarURL={null}
+              altText="Unknown"
+              className="w-10 h-10 mr-3 opacity-50"
+            />
+            <div>
+              <h3 className="font-bold text-black font-montserrat text-[16px]">
+                {authorName}
+              </h3>
+              <p className="text-gray-500 text-xs font-medium">
+                {timeAgo(post.created_at)}
+              </p>
+            </div>
           </div>
-        </Link>
+        )}
       </div>
 
       {/* Content */}
@@ -93,7 +118,6 @@ export default function FeedCard({ post }: { post: FeedPost }) {
           topReactions={topReactions}
           totalCount={reactionCount}
           isLoading={isInitialLoading}
-          // --- PASSING PROPS FOR HOVER ---
           referenceId={post.id}
           sourceType="feed"
         />
@@ -101,7 +125,6 @@ export default function FeedCard({ post }: { post: FeedPost }) {
 
       {/* Actions Footer */}
       <div className="px-4 py-2 border-t border-gray-100 flex gap-4 bg-gray-50/50">
-        {/* 1. YOUR REACTION BUTTON */}
         <div className="flex-1">
           <ReactionButton
             selectedReactionId={selectedReactionId}
@@ -114,7 +137,6 @@ export default function FeedCard({ post }: { post: FeedPost }) {
           />
         </div>
 
-        {/* 2. YOUR COMMENT BUTTON */}
         <div className="flex-1">
           <CommentButton />
         </div>
