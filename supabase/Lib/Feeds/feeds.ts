@@ -3,8 +3,9 @@ import { FeedPost, PLCHighlight } from "./types";
 
 // --- 1. Fetch General Feeds (Optimized for Pagination) ---
 // Add pagination parameters (page and limit)
+// supabase/Lib/Feeds/feeds.ts
+
 export async function getFeeds(page = 0, limit = 10): Promise<{ posts: FeedPost[], count: number | null }> {
-  // Calculate the range for pagination
   const from = page * limit;
   const to = from + limit - 1;
 
@@ -16,18 +17,18 @@ export async function getFeeds(page = 0, limit = 10): Promise<{ posts: FeedPost[
       images,
       created_at,
       author_id,
-      Accounts!Feeds_author_id_fkey (
+      author:Accounts!Feeds_author_id_fkey (
         id,
         fullName,
         avatarURL,
         role
       )
-    `, { count: 'exact' }) // Request total count for pagination checks
+    `, { count: 'exact' })
     .order("created_at", { ascending: false })
-    .range(from, to); // Apply the pagination range
+    .range(from, to);
 
   if (error) {
-    console.error("Error fetching feeds:", error);
+    console.error("Error fetching feeds:", error.message || error);
     return { posts: [], count: 0 };
   }
 
@@ -36,21 +37,10 @@ export async function getFeeds(page = 0, limit = 10): Promise<{ posts: FeedPost[
     content: item.content,
     images: item.images || [],
     created_at: item.created_at,
-    author: item.Accounts,
+    author: item.author,
   }));
   
   return { posts, count };
-}
-
-// --- 2. Create New Feed Post (Unchanged) ---
-export async function createFeedPost(content: string, images: string[], authorId: string) {
-  const { error } = await supabase.from("Feeds").insert({
-    content,
-    images,
-    author_id: authorId,
-  });
-
-  if (error) throw error;
 }
 
 // --- NEW: Update Feed Post (Unchanged) ---
