@@ -2,9 +2,6 @@ import { supabase } from "../General/supabaseClient";
 import { FeedPost, PLCHighlight } from "./types";
 
 // --- 1. Fetch General Feeds (Optimized for Pagination) ---
-// Add pagination parameters (page and limit)
-// supabase/Lib/Feeds/feeds.ts
-
 export async function getFeeds(page = 0, limit = 10): Promise<{ posts: FeedPost[], count: number | null }> {
   const from = page * limit;
   const to = from + limit - 1;
@@ -43,7 +40,23 @@ export async function getFeeds(page = 0, limit = 10): Promise<{ posts: FeedPost[
   return { posts, count };
 }
 
-// --- NEW: Update Feed Post (Unchanged) ---
+// --- NEW: Create Feed Post ---
+export async function createFeedPost(content: string, images: string[], authorId: string) {
+  const { error } = await supabase
+    .from("Feeds")
+    .insert({
+      content,
+      images,
+      author_id: authorId,
+    });
+
+  if (error) {
+    console.error("Error creating feed post:", error);
+    throw error;
+  }
+}
+
+// --- Update Feed Post ---
 export async function updateFeedPost(id: string, content: string, images: string[]) {
   const { error } = await supabase
     .from("Feeds")
@@ -59,7 +72,7 @@ export async function updateFeedPost(id: string, content: string, images: string
 
 // --- 3. Fetch PLC "Hall of Fame" (Optimized N+1 Query) ---
 export async function getPLCHighlights(): Promise<PLCHighlight[]> {
-  // 1. Fetch ALL ratings (This remains ONE efficient query)
+  // 1. Fetch ALL ratings
   const { data: ratingsData, error } = await supabase
     .from("TutorRatings")
     .select(`
@@ -84,7 +97,7 @@ export async function getPLCHighlights(): Promise<PLCHighlight[]> {
   // 2. Extract all unique booking IDs
   const bookingIds = ratingsData.map((item: any) => item.booking_id);
 
-  // 3. Batch fetch subjects from PLCBookingHistory (ONE database query to replace N queries)
+  // 3. Batch fetch subjects from PLCBookingHistory
   const { data: historyBookings } = await supabase
     .from("PLCBookingHistory")
     .select("id, subject")
@@ -92,7 +105,7 @@ export async function getPLCHighlights(): Promise<PLCHighlight[]> {
 
   const historyMap = new Map(historyBookings?.map(b => [b.id, b.subject]));
 
-  // 4. Batch fetch subjects from PLCBookings (ONE database query to replace N queries)
+  // 4. Batch fetch subjects from PLCBookings
   const { data: activeBookings } = await supabase
     .from("PLCBookings")
     .select("id, subject")
@@ -100,10 +113,8 @@ export async function getPLCHighlights(): Promise<PLCHighlight[]> {
 
   const activeMap = new Map(activeBookings?.map(a => [a.id, a.subject]));
 
-
-  // 5. Consolidate and enrich data in memory (Fast, non-blocking operation)
+  // 5. Consolidate and enrich data
   const enrichedData = ratingsData.map((item: any) => {
-      // Look up subject in the in-memory maps
       let subject = historyMap.get(item.booking_id) || activeMap.get(item.booking_id) || "Session";
 
       return {
