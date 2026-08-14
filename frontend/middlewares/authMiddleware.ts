@@ -1,0 +1,56 @@
+import { createServerClient } from "@supabase/ssr";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+
+export async function authMiddleware(req: NextRequest) {
+  let res = NextResponse.next({
+    request: {
+      headers: req.headers,
+    },
+  });
+
+  // Create a Supabase client for middleware
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return req.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            req.cookies.set(name, value)
+          );
+          res = NextResponse.next({
+            request: {
+              headers: req.headers,
+            },
+          });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            res.cookies.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
+
+  // Get the session
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  // If there's no session AND the user is trying to access a protected page
+  if (!session) {
+    // Redirect them to the sign-in page, but keep their intended URL
+    // so we can send them back after they log in.
+    const redirectUrl = req.nextUrl.clone();
+    redirectUrl.pathname = "/signin"; // <-- Your sign-in page
+    redirectUrl.searchParams.set(`redirectedFrom`, req.nextUrl.pathname);
+    
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  // If they are logged in, let them proceed
+  return res;
+}

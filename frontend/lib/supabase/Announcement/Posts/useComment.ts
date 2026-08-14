@@ -2,8 +2,8 @@
 
 import { supabase } from "../../General/supabaseClient";
 import { useEffect, useState, useCallback } from "react";
-import { CommentWithAuthor } from "@/components/General/Announcement/Posts/Comment/commentItem";
-import { usePostComment } from "@/components/General/Announcement/Posts/Comment/postCommentContext";
+import { CommentWithAuthor } from "@/features/Announcement/Posts/Comment/commentItem";
+import { usePostComment } from "@/features/Announcement/Posts/Comment/postCommentContext";
 import { ReactionCount } from "./usePostReaction";
 
 const simpleOptimisticUpdate = (

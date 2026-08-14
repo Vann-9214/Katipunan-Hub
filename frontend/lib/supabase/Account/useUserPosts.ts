@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../General/supabaseClient";
-import { PostUI } from "@/components/General/Announcement/Utils/types";
+import { PostUI } from "@/features/Announcement/Utils/types";
 // 1. Import the relative time formatter instead of the fixed one
-import formatPostDate from "@/components/General/Announcement/Utils/formatDate";
+import formatPostDate from "@/features/Announcement/Utils/formatDate";
 
 export function useUserPosts(userId: string | undefined) {
   const [posts, setPosts] = useState<PostUI[]>([]);

@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import type { PostUI, NewPostPayload, UpdatePostPayload } from "@/components/General/Announcement/Utils/types";
-import type { UploadButtonHandle } from "@/components/General/Announcement/Utils/types";
+import type { PostUI, NewPostPayload, UpdatePostPayload } from "@/features/Announcement/Utils/types";
+import type { UploadButtonHandle } from "@/features/Announcement/Utils/types";
 import { deleteUrlsFromBucket } from "./storage";
 import { createFeedPost } from "../../Feeds/feeds";
 import { supabase } from "../../General/supabaseClient";

@@ -17,9 +17,9 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
-import ChatPopup from "../../General/Message/ChatPopup/chatPopup";
-import Avatar from "../../ReusableComponent/Avatar";
-import AccountDropdown from "../../General/Account/accountDropdown";
+import ChatPopup from "../../../features/Message/ChatPopup/chatPopup";
+import Avatar from "../Avatar";
+import AccountDropdown from "../../../features/Account/accountDropdown";
 import type { User } from "@/lib/supabase/General/user";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase/General/supabaseClient";

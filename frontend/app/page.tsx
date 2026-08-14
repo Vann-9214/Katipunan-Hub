@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import LandingPageContent from "@/components/General/LandingPage/LandingPageContent/LandingPageContent";
+import LandingPageContent from "@/features/LandingPage/LandingPageContent/LandingPageContent";
 
 export default function LandingPage() {
   return (

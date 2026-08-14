@@ -1,6 +1,6 @@
 // supabase/Lib/Announcement/Filter/supabase-helper.ts
 
-import { DateOption } from "@/components/General/Announcement/Utils/types";
+import { DateOption } from "@/features/Announcement/Utils/types";
 
 interface DateRange {
   startDate: string;

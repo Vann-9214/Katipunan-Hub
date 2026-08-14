@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import { Montserrat, PT_Sans } from "next/font/google";
 import "./globals.css";
 
-import { PostModalProvider } from "@/components/General/Announcement/Posts/Comment/postCommentContext";
-import PostModal from "@/components/General/Announcement/Posts/Comment/PostComment";
+import { PostModalProvider } from "@/features/Announcement/Posts/Comment/postCommentContext";
+import PostModal from "@/features/Announcement/Posts/Comment/PostComment";
 // --- 1. Import your new provider ---
-import { ImageLightboxProvider } from "@/components/General/Announcement/ImageAttachment/imageLightboxContent";
+import { ImageLightboxProvider } from "@/features/Announcement/ImageAttachment/imageLightboxContent";
 
 const montserrat = Montserrat({
   subsets: ["latin"],

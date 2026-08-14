@@ -5,13 +5,13 @@
 @import "tw-animate-css";
 
 /* 2. Import your custom theme */
-@import "./Global/theme.css";
+@import "../styles/theme.css";
 
 /* 3. Import your custom scrollbar styles */
-@import "./Global/scrollbar.css";
+@import "../styles/scrollbar.css";
 
 /* 4. Import your custom animations */
-@import "./Global/animations.css";
+@import "../styles/animations.css";
 
 /* 5. Keep your base layer styles */
 @layer base {
