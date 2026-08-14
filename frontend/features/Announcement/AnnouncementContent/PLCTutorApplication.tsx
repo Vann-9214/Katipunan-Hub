@@ -5,8 +5,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { X, Loader2, BookOpenText, User as UserIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Montserrat, PT_Sans } from "next/font/google";
-import { getCurrentUserDetails } from "@/lib/supabase/General/getUser";
-import type { User } from "@/lib/supabase/General/user";
+import { getCurrentUserDetails } from "@/database/supabase/General/getUser";
+import type { User } from "@/database/supabase/General/user";
 
 // --- START: Upload Button Imports ---
 import UploadButton, { UploadButtonHandle } from "../UploadButton/UploadButton";

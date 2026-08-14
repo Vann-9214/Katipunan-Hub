@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { cn } from "@/lib/utils"; // Use your utility for better class merging
+import { cn } from "@/database/utils"; // Use your utility for better class merging
 
 interface TextBoxProps {
   type?: string;

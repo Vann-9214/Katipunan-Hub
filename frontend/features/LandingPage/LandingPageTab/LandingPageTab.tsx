@@ -1,9 +1,9 @@
 "use client";
 
-import Logo from "@/components/ReusableComponent/Logo";
+import Logo from "@/components/Logo";
 import SignUpForm from "./SignUpForms";
 import SignInForm from "./SignInForms";
-import Button from "../../../components/ReusableComponent/Buttons";
+import Button from "../../../components/Buttons";
 import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { createPortal } from "react-dom";

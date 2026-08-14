@@ -2,7 +2,7 @@
 
 import AdvancedFilter from "../LeftSide/AdvanceFilter";
 import TagsFilter from "../LeftSide/TagsFilter";
-import ToggleButton from "@/components/ReusableComponent/ToggleButton";
+import ToggleButton from "@/components/ToggleButton";
 import SearchFilter from "../LeftSide/SearchFilter";
 import { FilterState } from "../Utils/types";
 

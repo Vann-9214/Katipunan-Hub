@@ -5,7 +5,7 @@ import { useState, useRef } from "react";
 import { createPortal } from "react-dom"; // Import Portal to fix cutoff
 import { formatCompactNumber } from "./Utils/FormatNumber";
 import { getReactionIcon } from "./Utils/config";
-import { ReactionCount } from "@/lib/supabase/Announcement/Posts/usePostReaction";
+import { ReactionCount } from "@/database/supabase/Announcement/Posts/usePostReaction";
 import { useReactionUsers, ReactionSourceType } from "./useReactionUser";
 import { motion, AnimatePresence } from "framer-motion";
 

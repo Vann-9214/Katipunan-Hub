@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { User, LogOut, ChevronRight } from "lucide-react";
-import Avatar from "../../components/ReusableComponent/Avatar";
+import Avatar from "../../components/Avatar";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase/General/supabaseClient";
-import type { User as AppUser } from "@/lib/supabase/General/user";
+import { supabase } from "@/database/supabase/General/supabaseClient";
+import type { User as AppUser } from "@/database/supabase/General/user";
 import { motion, Variants } from "framer-motion";
 
 // Component Interface

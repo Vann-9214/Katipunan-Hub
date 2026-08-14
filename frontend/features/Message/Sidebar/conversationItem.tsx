@@ -5,9 +5,9 @@ import { createPortal } from "react-dom"; // Import Portal
 import { usePathname, useRouter } from "next/navigation";
 import { MoreHorizontal, Star, Ban, Trash2, RotateCcw } from "lucide-react";
 import { Conversation } from "../Utils/types";
-import Avatar from "@/components/ReusableComponent/Avatar";
+import Avatar from "@/components/Avatar";
 import { motion } from "framer-motion";
-import { supabase } from "@/lib/supabase/General/supabaseClient";
+import { supabase } from "@/database/supabase/General/supabaseClient";
 
 export default function ConversationItem({
   conversation,

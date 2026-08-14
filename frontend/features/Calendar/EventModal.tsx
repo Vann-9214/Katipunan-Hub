@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Montserrat } from "next/font/google";
 import { PostedEvent } from "@/features/Calendar/types";
-import { supabase } from "@/lib/supabase/General/supabaseClient";
+import { supabase } from "@/database/supabase/General/supabaseClient";
 
 const montserrat = Montserrat({
   subsets: ["latin"],

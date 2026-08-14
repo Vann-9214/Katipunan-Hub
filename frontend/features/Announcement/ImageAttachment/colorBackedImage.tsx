@@ -2,7 +2,7 @@
 
 import React from "react";
 // No next/image import needed here
-import { useAverageColor } from "@/lib/supabase/Announcement/ImageAttachment/useAverageColor";
+import { useAverageColor } from "@/database/supabase/Announcement/ImageAttachment/useAverageColor";
 
 interface ColorBackedImageProps {
   src: string;

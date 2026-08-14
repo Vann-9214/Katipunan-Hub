@@ -1,10 +1,10 @@
 "use client";
 
 /* Header */
-import HomepageTab from "@/components/ReusableComponent/HomepageTab/HomepageTab";
+import HomepageTab from "@/components/HomepageTab";
 import { useState, useEffect } from "react";
-import { getCurrentUserDetails } from "@/lib/supabase/General/getUser";
-import type { User } from "@/lib/supabase/General/user";
+import { getCurrentUserDetails } from "@/database/supabase/General/getUser";
+import type { User } from "@/database/supabase/General/user";
 
 /* Components */
 import PLCContent from "@/features/PLC/PLCContent";

@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { X, Loader2, Calendar, Clock } from "lucide-react";
 import { Montserrat, PT_Sans } from "next/font/google";
-import { supabase } from "@/lib/supabase/General/supabaseClient";
-import { getCurrentUserDetails } from "@/lib/supabase/General/getUser";
+import { supabase } from "@/database/supabase/General/supabaseClient";
+import { getCurrentUserDetails } from "@/database/supabase/General/getUser";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 
 const montserrat = Montserrat({ subsets: ["latin"], weight: ["600", "700"] });

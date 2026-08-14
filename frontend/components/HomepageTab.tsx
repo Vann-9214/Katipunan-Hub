@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import NavigationButton from "./navigationButtons";
-import Logo from "../Logo";
+import Logo from "./Logo";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
@@ -17,14 +17,14 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
-import ChatPopup from "../../../features/Message/ChatPopup/chatPopup";
-import Avatar from "../Avatar";
-import AccountDropdown from "../../../features/Account/accountDropdown";
-import type { User } from "@/lib/supabase/General/user";
+import ChatPopup from "../features/Message/ChatPopup/chatPopup";
+import Avatar from "./Avatar";
+import AccountDropdown from "../features/Account/accountDropdown";
+import type { User } from "@/database/supabase/General/user";
 import { motion, AnimatePresence } from "framer-motion";
-import { supabase } from "@/lib/supabase/General/supabaseClient";
+import { supabase } from "@/database/supabase/General/supabaseClient";
 
-import { useNotifications } from "@/lib/supabase/General/useNotification";
+import { useNotifications } from "@/database/supabase/General/useNotification";
 import NotificationDropdown from "./NotificationDropdown";
 
 interface HomepageTabProps {

@@ -12,7 +12,7 @@ import { MONTHS, getDaysInMonth, getFirstDayOfMonth } from "./Utils";
 import {
   usePLCYearBookings,
   MonthBooking,
-} from "@/lib/supabase/PLC/usePLCBooking";
+} from "@/database/supabase/PLC/usePLCBooking";
 // 1. Import Variants
 import { motion, AnimatePresence, Variants } from "framer-motion";
 

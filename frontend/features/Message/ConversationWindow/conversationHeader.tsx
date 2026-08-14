@@ -1,6 +1,6 @@
 "use client";
 
-import Avatar from "@/components/ReusableComponent/Avatar";
+import Avatar from "@/components/Avatar";
 import { OtherUser } from "../Utils/types";
 import { motion, Variants } from "framer-motion"; // 1. Imported Variants
 import Link from "next/link";

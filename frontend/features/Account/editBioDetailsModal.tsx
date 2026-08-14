@@ -11,8 +11,8 @@ import {
   School,
   Loader2,
 } from "lucide-react";
-import type { User } from "@/lib/supabase/General/user";
-import { updateUserAccount } from "@/lib/supabase/Account/updateUserAccount";
+import type { User } from "@/database/supabase/General/user";
+import { updateUserAccount } from "@/database/supabase/Account/updateUserAccount";
 import { motion } from "framer-motion";
 import { Montserrat, PT_Sans } from "next/font/google";
 

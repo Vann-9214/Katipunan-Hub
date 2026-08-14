@@ -1,12 +1,12 @@
 "use client";
 
-import ToggleButton from "@/components/ReusableComponent/ToggleButton";
+import ToggleButton from "@/components/ToggleButton";
 import SearchFilter from "../Announcement/LeftSide/SearchFilter";
 import AdvancedFilter from "../Announcement/LeftSide/AdvanceFilter";
 import { FilterState } from "../Announcement/Utils/types";
 // 1. Import User type and necessary icons/components
-import type { User } from "@/lib/supabase/General/user";
-import Avatar from "@/components/ReusableComponent/Avatar";
+import type { User } from "@/database/supabase/General/user";
+import Avatar from "@/components/Avatar";
 import { Mail, BookOpen, GraduationCap, Pen } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";

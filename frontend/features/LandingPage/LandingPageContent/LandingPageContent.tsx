@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Logo from "@/components/ReusableComponent/Logo";
+import Logo from "@/components/Logo";
 import { Mail, Globe } from "lucide-react";
 
 // --- Section Imports ---

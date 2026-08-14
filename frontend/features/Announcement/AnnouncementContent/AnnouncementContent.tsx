@@ -8,14 +8,14 @@ import {
   useCallback,
   useDeferredValue,
 } from "react";
-import { supabase } from "@/lib/supabase/General/supabaseClient";
-import LoadingScreen from "@/components/ReusableComponent/LoadingScreen";
-import HomepageTab from "@/components/ReusableComponent/HomepageTab/HomepageTab";
+import { supabase } from "@/database/supabase/General/supabaseClient";
+import LoadingScreen from "@/components/LoadingScreen";
+import HomepageTab from "@/components/HomepageTab";
 import AnnouncementLeftBar from "./AnnouncementLeftBar";
 import AnnouncementFeed from "./AnnouncementFeed";
 import PLCAdCard from "./PLCAdCard";
 import { useSearchParams } from "next/navigation";
-import BackgroundGradient from "@/components/ReusableComponent/BackgroundGradient";
+import BackgroundGradient from "@/components/BackgroundGradient";
 
 // --- Types ---
 import {
@@ -26,13 +26,13 @@ import {
   type FilterState,
   VisibilityOption,
 } from "../Utils/types";
-import type { User } from "@/lib/supabase/General/user";
+import type { User } from "@/database/supabase/General/user";
 
 // --- Constants & Utils ---
 import { VISIBILITY, programToCollege } from "../Utils/constants";
 import { shapePostForUI } from "./utils";
-import { getCurrentUserDetails } from "@/lib/supabase/General/getUser";
-import { getDateRange } from "@/lib/supabase/Announcement/Filter/supabase-helper";
+import { getCurrentUserDetails } from "@/database/supabase/General/getUser";
+import { getDateRange } from "@/database/supabase/Announcement/Filter/supabase-helper";
 
 // --- Default State ---
 const DEFAULT_FILTERS: FilterState = {

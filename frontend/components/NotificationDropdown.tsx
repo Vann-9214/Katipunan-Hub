@@ -1,10 +1,10 @@
 "use client";
 
-import { NotificationItem } from "@/lib/supabase/General/useNotification";
+import { NotificationItem } from "@/database/supabase/General/useNotification";
 import { useRouter } from "next/navigation";
 import { BellRing, Megaphone, Trash2 } from "lucide-react"; // Added Trash2
-import { supabase } from "@/lib/supabase/General/supabaseClient"; // Added supabase import
-import { getCurrentUserDetails } from "@/lib/supabase/General/getUser"; // Added user import
+import { supabase } from "@/database/supabase/General/supabaseClient"; // Added supabase import
+import { getCurrentUserDetails } from "@/database/supabase/General/getUser"; // Added user import
 
 interface NotificationDropdownProps {
   notifications: NotificationItem[];

@@ -3,9 +3,9 @@
 import { Search, Maximize2, Loader2 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase/General/supabaseClient";
-import { getCurrentUserDetails } from "@/lib/supabase/General/getUser";
-import type { User } from "@/lib/supabase/General/user";
+import { supabase } from "@/database/supabase/General/supabaseClient";
+import { getCurrentUserDetails } from "@/database/supabase/General/getUser";
+import type { User } from "@/database/supabase/General/user";
 import { ConversationItem } from "../Utils/types";
 import PopupConversationItem from "./popupConversationitem";
 import { motion, Variants } from "framer-motion";

@@ -2,7 +2,7 @@
 
 import { forwardRef, useImperativeHandle } from "react";
 import { UploadButtonProps, UploadButtonHandle } from "../Utils/types";
-import { useImageUploader } from "@/lib/supabase/Announcement/UploadButton/useImageUploader";
+import { useImageUploader } from "@/database/supabase/Announcement/UploadButton/useImageUploader";
 import { ImagePreview } from "./imagePreviewer";
 import { Dropzone } from "./dropzone";
 

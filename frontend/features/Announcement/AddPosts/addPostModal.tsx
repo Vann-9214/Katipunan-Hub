@@ -7,11 +7,11 @@ import { createPortal } from "react-dom";
 import { X, ChevronDown, School } from "lucide-react";
 import PostAudienceSelector from "./postAudience";
 import TagEditor from "./tagEditor";
-import { useAddPostForm } from "@/lib/supabase/Announcement/AddPosts/useAddPostForm";
+import { useAddPostForm } from "@/database/supabase/Announcement/AddPosts/useAddPostForm";
 import { type AddPostsProps } from "./addPosts";
 import { collegeitems } from "../Utils/constants";
 import { motion, AnimatePresence } from "framer-motion";
-import Avatar from "@/components/ReusableComponent/Avatar";
+import Avatar from "@/components/Avatar";
 import { Montserrat, PT_Sans } from "next/font/google";
 
 const montserrat = Montserrat({ subsets: ["latin"], weight: ["600", "700"] });

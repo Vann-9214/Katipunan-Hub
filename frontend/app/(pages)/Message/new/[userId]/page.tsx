@@ -3,11 +3,11 @@
 import { useState, useEffect } from "react";
 import { Send } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { getSortedUserPair } from "@/lib/supabase/Message/auth";
+import { getSortedUserPair } from "@/database/supabase/Message/auth";
 
-import { supabase } from "@/lib/supabase/General/supabaseClient";
-import { getCurrentUserDetails } from "@/lib/supabase/General/getUser";
-import type { User } from "@/lib/supabase/General/user";
+import { supabase } from "@/database/supabase/General/supabaseClient";
+import { getCurrentUserDetails } from "@/database/supabase/General/getUser";
+import type { User } from "@/database/supabase/General/user";
 
 import Image from "next/image";
 

@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getPLCHighlights } from "@/lib/supabase/Feeds/feeds";
-import { PLCHighlight } from "@/lib/supabase/Feeds/types";
-import Avatar from "@/components/ReusableComponent/Avatar";
+import { getPLCHighlights } from "@/database/supabase/Feeds/feeds";
+import { PLCHighlight } from "@/database/supabase/Feeds/types";
+import Avatar from "@/components/Avatar";
 import { Star, Quote, Award, Crown } from "lucide-react";
-import LoadingScreen from "@/components/ReusableComponent/LoadingScreen";
-import { supabase } from "@/lib/supabase/General/supabaseClient";
+import LoadingScreen from "@/components/LoadingScreen";
+import { supabase } from "@/database/supabase/General/supabaseClient";
 import Link from "next/link";
 import { motion } from "framer-motion";
 

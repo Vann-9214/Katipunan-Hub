@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { supabase } from "@/lib/supabase/General/supabaseClient";
+import { supabase } from "@/database/supabase/General/supabaseClient";
 
 export interface ReactionUser {
   reaction: string;

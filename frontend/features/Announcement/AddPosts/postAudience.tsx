@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { ArrowLeft, Globe, School, Circle, CheckCircle2 } from "lucide-react";
-import { Combobox } from "@/components/ReusableComponent/Combobox";
+import { Combobox } from "@/components/Combobox";
 import { collegeitems } from "../Utils/constants";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { Montserrat, PT_Sans } from "next/font/google";

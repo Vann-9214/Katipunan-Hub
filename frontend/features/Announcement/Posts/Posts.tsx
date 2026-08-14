@@ -2,17 +2,17 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { usePostComment } from "./Comment/postCommentContext";
-import { useCommentCount } from "@/lib/supabase/Announcement/Posts/useCommentCount";
+import { useCommentCount } from "@/database/supabase/Announcement/Posts/useCommentCount";
 import CommentButton from "./Comment/commentButton";
 import ReactButton from "./reactButton";
 import Image from "next/image";
 import ImageAttachments from "../ImageAttachment/ImageAttachments";
 import EditPostsButton from "../LeftSide/EditPostsButton";
-import { usePostReactions } from "@/lib/supabase/Announcement/Posts/usePostReaction";
-import { useFeedReaction } from "@/lib/supabase/Feeds/useFeedReaction";
+import { usePostReactions } from "@/database/supabase/Announcement/Posts/usePostReaction";
+import { useFeedReaction } from "@/database/supabase/Feeds/useFeedReaction";
 import ReactionSummary from "./reactionSummary";
 import { collegeitems } from "../Utils/constants";
-import Avatar from "@/components/ReusableComponent/Avatar";
+import Avatar from "@/components/Avatar";
 import Link from "next/link"; // 1. Import Link
 
 // Component Interface

@@ -1,17 +1,17 @@
 "use client";
 
-import { supabase } from "@/lib/supabase/General/supabaseClient";
+import { supabase } from "@/database/supabase/General/supabaseClient";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { AlertCircle, ArrowRight } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
-import ToggleButton from "@/components/ReusableComponent/ToggleButton";
-import Button from "@/components/ReusableComponent/Buttons";
-import Logo from "@/components/ReusableComponent/Logo";
-import TextBox from "@/components/ReusableComponent/Textbox";
-import { EMAIL_DOMAIN } from "@/lib/supabase/constants";
+import ToggleButton from "@/components/ToggleButton";
+import Button from "@/components/Buttons";
+import Logo from "@/components/Logo";
+import TextBox from "@/components/Textbox";
+import { EMAIL_DOMAIN } from "@/database/supabase/constants";
 
 interface SignInFormProps {
   onClose?: () => void;

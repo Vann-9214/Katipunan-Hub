@@ -14,26 +14,26 @@ import {
 import { motion } from "framer-motion";
 
 // Components
-import HomepageTab from "@/components/ReusableComponent/HomepageTab/HomepageTab";
-import LoadingScreen from "../../components/ReusableComponent/LoadingScreen";
-import Avatar from "@/components/ReusableComponent/Avatar";
+import HomepageTab from "@/components/HomepageTab";
+import LoadingScreen from "../../components/LoadingScreen";
+import Avatar from "@/components/Avatar";
 import Posts from "../Announcement/Posts/Posts";
 import AddPosts from "../Announcement/AddPosts/addPosts";
-import BackgroundGradient from "../../components/ReusableComponent/BackgroundGradient";
+import BackgroundGradient from "../../components/BackgroundGradient";
 
 // Modals
 import EditMainProfileModal from "./editMainProfileModal";
 import EditBioDetailsModal from "./editBioDetailsModal";
 
 // Logic
-import { getCurrentUserDetails } from "@/lib/supabase/General/getUser";
-import { useUserPosts } from "@/lib/supabase/Account/useUserPosts";
-import { supabase } from "@/lib/supabase/General/supabaseClient";
-import { updateFeedPost } from "@/lib/supabase/Feeds/feeds";
+import { getCurrentUserDetails } from "@/database/supabase/General/getUser";
+import { useUserPosts } from "@/database/supabase/Account/useUserPosts";
+import { supabase } from "@/database/supabase/General/supabaseClient";
+import { updateFeedPost } from "@/database/supabase/Feeds/feeds";
 // 1. Import helper to sort IDs
-import { getSortedUserPair } from "@/lib/supabase/Message/auth";
+import { getSortedUserPair } from "@/database/supabase/Message/auth";
 
-import type { User } from "@/lib/supabase/General/user";
+import type { User } from "@/database/supabase/General/user";
 import type { PostUI, UpdatePostPayload } from "../Announcement/Utils/types";
 
 /* --- NEW: Import Lightbox Hook --- */

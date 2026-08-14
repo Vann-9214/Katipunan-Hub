@@ -3,11 +3,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { Search, MessagesSquare, ArrowLeft, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { getSortedUserPair } from "@/lib/supabase/Message/auth";
-import { supabase } from "@/lib/supabase/General/supabaseClient";
-import { getCurrentUserDetails } from "@/lib/supabase/General/getUser";
-import type { User } from "@/lib/supabase/General/user";
-import Avatar from "@/components/ReusableComponent/Avatar";
+import { getSortedUserPair } from "@/database/supabase/Message/auth";
+import { supabase } from "@/database/supabase/General/supabaseClient";
+import { getCurrentUserDetails } from "@/database/supabase/General/getUser";
+import type { User } from "@/database/supabase/General/user";
+import Avatar from "@/components/Avatar";
 import { OtherAccount, Conversation } from "../Utils/types";
 import ConversationList from "./conversationList";
 import SearchResultItem from "./searchResultItem";

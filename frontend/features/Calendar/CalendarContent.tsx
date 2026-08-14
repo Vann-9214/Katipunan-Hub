@@ -12,13 +12,13 @@ import {
 import EventModal from "@/features/Calendar/EventModal";
 import ReminderPanel from "@/features/Calendar/ReminderPanel";
 import SchedulePanel from "@/features/Calendar/SchedulePanel";
-import LoadingScreen from "@/components/ReusableComponent/LoadingScreen";
+import LoadingScreen from "@/components/LoadingScreen";
 import CalendarMenu from "@/features/Calendar/CalendarMenu";
 import CalendarViews from "@/features/Calendar/CalendarViews";
 import { getPhilippineHolidays } from "@/features/Calendar/calendarUtils";
-import { supabase } from "@/lib/supabase/General/supabaseClient";
-import { getCurrentUserDetails } from "@/lib/supabase/General/getUser";
-import BackgroundGradient from "@/components/ReusableComponent/BackgroundGradient";
+import { supabase } from "@/database/supabase/General/supabaseClient";
+import { getCurrentUserDetails } from "@/database/supabase/General/getUser";
+import BackgroundGradient from "@/components/BackgroundGradient";
 import { Calendar as CalendarIcon, LayoutGrid } from "lucide-react";
 import { motion } from "framer-motion";
 

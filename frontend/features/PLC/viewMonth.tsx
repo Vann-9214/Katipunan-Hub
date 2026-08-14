@@ -20,7 +20,7 @@ import {
   usePLCBookings,
   Booking,
   MonthBooking,
-} from "@/lib/supabase/PLC/usePLCBooking";
+} from "@/database/supabase/PLC/usePLCBooking";
 // 1. Import Framer Motion
 import { motion, AnimatePresence } from "framer-motion";
 

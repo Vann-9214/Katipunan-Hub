@@ -1,20 +1,20 @@
 "use client";
 
-import ToggleButton from "@/components/ReusableComponent/ToggleButton";
+import ToggleButton from "@/components/ToggleButton";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Button from "@/components/ReusableComponent/Buttons";
-import Logo from "@/components/ReusableComponent/Logo";
-import TextBox from "@/components/ReusableComponent/Textbox";
-import { Combobox } from "@/components/ReusableComponent/Combobox";
-import { supabase } from "@/lib/supabase/General/supabaseClient";
+import Button from "@/components/Buttons";
+import Logo from "@/components/Logo";
+import TextBox from "@/components/Textbox";
+import { Combobox } from "@/components/Combobox";
+import { supabase } from "@/database/supabase/General/supabaseClient";
 import Image from "next/image";
 import { CheckCircle } from "lucide-react"; // Removed ArrowRight
 import {
   COURSE_PROGRAMS,
   YEAR_LEVELS,
   EMAIL_DOMAIN,
-} from "@/lib/supabase/constants";
+} from "@/database/supabase/constants";
 
 interface SignUpFormProps {
   onClose?: () => void;

@@ -12,7 +12,7 @@ import {
   User,
 } from "lucide-react";
 import { Montserrat, PT_Sans } from "next/font/google";
-import { Booking } from "@/lib/supabase/PLC/usePLCBooking";
+import { Booking } from "@/database/supabase/PLC/usePLCBooking";
 import RateTutorModal from "./rateTutorModal";
 // 1. Added Framer Motion for consistent animations
 import { motion, AnimatePresence } from "framer-motion";

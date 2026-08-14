@@ -21,8 +21,8 @@ import PostItemModal, { ModalPostData } from "./PostItemModal";
 import PostViewModal from "./PostViewModal";
 
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase/General/supabaseClient";
-import BackgroundGradient from "@/components/ReusableComponent/BackgroundGradient";
+import { supabase } from "@/database/supabase/General/supabaseClient";
+import BackgroundGradient from "@/components/BackgroundGradient";
 
 // --- FONTS ---
 const montserrat = Montserrat({

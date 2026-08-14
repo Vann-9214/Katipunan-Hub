@@ -10,7 +10,7 @@ import {
   type UpdatePostPayload,
 } from "../Utils/types";
 import { AddPostModal } from "./addPostModal";
-import Avatar from "@/components/ReusableComponent/Avatar";
+import Avatar from "@/components/Avatar";
 
 // Props Interface
 export interface AddPostsProps {

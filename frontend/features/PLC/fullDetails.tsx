@@ -15,15 +15,15 @@ import {
   Loader2,
 } from "lucide-react";
 import { Montserrat, PT_Sans } from "next/font/google";
-import Avatar from "@/components/ReusableComponent/Avatar";
+import Avatar from "@/components/Avatar";
 import RateTutorModal from "./rateTutorModal";
 import { motion, AnimatePresence } from "framer-motion";
 
 // --- CHAT IMPORTS ---
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase/General/supabaseClient";
-import { getCurrentUserDetails } from "@/lib/supabase/General/getUser";
-import { getSortedUserPair } from "@/lib/supabase/Message/auth";
+import { supabase } from "@/database/supabase/General/supabaseClient";
+import { getCurrentUserDetails } from "@/database/supabase/General/getUser";
+import { getSortedUserPair } from "@/database/supabase/Message/auth";
 
 /* Fonts */
 const montserrat = Montserrat({

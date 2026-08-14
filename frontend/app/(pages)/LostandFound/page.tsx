@@ -1,11 +1,11 @@
 "use client";
 
-import HomepageTab from "@/components/ReusableComponent/HomepageTab/HomepageTab";
+import HomepageTab from "@/components/HomepageTab";
 import LostAndFoundContent from "@/features/LostandFound/LostandFoundcontent";
 import { useState, useEffect } from "react";
 // Keep backend imports for your leader
-import { getCurrentUserDetails } from "@/lib/supabase/General/getUser";
-import type { User } from "@/lib/supabase/General/user";
+import { getCurrentUserDetails } from "@/database/supabase/General/getUser";
+import type { User } from "@/database/supabase/General/user";
 
 export default function LostandFoundPage() {
   const [user, setUser] = useState<User | null>(null);

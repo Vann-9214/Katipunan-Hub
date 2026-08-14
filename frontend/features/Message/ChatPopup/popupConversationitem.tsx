@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { ConversationItem } from "../Utils/types";
-import Avatar from "@/components/ReusableComponent/Avatar";
+import Avatar from "@/components/Avatar";
 import { motion, Variants, AnimatePresence } from "framer-motion";
 
 interface PopupConversationItemProps {

@@ -12,14 +12,14 @@ import {
   Trash2,
 } from "lucide-react";
 import Image from "next/image";
-import type { User } from "@/lib/supabase/General/user";
+import type { User } from "@/database/supabase/General/user";
 import FormInput from "./formInput";
-import { uploadAvatar } from "@/lib/supabase/Account/uploadAvatar";
-import { uploadCover } from "@/lib/supabase/Account/coverPhoto";
-import { updateUserAccount } from "@/lib/supabase/Account/updateUserAccount";
-import { removeUserImage } from "@/lib/supabase/Account/removeImage";
+import { uploadAvatar } from "@/database/supabase/Account/uploadAvatar";
+import { uploadCover } from "@/database/supabase/Account/coverPhoto";
+import { updateUserAccount } from "@/database/supabase/Account/updateUserAccount";
+import { removeUserImage } from "@/database/supabase/Account/removeImage";
 import Cropper, { Area } from "react-easy-crop";
-import { getCroppedImg } from "@/lib/supabase/Account/getCroppped";
+import { getCroppedImg } from "@/database/supabase/Account/getCroppped";
 import { motion } from "framer-motion"; // Added for smooth entry
 import { Montserrat } from "next/font/google"; // Font
 

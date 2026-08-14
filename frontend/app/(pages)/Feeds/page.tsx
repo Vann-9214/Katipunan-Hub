@@ -1,11 +1,11 @@
 "use client";
 
-import HomepageTab from "@/components/ReusableComponent/HomepageTab/HomepageTab";
+import HomepageTab from "@/components/HomepageTab";
 import { useState, useEffect, Suspense } from "react";
-import { getCurrentUserDetails } from "@/lib/supabase/General/getUser";
-import type { User } from "@/lib/supabase/General/user";
+import { getCurrentUserDetails } from "@/database/supabase/General/getUser";
+import type { User } from "@/database/supabase/General/user";
 import FeedsContent from "@/features/Feed/feedContent";
-import LoadingScreen from "@/components/ReusableComponent/LoadingScreen";
+import LoadingScreen from "@/components/LoadingScreen";
 
 export default function Feeds() {
   const [user, setUser] = useState<User | null>(null);

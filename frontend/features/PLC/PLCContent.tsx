@@ -11,12 +11,12 @@ import { Montserrat, PT_Sans } from "next/font/google";
 import PLCViewMonth from "./viewMonth";
 import PLCViewYear from "./viewYear";
 import HistoryModal from "./historyModal";
-import { usePLCBookings } from "@/lib/supabase/PLC/usePLCBooking";
-import LoadingScreen from "../../components/ReusableComponent/LoadingScreen";
+import { usePLCBookings } from "@/database/supabase/PLC/usePLCBooking";
+import LoadingScreen from "../../components/LoadingScreen";
 // 1. Import motion
 import { motion } from "framer-motion";
 // --- NEW IMPORT ---
-import BackgroundGradient from "@/components/ReusableComponent/BackgroundGradient";
+import BackgroundGradient from "@/components/BackgroundGradient";
 
 const montserrat = Montserrat({
   subsets: ["latin"],

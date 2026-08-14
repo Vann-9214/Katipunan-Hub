@@ -1,32 +1,32 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { supabase } from "@/lib/supabase/General/supabaseClient";
-import { getCurrentUserDetails } from "@/lib/supabase/General/getUser";
+import { supabase } from "@/database/supabase/General/supabaseClient";
+import { getCurrentUserDetails } from "@/database/supabase/General/getUser";
 import {
   getFeeds,
   updateFeedPost,
-} from "@/lib/supabase/Feeds/feeds";
-import type { User } from "@/lib/supabase/General/user";
-import type { FeedPost } from "@/lib/supabase/Feeds/types";
+} from "@/database/supabase/Feeds/feeds";
+import type { User } from "@/database/supabase/General/user";
+import type { FeedPost } from "@/database/supabase/Feeds/types";
 import {
   FilterState,
   PostUI,
   UpdatePostPayload,
 } from "../Announcement/Utils/types";
-import { getDateRange } from "@/lib/supabase/Announcement/Filter/supabase-helper";
+import { getDateRange } from "@/database/supabase/Announcement/Filter/supabase-helper";
 import { Newspaper } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
 // UI
-import HomepageTab from "@/components/ReusableComponent/HomepageTab/HomepageTab";
+import HomepageTab from "@/components/HomepageTab";
 import FeedsLeftBar from "./feedleftbar";
 import PLCStream from "./PLCStream";
-import LoadingScreen from "@/components/ReusableComponent/LoadingScreen";
+import LoadingScreen from "@/components/LoadingScreen";
 import AddPosts from "../Announcement/AddPosts/addPosts";
 import Posts from "../Announcement/Posts/Posts";
 import formatPostDate from "../Announcement/Utils/formatDate";
-import BackgroundGradient from "@/components/ReusableComponent/BackgroundGradient";
+import BackgroundGradient from "@/components/BackgroundGradient";
 
 const DEFAULT_FILTERS: FilterState = {
   sort: "Newest First",

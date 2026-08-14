@@ -1,12 +1,12 @@
 "use client";
 
 import ChatSidebar from "@/features/Message/Sidebar/sidebar";
-import HomepageTab from "@/components/ReusableComponent/HomepageTab/HomepageTab";
+import HomepageTab from "@/components/HomepageTab";
 import { useState, useEffect } from "react";
-import { getCurrentUserDetails } from "@/lib/supabase/General/getUser";
-import type { User } from "@/lib/supabase/General/user";
+import { getCurrentUserDetails } from "@/database/supabase/General/getUser";
+import type { User } from "@/database/supabase/General/user";
 // --- NEW IMPORT ---
-import BackgroundGradient from "@/components/ReusableComponent/BackgroundGradient";
+import BackgroundGradient from "@/components/BackgroundGradient";
 
 export default function MessageLayout({
   children,

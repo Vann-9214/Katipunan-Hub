@@ -1,7 +1,7 @@
 "use client";
 
 import { OtherAccount } from "../Utils/types";
-import Avatar from "@/components/ReusableComponent/Avatar";
+import Avatar from "@/components/Avatar";
 import { motion } from "framer-motion";
 
 export default function SearchResultItem({

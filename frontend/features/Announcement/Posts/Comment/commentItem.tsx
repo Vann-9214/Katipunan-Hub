@@ -2,7 +2,7 @@
 import Image from "next/image";
 import ReactionButton from "../reactButton";
 import ReactionSummary from "../../Posts/reactionSummary";
-import { ReactionCount } from "@/lib/supabase/Announcement/Posts/usePostReaction";
+import { ReactionCount } from "@/database/supabase/Announcement/Posts/usePostReaction";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { usePostComment } from "./postCommentContext";
