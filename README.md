@@ -1,6 +1,27 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Katipunan Hub
+
+This repository is set up as an NPM Workspace containing both the frontend and backend applications:
+
+- **`frontend/`**: The Next.js web application.
+- **`backend/`**: The Express.js backend API and services.
+- **`backend/supabase/`**: The Supabase database migrations and configuration.
 
 ## Getting Started
+
+To install all dependencies for both frontend and backend, run this at the root of the project:
+```bash
+npm install
+```
+
+To run both development servers concurrently:
+```bash
+npm run dev
+```
+
+---
+
+## Next.js Frontend Details
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 First, run the development server:
 
