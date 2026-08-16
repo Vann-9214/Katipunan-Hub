@@ -28,10 +28,7 @@ export const shapePostForUI = (r: DBPostRow | null): PostUI | null => {
     date: formatDateWithAmPm(r.created_at ?? r.created_at ?? null),
     images: Array.isArray(r.images) ? r.images : [],
     tags: Array.isArray(r.tags) ? r.tags : [],
-    type:
-      r.type === "announcement" || r.type === "highlight"
-        ? (r.type as "announcement" | "highlight")
-        : "announcement",
+    type: "announcement",
     visibility: r.visibility ?? null,
     author_id: r.author_id ?? undefined,
     created_at: r.created_at ?? null,

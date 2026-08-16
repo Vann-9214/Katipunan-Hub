@@ -26,7 +26,7 @@ export interface PostsProps {
   onEdit?: () => void;
   onDelete?: () => void;
   canEdit?: boolean;
-  type: "announcement" | "highlight" | "feed";
+  type: "announcement";
   mode?: "card" | "modal";
   visibility?: string | null;
   isFeed?: boolean;

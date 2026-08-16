@@ -5,13 +5,11 @@ import { useRouter } from "next/navigation";
 import type { PostUI, NewPostPayload, UpdatePostPayload } from "@/features/Announcement/Utils/types";
 import type { UploadButtonHandle } from "@/features/Announcement/Utils/types";
 import { deleteUrlsFromBucket } from "./storage";
-import { createFeedPost } from "../../Feeds/feeds";
 import { supabase } from "../../General/supabaseClient";
-
 // Props Interface
 export interface UseAddPostFormProps {
   initialPost?: PostUI | null;
-  currentType?: "announcement" | "feed";
+  currentType?: "announcement";
   authorId?: string | null;
   onAddPost?: (post: NewPostPayload) => Promise<void> | void;
   onUpdatePost?: (post: UpdatePostPayload) => Promise<void> | void;
@@ -42,7 +40,7 @@ export const useAddPostForm = ({
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [postType, setPostType] =
-    useState<"announcement" | "feed">(currentType);
+    useState<"announcement">(currentType);
   const [predefinedImages, setPredefinedImages] = useState<string[]>([]);
 
   // --- NEW: State for suggested tags ---
@@ -66,7 +64,6 @@ export const useAddPostForm = ({
 
   // --- NEW: Fetch previously used tags ---
   useEffect(() => {
-    if (postType === "feed") return;
 
     const fetchTags = async () => {
       const { data, error } = await supabase
@@ -167,28 +164,8 @@ export const useAddPostForm = ({
 
       if (!authorId && !initialPost) throw new Error("Author ID not found");
 
-      // --- FEED LOGIC ---
-      if (postType === "feed") {
-         // FIX: Handle Update for Feeds
-         if (initialPost && onUpdatePost) {
-            if (!initialPost.id) throw new Error("Post id missing. Cannot update.");
-            await onUpdatePost({
-                id: initialPost.id,
-                description: combinedDescription,
-                images: uniqueImages,
-                tags: [], // Feeds don't use tags, but payload expects it
-                type: "feed",
-                visibility: "global",
-                title: "",
-            });
-         } else if (authorId) {
-            // Handle Create
-            await createFeedPost(combinedDescription, uniqueImages, authorId);
-         }
-         await deleteUrlsFromBucket(removedUrls);
-      } 
       // --- ANNOUNCEMENT LOGIC ---
-      else {
+      if (postType === "announcement") {
         const visibilityToStore: string | null =
           visibleTo === "global"
             ? "global"

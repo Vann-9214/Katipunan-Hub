@@ -102,10 +102,8 @@ export default function PostComment() {
 
   const { type } = spotlightPost;
   const modalTitle = isFeedPost
-    ? "User Feed"
-    : type === "highlight"
-    ? "Highlight"
-    : "Announcement";
+    ? "View Post"
+    : "View Announcement";
 
   return (
     <>

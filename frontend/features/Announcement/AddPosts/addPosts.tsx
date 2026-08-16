@@ -19,7 +19,7 @@ export interface AddPostsProps {
   externalOpen?: boolean;
   onExternalClose?: () => void;
   initialPost?: PostUI | null;
-  currentType?: "announcement" | "feed";
+  currentType?: "announcement";
   authorId?: string | null;
 
   // --- Feed Support ---

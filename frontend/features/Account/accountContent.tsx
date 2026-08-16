@@ -29,7 +29,6 @@ import EditBioDetailsModal from "./editBioDetailsModal";
 import { getCurrentUserDetails } from "@/database/supabase/General/getUser";
 import { useUserPosts } from "@/database/supabase/Account/useUserPosts";
 import { supabase } from "@/database/supabase/General/supabaseClient";
-import { updateFeedPost } from "@/database/supabase/Feeds/feeds";
 // 1. Import helper to sort IDs
 import { getSortedUserPair } from "@/database/supabase/Message/auth";
 
@@ -192,11 +191,7 @@ export default function AccountContent({ targetUserId }: AccountContentProps) {
   const handleUpdatePost = async (updatedPost: UpdatePostPayload) => {
     if (!updatedPost.description) return;
     try {
-      await updateFeedPost(
-        updatedPost.id,
-        updatedPost.description,
-        updatedPost.images || []
-      );
+      // feed updating is disabled
       handleCloseEditor();
     } catch (error) {
       console.error("Error updating post:", error);
@@ -398,22 +393,6 @@ export default function AccountContent({ targetUserId }: AccountContentProps) {
         {/* RIGHT: POSTS FEED */}
         <div className="flex-1 min-w-0">
           <div className="flex flex-col items-center space-y-8">
-            {isOwner && (
-              <AddPosts
-                currentType="feed"
-                isFeed={true}
-                author={{
-                  fullName: currentUser.fullName,
-                  avatarURL: currentUser.avatarURL,
-                }}
-                authorId={currentUser.id}
-                externalOpen={editorOpen}
-                initialPost={editingPost}
-                onExternalClose={handleCloseEditor}
-                onUpdatePost={handleUpdatePost}
-              />
-            )}
-
             {postsLoading ? (
               <div className="py-10 text-gray-400 font-montserrat">
                 Loading posts...

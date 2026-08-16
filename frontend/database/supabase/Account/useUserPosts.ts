@@ -29,7 +29,7 @@ export function useUserPosts(userId: string | undefined) {
         description: p.content, 
         images: p.images || [],
         tags: [], 
-        type: "feed", 
+        type: "announcement", 
         visibility: "global", 
         author_id: p.author_id,
         created_at: p.created_at,

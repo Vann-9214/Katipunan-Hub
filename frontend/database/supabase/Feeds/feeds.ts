@@ -1,76 +1,7 @@
 import { supabase } from "../General/supabaseClient";
-import { FeedPost, PLCHighlight } from "./types";
+import { PLCHighlight } from "./types";
 
-// --- 1. Fetch General Feeds (Optimized for Pagination) ---
-export async function getFeeds(page = 0, limit = 10): Promise<{ posts: FeedPost[], count: number | null }> {
-  const from = page * limit;
-  const to = from + limit - 1;
-
-  const { data, error, count } = await supabase
-    .from("Feeds")
-    .select(`
-      id,
-      content,
-      images,
-      created_at,
-      author_id,
-      author:Accounts!Feeds_author_id_fkey (
-        id,
-        fullName,
-        avatarURL,
-        role
-      )
-    `, { count: 'exact' })
-    .order("created_at", { ascending: false })
-    .range(from, to);
-
-  if (error) {
-    console.error("Error fetching feeds:", error.message || error);
-    return { posts: [], count: 0 };
-  }
-
-  const posts = data.map((item: any) => ({
-    id: item.id,
-    content: item.content,
-    images: item.images || [],
-    created_at: item.created_at,
-    author: item.author,
-  }));
-  
-  return { posts, count };
-}
-
-// --- NEW: Create Feed Post ---
-export async function createFeedPost(content: string, images: string[], authorId: string) {
-  const { error } = await supabase
-    .from("Feeds")
-    .insert({
-      content,
-      images,
-      author_id: authorId,
-    });
-
-  if (error) {
-    console.error("Error creating feed post:", error);
-    throw error;
-  }
-}
-
-// --- Update Feed Post ---
-export async function updateFeedPost(id: string, content: string, images: string[]) {
-  const { error } = await supabase
-    .from("Feeds")
-    .update({
-      content,
-      images,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", id);
-
-  if (error) throw error;
-}
-
-// --- 3. Fetch PLC "Hall of Fame" (Optimized N+1 Query) ---
+// --- Fetch PLC "Hall of Fame" (Optimized N+1 Query) ---
 export async function getPLCHighlights(): Promise<PLCHighlight[]> {
   // 1. Fetch ALL ratings
   const { data: ratingsData, error } = await supabase
