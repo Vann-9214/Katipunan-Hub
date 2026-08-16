@@ -549,7 +549,7 @@ export const usePLCBookings = (
     if (!currentUser) return;
 
     const channel = supabase
-      .channel('plc-bookings-realtime')
+      .channel(`plc-bookings-realtime_${Date.now()}`)
       // --- ADDED THIS LINE TO FIX REALTIME UPDATES ---
       .on('postgres_changes', { event: '*', schema: 'public', table: 'PLCBookings' }, () => { refreshBookings(true); })
       // ------------------------------------------------

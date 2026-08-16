@@ -19,7 +19,7 @@ export interface AddPostsProps {
   externalOpen?: boolean;
   onExternalClose?: () => void;
   initialPost?: PostUI | null;
-  currentType?: "announcement" | "highlight" | "feed";
+  currentType?: "announcement" | "feed";
   authorId?: string | null;
 
   // --- Feed Support ---
@@ -141,8 +141,6 @@ export default function AddPosts(props: AddPostsProps) {
                   ? `What's on your mind, ${
                       author?.fullName.split(" ")[0] || "Teknoy"
                     }?`
-                  : currentType === "highlight"
-                  ? "Create a new highlight..."
                   : "Make an announcement..."}
               </span>
 

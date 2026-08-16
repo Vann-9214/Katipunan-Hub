@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useId } from "react";
 import { supabase } from "./supabaseClient";
 import type { User } from "./user";
 import { programToCollege } from "@/features/Announcement/Utils/constants";
@@ -166,13 +166,15 @@ export function useNotifications(user: User | null) {
     }
   }, [userId, fetchLastReadStatus, fetchNotifications]);
 
+  const hookId = useId();
+
   // Realtime Subscriptions
   useEffect(() => {
     if (!userId) return;
 
     // Listen to Announcements
     const announcementChannel = supabase
-      .channel(`public:Posts:announcement-check-${userId}`)
+      .channel(`public:Posts:announcement-check-${userId}-${hookId}`)
       .on(
         "postgres_changes",
         {
@@ -187,7 +189,7 @@ export function useNotifications(user: User | null) {
 
     // Listen to UserNotifications
     const userNotifChannel = supabase
-      .channel(`public:UserNotifications:${userId}`)
+      .channel(`public:UserNotifications:${userId}-${hookId}`)
       .on(
         "postgres_changes",
         {

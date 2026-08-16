@@ -157,7 +157,7 @@ export default function CalendarContent() {
     fetchEvents();
 
     const channel = supabase
-      .channel("events-calendar-changes")
+      .channel(`events-calendar-changes_${Date.now()}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "Events" },

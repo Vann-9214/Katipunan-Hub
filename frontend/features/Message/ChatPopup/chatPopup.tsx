@@ -175,7 +175,7 @@ export default function ChatPopup() {
     if (!currentUserId) return;
 
     const channel = supabase
-      .channel("chat_popup_realtime")
+      .channel(`chat_popup_realtime_${Date.now()}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "Messages" },

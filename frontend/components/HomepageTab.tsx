@@ -198,7 +198,7 @@ export default function HomepageTab({ user }: HomepageTabProps) {
     if (!user?.id) return;
     fetchChatUnreadCount();
     const channel = supabase
-      .channel("homepage_chat_badge")
+      .channel(`homepage_chat_badge_${user.id}_${Date.now()}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "Messages" },

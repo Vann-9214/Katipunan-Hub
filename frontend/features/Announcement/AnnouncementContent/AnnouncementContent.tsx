@@ -49,14 +49,10 @@ export default function AnnouncementPageContent() {
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<PostUI | null>(null);
-  const [activeTab, setActiveTab] = useState<"announcement" | "highlight">(
-    "announcement"
-  );
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTags, setActiveTags] = useState<string[]>([]);
 
   // --- Performance Optimization ---
-  const deferredTab = useDeferredValue(activeTab);
   const deferredTags = useDeferredValue(activeTags);
   const searchParams = useSearchParams();
 
@@ -82,7 +78,6 @@ export default function AnnouncementPageContent() {
     const targetId = searchParams.get("id");
 
     if (targetId && targetFilter) {
-      setActiveTab("announcement");
       if (targetFilter === "Course" || targetFilter === "Global") {
         setFilters((prev) => ({
           ...prev,
@@ -137,7 +132,7 @@ export default function AnnouncementPageContent() {
         let query = supabase
           .from("Posts")
           .select("*")
-          .in("type", ["announcement", "highlight"]);
+          .eq("type", "announcement");
 
         // Apply Filters
         const dateRange = getDateRange(currentFilters.date);
@@ -194,7 +189,7 @@ export default function AnnouncementPageContent() {
   // --- NEW: Realtime Subscription for Announcements ---
   useEffect(() => {
     const channel = supabase
-      .channel("realtime-announcements")
+      .channel(`realtime-announcements_${Date.now()}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "Posts" },
@@ -213,19 +208,6 @@ export default function AnnouncementPageContent() {
   // --- Handlers ---
   const handleFilterChange = (newFilters: FilterState) => {
     setFilters(newFilters);
-  };
-
-  const handleTabToggle = (tab: "announcement" | "highlight") => {
-    setActiveTab(tab);
-    setActiveTags([]);
-
-    if (tab === "highlight") {
-      setFilters((prev) => {
-        if (prev.visibility === "Global" && prev.date === "All Time")
-          return prev;
-        return { ...prev, visibility: "Global", date: "All Time" };
-      });
-    }
   };
 
   const handleAddPost = async (newPostData: NewPostPayload) => {
@@ -247,9 +229,9 @@ export default function AnnouncementPageContent() {
             : [...prev, newlyAddedPost]
         );
       }
-    } catch (err) {
-      console.error("Unexpected error creating post:", err);
-      alert("An unexpected error occurred.");
+    } catch (err: any) {
+      console.error("Unexpected error creating post:", JSON.stringify(err, null, 2), err?.message);
+      alert("An unexpected error occurred: " + (err?.message || "Check console"));
     }
   };
 
@@ -340,7 +322,7 @@ export default function AnnouncementPageContent() {
 
   // --- Client-Side Filtering (Optimized) ---
   const derivedTags = useMemo(() => {
-    const candidate = posts.filter((p) => p.type === deferredTab);
+    const candidate = posts.filter((p) => p.type === "announcement");
     return Array.from(
       new Set(
         candidate
@@ -348,12 +330,12 @@ export default function AnnouncementPageContent() {
           .filter(Boolean)
       )
     );
-  }, [posts, deferredTab]);
+  }, [posts]);
 
   const filteredPosts = useMemo(() => {
     let list = [...posts];
 
-    list = list.filter((p) => p.type === deferredTab);
+    list = list.filter((p) => p.type === "announcement");
 
     if (searchTerm.trim() !== "") {
       const lower = searchTerm.toLowerCase();
@@ -371,7 +353,7 @@ export default function AnnouncementPageContent() {
     }
 
     return list;
-  }, [posts, deferredTab, searchTerm, deferredTags]);
+  }, [posts, searchTerm, deferredTags]);
 
   // --- Main Render ---
   const { id, role } = currentUser || {};
@@ -403,12 +385,9 @@ export default function AnnouncementPageContent() {
       <HomepageTab user={currentUser} />
 
       <AnnouncementLeftBar
-        activeTab={activeTab}
-        onTabToggle={handleTabToggle}
         onSearchChange={setSearchTerm}
         onFilterChange={handleFilterChange}
         filters={filters}
-        isHighlights={activeTab === "highlight"}
         derivedTags={derivedTags}
         onTagClick={setActiveTags}
       />
@@ -425,7 +404,6 @@ export default function AnnouncementPageContent() {
         <AnnouncementFeed
           isAdmin={isAdmin}
           currentUserId={currentUserId}
-          currentType={deferredTab}
           filteredPosts={filteredPosts}
           editorOpen={editorOpen}
           editingPost={editingPost}

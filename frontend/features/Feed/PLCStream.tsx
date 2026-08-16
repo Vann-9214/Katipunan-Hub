@@ -24,7 +24,7 @@ export default function PLCStream() {
     fetchHighlights();
 
     const channel = supabase
-      .channel("plc-highlights-realtime")
+      .channel(`plc-highlights-realtime_${Date.now()}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "TutorRatings" },

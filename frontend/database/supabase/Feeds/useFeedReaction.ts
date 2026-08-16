@@ -62,6 +62,8 @@ export function useFeedReaction({ feedId, userId }: UseFeedReactionsProps) {
 
   // Realtime
   useEffect(() => {
+    if (!feedId) return;
+
     const channel = supabase
       .channel(`feed-reaction-${feedId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "FeedReactions", filter: `feed_id=eq.${feedId}` }, () => {

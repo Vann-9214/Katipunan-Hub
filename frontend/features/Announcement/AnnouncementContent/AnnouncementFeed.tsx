@@ -11,7 +11,6 @@ import { Megaphone } from "lucide-react";
 interface AnnouncementFeedProps {
   isAdmin: boolean;
   currentUserId: string;
-  currentType: "announcement" | "highlight";
   filteredPosts: PostUI[];
   editorOpen: boolean;
   editingPost: PostUI | null;
@@ -27,7 +26,6 @@ interface AnnouncementFeedProps {
 export default function AnnouncementFeed({
   isAdmin,
   currentUserId,
-  currentType,
   filteredPosts,
   editorOpen,
   editingPost,
@@ -49,7 +47,7 @@ export default function AnnouncementFeed({
             externalOpen={editorOpen}
             onExternalClose={onCloseEditor}
             initialPost={editingPost}
-            currentType={currentType}
+            currentType="announcement"
             authorId={currentUserId}
           />
         )}
@@ -64,7 +62,7 @@ export default function AnnouncementFeed({
                 </div>
                 <h3 className="font-montserrat font-bold text-[18px] text-white tracking-wide">
                   {/* Dynamic Header Text */}
-                  {currentType === "highlight" ? "Highlights" : "Announcements"}
+                  Announcements
                 </h3>
               </div>
               {/* Body */}
@@ -76,8 +74,6 @@ export default function AnnouncementFeed({
                   {/* Dynamic Body Text */}
                   {searchTerm
                     ? "No results found"
-                    : currentType === "highlight"
-                    ? "No highlights yet"
                     : "No announcements yet"}
                 </h3>
                 <p className="text-gray-500 text-sm font-ptsans">

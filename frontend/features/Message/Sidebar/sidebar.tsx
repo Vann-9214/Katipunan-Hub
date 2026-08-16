@@ -198,7 +198,7 @@ export default function ChatSidebar() {
     }
 
     const channel = supabase
-      .channel("chats_list_changes")
+      .channel(`chats_list_changes_${Date.now()}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "Messages" },

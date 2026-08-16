@@ -297,24 +297,23 @@ export function AddPostModal(props: AddPostModalProps) {
                     </div>
                   )}
 
-                  {/* Attachment - Updated Wrapper */}
-                  <div className="space-y-2">
-                    <label
-                      className={`${montserrat.className} block text-sm font-bold text-gray-700`}
-                    >
-                      {props.isFeed
-                        ? "Add to your post"
-                        : "Attachments (Optional)"}
-                    </label>
-                    {/* Removed the outer white box style since UploadButton now handles UI */}
-                    <div className="w-full">
-                      <UploadButton
-                        key={props.initialPost?.id ?? "new"}
-                        ref={refs.uploadRef}
-                        predefinedImages={predefinedImages}
-                      />
+                  {/* Attachment - Hidden for Announcements per user request */}
+                  {props.isFeed && (
+                    <div className="space-y-2">
+                      <label
+                        className={`${montserrat.className} block text-sm font-bold text-gray-700`}
+                      >
+                        Add to your post
+                      </label>
+                      <div className="w-full">
+                        <UploadButton
+                          key={props.initialPost?.id ?? "new"}
+                          ref={refs.uploadRef}
+                          predefinedImages={predefinedImages}
+                        />
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </form>
 
                 {/* Footer */}

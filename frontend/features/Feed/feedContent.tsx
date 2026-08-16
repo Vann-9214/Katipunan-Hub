@@ -125,7 +125,7 @@ export default function FeedsContent() {
   // --- OPTIMIZED: Realtime listener no longer calls fetchPosts (Fixes Refetch Storm) ---
   useEffect(() => {
     const channel = supabase
-      .channel("realtime-feeds")
+      .channel(`realtime-feeds_${Date.now()}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "Feeds" },

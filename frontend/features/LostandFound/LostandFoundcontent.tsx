@@ -145,7 +145,7 @@ export default function LostandFoundContent({ user }: { user: User | null }) {
   // --- Realtime Subscription ---
   useEffect(() => {
     const channel = supabase
-      .channel("realtime-lost-and-found")
+      .channel(`realtime-lost-and-found_${Date.now()}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "LostAndFoundPosts" },

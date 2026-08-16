@@ -91,6 +91,8 @@ export function usePostReactions({ postId, userId }: UsePostReactionsProps) {
   // --- 3. Real-time Subscription ---
   // This is now stable because fetchAllReactionData is stable.
   useEffect(() => {
+    if (!postId) return;
+
     const channel = supabase
       .channel(`reaction-count-${postId}`)
       .on(

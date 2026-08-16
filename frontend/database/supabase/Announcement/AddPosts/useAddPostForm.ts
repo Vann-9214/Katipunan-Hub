@@ -11,7 +11,7 @@ import { supabase } from "../../General/supabaseClient";
 // Props Interface
 export interface UseAddPostFormProps {
   initialPost?: PostUI | null;
-  currentType?: "announcement" | "highlight" | "feed";
+  currentType?: "announcement" | "feed";
   authorId?: string | null;
   onAddPost?: (post: NewPostPayload) => Promise<void> | void;
   onUpdatePost?: (post: UpdatePostPayload) => Promise<void> | void;
@@ -42,7 +42,7 @@ export const useAddPostForm = ({
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [postType, setPostType] =
-    useState<"announcement" | "highlight" | "feed">(currentType);
+    useState<"announcement" | "feed">(currentType);
   const [predefinedImages, setPredefinedImages] = useState<string[]>([]);
 
   // --- NEW: State for suggested tags ---
@@ -190,17 +190,15 @@ export const useAddPostForm = ({
       // --- ANNOUNCEMENT LOGIC ---
       else {
         const visibilityToStore: string | null =
-          postType === "highlight"
+          visibleTo === "global"
             ? "global"
-            : visibleTo === "global"
-              ? "global"
-              : visibleCollege ?? null;
+            : visibleCollege ?? null;
 
         const payload = {
           title,
           description: combinedDescription,
-          images: uniqueImages,
-          tags,
+          images: uniqueImages.length > 0 ? uniqueImages : null,
+          tags: tags.length > 0 ? tags : null,
           type: postType,
           visibility: visibilityToStore,
         };
@@ -238,8 +236,8 @@ export const useAddPostForm = ({
   };
 
   const modalTitle = initialPost
-    ? `Edit ${postType === "announcement" ? "Announcement" : postType === "feed" ? "Post" : "Highlight"}`
-    : `Add ${postType === "announcement" ? "Announcement" : postType === "feed" ? "Post" : "Highlight"}`;
+    ? `Edit ${postType === "announcement" ? "Announcement" : "Post"}`
+    : `Add ${postType === "announcement" ? "Announcement" : "Post"}`;
 
   return {
     state: {
