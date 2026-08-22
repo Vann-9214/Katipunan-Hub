@@ -16,13 +16,12 @@ import {
   Loader2,
   ChevronRight,
 } from "lucide-react";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import ChatPopup from "../../General/Message/ChatPopup/chatPopup";
 import Avatar from "../../ReusableComponent/Avatar";
 import AccountDropdown from "../../General/Account/accountDropdown";
 import type { User } from "../../../../../supabase/Lib/General/user";
 import { motion, AnimatePresence } from "framer-motion";
-import { supabase } from "../../../../../supabase/Lib/General/supabaseClient";
 
 import { useNotifications } from "../../../../../supabase/Lib/General/useNotification";
 import NotificationDropdown from "./NotificationDropdown";
@@ -99,118 +98,76 @@ export default function HomepageTab({ user }: HomepageTabProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // --- WILDCARD SEARCH LOGIC ---
+  // --- WILDCARD SEARCH LOGIC (UI Mode) ---
   useEffect(() => {
-    const delayDebounceFn = setTimeout(async () => {
-      if (searchQuery.trim().length < 2) {
-        setSearchResults([]);
-        setIsSearching(false);
-        return;
-      }
-
-      setIsSearching(true);
-      setShowSearchDropdown(true);
-
-      try {
-        // 1. Fetch Users (Removed 'email' from select to prevent crash)
-        const { data: usersData, error: userError } = await supabase
-          .from("Accounts")
-          .select("id, fullName, avatarURL") // <-- FIXED HERE
-          .ilike("fullName", `%${searchQuery}%`)
-          .limit(3);
-
-        if (userError) console.error("User search error:", userError);
-
-        // 2. Fetch News/Announcements (Wildcard match on title)
-        const { data: newsData, error: newsError } = await supabase
-          .from("Posts")
-          .select("id, title, created_at")
-          .eq("type", "announcement")
-          .ilike("title", `%${searchQuery}%`)
-          .limit(3);
-
-        if (newsError) console.error("News search error:", newsError);
-
-        // -- Process Results --
-        const results: GlobalSearchResult[] = [];
-
-        // Add Users
-        if (usersData) {
-          usersData.forEach((u) => {
-            // Don't show self
-            if (u.id !== user?.id) {
-              results.push({
-                id: u.id,
-                type: "user",
-                title: u.fullName || "Unknown User",
-                subtitle: "User",
-                url: `/Profile/${u.id}`, // <-- Leads to Profile Page
-                image: u.avatarURL,
-              });
-            }
-          });
-        }
-
-        // Add News
-        if (newsData) {
-          newsData.forEach((n) => {
-            results.push({
-              id: n.id,
-              type: "news",
-              title: n.title,
-              subtitle: new Date(n.created_at).toLocaleDateString(),
-              url: `/Announcement?id=${n.id}`,
-            });
-          });
-        }
-
-        setSearchResults(results);
-      } catch (error) {
-        console.error("Search Critical Error:", error);
-      } finally {
-        setIsSearching(false);
-      }
-    }, 400); // 400ms debounce
-
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery, user?.id]);
-
-  // Fetch Chat Badge
-  const fetchChatUnreadCount = useCallback(async () => {
-    if (!user?.id) return;
-    try {
-      const { data, error } = await supabase
-        .from("Messages")
-        .select("conversation_id")
-        .neq("sender_id", user.id)
-        .is("read_at", null);
-      if (error || !data) return;
-      const uniqueConversations = new Set(
-        data.map((msg) => msg.conversation_id)
-      );
-      setChatUnreadCount(uniqueConversations.size);
-    } catch (err) {
-      console.error("Error fetching chat unread count:", err);
+    if (searchQuery.trim().length < 2) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
     }
-  }, [user?.id]);
 
+    setIsSearching(true);
+    setShowSearchDropdown(true);
+
+    const query = searchQuery.toLowerCase();
+    const mockSearchUsers: GlobalSearchResult[] = [
+      {
+        id: "usr_maria_03",
+        type: "user",
+        title: "Maria Santos",
+        subtitle: "PLC Tutor",
+        url: "/Profile/usr_maria_03",
+        image: "/Cit Logo.svg",
+      },
+      {
+        id: "usr_alex_02",
+        type: "user",
+        title: "Alex Rivera",
+        subtitle: "Student",
+        url: "/Profile/usr_alex_02",
+        image: "/Cit Logo.svg",
+      },
+      {
+        id: "usr_david_04",
+        type: "user",
+        title: "David Lim",
+        subtitle: "Student",
+        url: "/Profile/usr_david_04",
+        image: "/Cit Logo.svg",
+      },
+    ];
+
+    const mockSearchNews: GlobalSearchResult[] = [
+      {
+        id: "ann-1",
+        type: "news",
+        title: "CIT-U Innovation Summit 2025",
+        subtitle: "News • Today",
+        url: "/Announcement?id=ann-1",
+      },
+      {
+        id: "ann-2",
+        type: "news",
+        title: "Midterm Examination Schedule Released",
+        subtitle: "News • Yesterday",
+        url: "/Announcement?id=ann-2",
+      },
+    ];
+
+    const allResults = [...mockSearchUsers, ...mockSearchNews].filter(
+      (r) =>
+        r.title.toLowerCase().includes(query) ||
+        r.subtitle.toLowerCase().includes(query)
+    );
+
+    setSearchResults(allResults);
+    setIsSearching(false);
+  }, [searchQuery]);
+
+  // Set Chat Badge
   useEffect(() => {
-    if (!user?.id) return;
-    fetchChatUnreadCount();
-    const channel = supabase
-      .channel("homepage_chat_badge")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "Messages" },
-        () => {
-          fetchChatUnreadCount();
-        }
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user?.id, fetchChatUnreadCount]);
+    setChatUnreadCount(1);
+  }, []);
 
   const handleBellClick = () => {
     if (!isNotificationOpen) markAsRead();

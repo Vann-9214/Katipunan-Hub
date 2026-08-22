@@ -82,78 +82,52 @@ export default function ConversationWindow() {
   // --- Reply State ---
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
 
-  /* User Fetcher */
+  const mockInitialMessages: Message[] = [
+    {
+      id: "msg-1",
+      conversation_id: conversationId,
+      sender_id: "usr_maria_03",
+      content:
+        "Hello! I saw your request for Data Structures tutoring. What topics would you like to focus on?",
+      created_at: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+      read_at: new Date().toISOString(),
+    },
+    {
+      id: "msg-2",
+      conversation_id: conversationId,
+      sender_id: "usr_mock_wildcat_01",
+      content:
+        "Hi Maria! I'd love to review Graph algorithms, especially BFS/DFS and Dijkstra's algorithm.",
+      created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+      read_at: new Date().toISOString(),
+    },
+    {
+      id: "msg-3",
+      conversation_id: conversationId,
+      sender_id: "usr_maria_03",
+      content: "Sounds great! See you tomorrow at the PLC hub.",
+      created_at: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
+      read_at: null,
+    },
+  ];
+
+  /* User Fetcher & Initial Load */
   useEffect(() => {
-    const fetchUser = async () => {
-      const user = await getCurrentUserDetails();
+    getCurrentUserDetails().then((user) => {
       setCurrentUser(user);
-    };
-    fetchUser();
-  }, []);
-
-  /* Auto Scroll */
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  /* Data Fetcher */
-  useEffect(() => {
-    if (!conversationId || !currentUser?.id) {
-      if (!conversationId) setLoading(false);
-      return;
-    }
-
-    const fetchConversationData = async () => {
-      try {
-        // --- CHANGE 2: SELECT BLOCKED COLUMNS ---
-        const { data: convoData, error: convoError } = await supabase
-          .from("Conversations")
-          .select(
-            "user_a_id, user_b_id, user_a_is_blocked_by_b, user_b_is_blocked_by_a"
-          )
-          .eq("id", conversationId)
-          .single();
-
-        if (convoError) throw convoError;
-        if (!convoData) throw new Error("Conversation not found");
-
-        // Calculate Blocked Status immediately
-        const blocked =
-          convoData.user_a_is_blocked_by_b || convoData.user_b_is_blocked_by_a;
-        setIsCommunicationBlocked(blocked);
-
-        const otherUserId =
-          convoData.user_a_id === currentUser.id
-            ? convoData.user_b_id
-            : convoData.user_a_id;
-
-        const [accountResult, messagesResult] = await Promise.all([
-          supabase
-            .from("Accounts")
-            .select("id, fullName, avatarURL, role, course, studentID, year")
-            .eq("id", otherUserId)
-            .single(),
-          supabase
-            .from("Messages")
-            .select("*")
-            .eq("conversation_id", conversationId)
-            .order("created_at", { ascending: true }),
-        ]);
-
-        if (accountResult.error) throw accountResult.error;
-        if (messagesResult.error) throw messagesResult.error;
-
-        if (accountResult.data) setOtherUser(accountResult.data);
-        if (messagesResult.data) setMessages(messagesResult.data);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchConversationData();
-  }, [conversationId, currentUser?.id]);
+      setOtherUser({
+        id: "usr_maria_03",
+        fullName: "Maria Santos (PLC Tutor)",
+        avatarURL: "/Cit Logo.svg",
+        role: "Tutor",
+        course: "BS Computer Science",
+        studentID: "21-9876-543",
+        year: "4th Year",
+      });
+      setMessages(mockInitialMessages);
+      setLoading(false);
+    });
+  }, [conversationId]);
 
   /* Mark Messages as Read Logic */
   useEffect(() => {
@@ -285,35 +259,20 @@ export default function ConversationWindow() {
       finalContent = isImage ? "Sent a photo" : "Sent an attachment";
     }
 
-    const messagePayload = {
+    const theMessage: Message = {
+      id: `msg-${Date.now()}`,
       content: finalContent,
       sender_id: currentUser.id,
       conversation_id: conversationId,
       image_url: imageUrl,
       file_name: selectedFile ? selectedFile.name : null,
-      reply_to_id: replyingTo?.id || null, // Include reply ID
+      reply_to_id: replyingTo?.id || null,
+      created_at: new Date().toISOString(),
+      read_at: null,
     };
 
-    // Optimistically clear input
-    setNewMessage("");
-    setSelectedFile(null);
-    setReplyingTo(null);
-
-    const { data: newMessageData, error } = await supabase
-      .from("Messages")
-      .insert(messagePayload)
-      .select();
-
-    setIsUploading(false);
-
-    if (error || !newMessageData || newMessageData.length === 0) {
-      setNewMessage(newMessage.trim());
-      console.error("Failed to send message", error);
-      return;
-    }
-
-    const theMessage = newMessageData[0];
     setMessages((currentMessages) => [...currentMessages, theMessage]);
+    setIsUploading(false);
   };
 
   return (

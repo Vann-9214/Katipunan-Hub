@@ -33,6 +33,7 @@ import { VISIBILITY, programToCollege } from "../Utils/constants";
 import { shapePostForUI } from "./utils";
 import { getCurrentUserDetails } from "../../../../../../supabase/Lib/General/getUser";
 import { getDateRange } from "../../../../../../supabase/Lib/Announcement/Filter/supabase-helper";
+import { MOCK_ANNOUNCEMENTS } from "../../../../../../supabase/Lib/mockData";
 
 // --- Default State ---
 const DEFAULT_FILTERS: FilterState = {
@@ -41,11 +42,15 @@ const DEFAULT_FILTERS: FilterState = {
   visibility: "Global",
 };
 
+const initialMockPosts: PostUI[] = MOCK_ANNOUNCEMENTS
+  .map((row) => shapePostForUI(row))
+  .filter((x): x is PostUI => x !== null);
+
 // --- Controller Component ---
 export default function AnnouncementPageContent() {
   // --- State ---
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [posts, setPosts] = useState<PostUI[]>([]);
+  const [posts, setPosts] = useState<PostUI[]>(initialMockPosts);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<PostUI | null>(null);
@@ -229,53 +234,48 @@ export default function AnnouncementPageContent() {
   };
 
   const handleAddPost = async (newPostData: NewPostPayload) => {
-    try {
-      const { data, error } = await supabase
-        .from("Posts")
-        .insert([newPostData])
-        .select()
-        .single();
-      if (error) throw error;
-      // We don't necessarily need to manually update state here anymore
-      // because the realtime subscription will trigger a fetch.
-      // However, keeping it for instant UI feedback is fine.
-      const newlyAddedPost = shapePostForUI(data);
-      if (newlyAddedPost) {
-        setPosts((prev) =>
-          filters.sort === "Newest First"
-            ? [newlyAddedPost, ...prev]
-            : [...prev, newlyAddedPost]
-        );
-      }
-    } catch (err) {
-      console.error("Unexpected error creating post:", err);
-      alert("An unexpected error occurred.");
-    }
+    const newlyAddedPost: PostUI = {
+      id: `post-${Date.now()}`,
+      title: newPostData.title,
+      description: newPostData.description,
+      date: new Date().toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }),
+      images: newPostData.images || [],
+      tags: newPostData.tags || [],
+      type: newPostData.type,
+      visibility: newPostData.visibility,
+      author_id: newPostData.author_id,
+      created_at: new Date().toISOString(),
+    };
+
+    setPosts((prev) => [newlyAddedPost, ...prev]);
+    setEditorOpen(false);
   };
 
   const handleUpdatePost = async (updatedPost: UpdatePostPayload) => {
     const { id: postId, ...postUpdateData } = updatedPost;
     if (!postId) return;
-    try {
-      const { data, error } = await supabase
-        .from("Posts")
-        .update(postUpdateData)
-        .eq("id", postId)
-        .select()
-        .single();
-      if (error) throw error;
-      const freshlyUpdatedPost = shapePostForUI(data);
-      if (freshlyUpdatedPost) {
-        setPosts((prev) =>
-          prev.map((p) => (p.id === postId ? freshlyUpdatedPost : p))
-        );
-      }
-      setEditingPost(null);
-      setEditorOpen(false);
-    } catch (err) {
-      console.error("Unexpected error updating post:", err);
-      alert("An unexpected error occurred while updating.");
-    }
+
+    setPosts((prev) =>
+      prev.map((p) =>
+        p.id === postId
+          ? {
+              ...p,
+              title: postUpdateData.title,
+              description: postUpdateData.description,
+              images: postUpdateData.images || [],
+              tags: postUpdateData.tags || [],
+              type: postUpdateData.type,
+              visibility: postUpdateData.visibility,
+            }
+          : p
+      )
+    );
+    setEditingPost(null);
+    setEditorOpen(false);
   };
 
   const handleDelete = async (idToDelete: string) => {
@@ -289,40 +289,10 @@ export default function AnnouncementPageContent() {
       return;
     }
 
-    try {
-      const { error: dbError } = await supabase
-        .from("Posts")
-        .delete()
-        .eq("id", idToDelete);
-      if (dbError) throw dbError;
-
-      if (postToDelete.images && postToDelete.images.length > 0) {
-        const imagePaths = postToDelete.images
-          .map((url) => {
-            try {
-              const urlParts = new URL(url).pathname.split("/");
-              return urlParts.slice(urlParts.indexOf("posts")).join("/");
-            } catch (e) {
-              console.error("Invalid image URL:", e);
-              return null;
-            }
-          })
-          .filter((path): path is string => !!path);
-
-        if (imagePaths.length > 0) {
-          await supabase.storage.from("posts").remove(imagePaths);
-        }
-      }
-
-      setPosts((prev) => prev.filter((p) => p.id !== idToDelete));
-      if (editingPost?.id === idToDelete) {
-        setEditingPost(null);
-        setEditorOpen(false);
-      }
-      alert("Post deleted successfully.");
-    } catch (err) {
-      console.error("Error deleting post:", err);
-      alert("An error occurred while deleting the post.");
+    setPosts((prev) => prev.filter((p) => p.id !== idToDelete));
+    if (editingPost?.id === idToDelete) {
+      setEditingPost(null);
+      setEditorOpen(false);
     }
   };
 

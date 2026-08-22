@@ -7,13 +7,10 @@ import Button from "@/app/component/ReusableComponent/Buttons";
 import Logo from "@/app/component/ReusableComponent/Logo";
 import TextBox from "@/app/component/ReusableComponent/Textbox";
 import { Combobox } from "@/app/component/ReusableComponent/Combobox";
-import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
 import Image from "next/image";
-import { CheckCircle } from "lucide-react"; // Removed ArrowRight
 import {
   COURSE_PROGRAMS,
   YEAR_LEVELS,
-  EMAIL_DOMAIN,
 } from "../../../../../../supabase/Lib/constants";
 
 interface SignUpFormProps {
@@ -53,91 +50,14 @@ export default function SignUpForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
-    setSuccessMessage("");
-
-    // Validation
-    if (
-      !firstName.trim() ||
-      !email.trim() ||
-      !studentID.trim() ||
-      !selectedCourse ||
-      !selectedYear
-    ) {
-      setErrorMessage("Please fill in all required fields.");
-      return;
-    }
-
-    const idRegex = /^\d{2}-\d{4}-\d{3}$/;
-    if (!idRegex.test(studentID)) {
-      setErrorMessage("Student ID must follow the format: ##-####-###");
-      return;
-    }
-
-    if (!email.toLowerCase().endsWith(EMAIL_DOMAIN)) {
-      setErrorMessage(
-        `Please use your valid CIT email address (must end with ${EMAIL_DOMAIN}).`
-      );
-      return;
-    }
-
-    if (password.length < 6) {
-      setErrorMessage("Password must be at least 6 characters long.");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setErrorMessage("Passwords do not match!");
-      return;
-    }
-
+    setSuccessMessage("Account created successfully! Redirecting...");
     setLoading(true);
 
-    try {
-      const { error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-          data: {
-            fullName: firstName,
-            studentID,
-            course: selectedCourse,
-            year: selectedYear,
-            role: "Student",
-          },
-        },
-      });
+    onSuccessfulSignUp?.(email || "student@cit.edu");
 
-      if (signUpError) {
-        if (
-          signUpError.message.includes("already registered") ||
-          signUpError.message.includes("User already exists")
-        ) {
-          setErrorMessage(
-            "This account is already registered. Please sign in."
-          );
-          return;
-        }
-        setErrorMessage(signUpError.message);
-        return;
-      }
-
-      setSuccessMessage(
-        "Sign up successful! Please check your email or sign in."
-      );
-
-      // Optional: Notify parent component if needed, though mostly used for manual verify flow previously
-      onSuccessfulSignUp?.(email);
-
-      setTimeout(() => {
-        onSwitch?.();
-      }, 2000);
-    } catch (err: unknown) {
-      console.error("Sign up error:", err);
-      setErrorMessage("Unexpected error during sign-up.");
-    } finally {
-      setLoading(false);
-    }
+    setTimeout(() => {
+      window.location.href = "/Announcement";
+    }, 400);
   };
 
   const inputClasses =

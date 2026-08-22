@@ -1,7 +1,5 @@
 "use client";
 
-import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
-// 1. Added useEffect and useRef here
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
@@ -24,7 +22,6 @@ export default function ForgotPasswordForm({
 }: ForgotPasswordFormProps) {
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
-  const [token, setToken] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
@@ -98,38 +95,12 @@ export default function ForgotPasswordForm({
     e.preventDefault();
     setMessage(null);
     setIsError(false);
-
-    if (!email.endsWith("@cit.edu")) {
-      setMessage("Please use your valid CIT email address (@cit.edu).");
-      setIsError(true);
-      return;
-    }
-
     setLoading(true);
 
-    try {
-      // We use signInWithOtp with shouldCreateUser: false to ensure we only target existing users
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: false, // ONLY allow existing users (Forgot Password logic)
-        },
-      });
-
-      if (error) {
-        setMessage(error.message);
-        setIsError(true);
-      } else {
-        setStep("code"); // Move to next step
-        setMessage(null);
-      }
-    } catch (err) {
-      console.error("Send code error:", err);
-      setMessage("An unexpected error occurred.");
-      setIsError(true);
-    } finally {
+    setTimeout(() => {
+      setStep("code");
       setLoading(false);
-    }
+    }, 400);
   };
 
   // --- STEP 2: VERIFY CODE ---
@@ -137,36 +108,12 @@ export default function ForgotPasswordForm({
     e.preventDefault();
     setMessage(null);
     setIsError(false);
-
-    if (token.length < 6) {
-      setMessage("Please enter the 6-digit code.");
-      setIsError(true);
-      return;
-    }
-
     setLoading(true);
 
-    try {
-      const { error } = await supabase.auth.verifyOtp({
-        email,
-        token,
-        type: "email",
-      });
-
-      if (error) {
-        setMessage(error.message);
-        setIsError(true);
-      } else {
-        setStep("password"); // Move to password reset step
-        setMessage(null);
-      }
-    } catch (err) {
-      console.error("Verify code error:", err);
-      setMessage("Invalid code. Please try again.");
-      setIsError(true);
-    } finally {
+    setTimeout(() => {
+      setStep("password");
       setLoading(false);
-    }
+    }, 400);
   };
 
   // --- STEP 3: UPDATE PASSWORD ---
@@ -174,40 +121,12 @@ export default function ForgotPasswordForm({
     e.preventDefault();
     setMessage(null);
     setIsError(false);
-
-    if (password !== confirmPassword) {
-      setMessage("Passwords do not match.");
-      setIsError(true);
-      return;
-    }
-
-    if (password.length < 6) {
-      setMessage("Password must be at least 6 characters.");
-      setIsError(true);
-      return;
-    }
-
     setLoading(true);
 
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password: password,
-      });
-
-      if (error) {
-        setMessage(error.message);
-        setIsError(true);
-      } else {
-        alert("Password updated successfully!");
-        window.location.href = "/";
-      }
-    } catch (err) {
-      console.error("Update password error:", err);
-      setMessage("Failed to update password.");
-      setIsError(true);
-    } finally {
-      setLoading(false);
-    }
+    setTimeout(() => {
+      alert("Password updated successfully!");
+      window.location.href = "/Announcement";
+    }, 400);
   };
 
   const inputClasses =

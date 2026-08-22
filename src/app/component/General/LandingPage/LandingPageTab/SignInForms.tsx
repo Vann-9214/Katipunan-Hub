@@ -1,6 +1,5 @@
 "use client";
 
-import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
@@ -11,7 +10,6 @@ import ToggleButton from "@/app/component/ReusableComponent/ToggleButton";
 import Button from "@/app/component/ReusableComponent/Buttons";
 import Logo from "@/app/component/ReusableComponent/Logo";
 import TextBox from "@/app/component/ReusableComponent/Textbox";
-import { EMAIL_DOMAIN } from "../../../../../../supabase/Lib/constants";
 
 interface SignInFormProps {
   onClose?: () => void;
@@ -36,44 +34,10 @@ export default function SignInForm({
     e.preventDefault();
     setErrorMsg("");
     setIsUnverified(false);
-
-    if (!email.endsWith(EMAIL_DOMAIN)) {
-      setErrorMsg(`Only ${EMAIL_DOMAIN} emails are allowed.`);
-      return;
-    }
-    if (!email || !password) {
-      setErrorMsg("Please fill in all fields.");
-      return;
-    }
     setLoading(true);
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
 
-      if (error) {
-        if (error.message.includes("Email not confirmed")) {
-          setIsUnverified(true);
-        } else {
-          setErrorMsg(error.message);
-        }
-        return;
-      }
-
-      if (!data?.user) {
-        setErrorMsg("Login failed. Please check your credentials.");
-        return;
-      }
-
-      const redirectUrl = searchParams.get("redirectedFrom") || "/Announcement";
-      window.location.href = redirectUrl;
-    } catch (err) {
-      console.error("Login error:", err);
-      setErrorMsg("An unexpected error occurred.");
-    } finally {
-      setLoading(false);
-    }
+    const redirectUrl = searchParams.get("redirectedFrom") || "/Announcement";
+    window.location.href = redirectUrl;
   };
 
   // Removed: Fixed backdrop and outer Card styling (handled by parent)

@@ -1,11 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { supabase } from "../General/supabaseClient";
+import { useState, useEffect } from "react";
 import { getCurrentUserDetails } from "../General/getUser";
 import type { User } from "../General/user";
-// 1. Import the auth helper for chat
-import { getSortedUserPair } from "../Message/auth";
 
 // --- Types ---
 export interface Booking {
@@ -27,7 +24,6 @@ export interface Booking {
     studentID: string;
     avatarURL: string;
   };
-  // --- UPDATED: Added avatarURL ---
   Tutor?: {
     id: string;
     fullName: string;
@@ -41,10 +37,10 @@ export interface TutorRating {
   review: string;
 }
 
-// Define a type for our ratings map
-type RatingsMap = Map<string, TutorRating>;
-
-export type MonthBooking = Pick<Booking, "id" | "bookingDate" | "status" | "approvedBy" | "startTime" | "endTime">;
+export type MonthBooking = Pick<
+  Booking,
+  "id" | "bookingDate" | "status" | "approvedBy" | "startTime" | "endTime"
+>;
 
 const getDateString = (y: number, m: number, d: number) => {
   const mm = String(m + 1).padStart(2, "0");
@@ -64,10 +60,17 @@ interface UsePLCBookingsResult {
   deleteHistoryBooking: (bookingId: string) => Promise<void>;
   approveBooking: (bookingId: string) => Promise<void>;
   denyBooking: (bookingId: string) => Promise<void>;
-  getBookingStats: (bookingId: string) => Promise<{ totalTutors: number; rejectionCount: number }>;
+  getBookingStats: (
+    bookingId: string
+  ) => Promise<{ totalTutors: number; rejectionCount: number }>;
   refreshBookings: (silent?: boolean) => Promise<void>;
   getDateString: (y: number, m: number, d: number) => string;
-  rateTutor: (bookingId: string, tutorId: string, rating: number, review: string) => Promise<void>;
+  rateTutor: (
+    bookingId: string,
+    tutorId: string,
+    rating: number,
+    review: string
+  ) => Promise<void>;
 }
 
 // --- Main Hook ---
@@ -75,498 +78,124 @@ export const usePLCBookings = (
   year: number,
   monthIndex: number,
   selectedDate: number | null
-) : UsePLCBookingsResult => {
+): UsePLCBookingsResult => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [monthBookings, setMonthBookings] = useState<MonthBooking[]>([]);
-  const [dayBookings, setDayBookings] = useState<Booking[]>([]);
-  const [historyBookings, setHistoryBookings] = useState<Booking[]>([]);
-  
-  // Loading States
-  const [isLoadingDayBookings, setIsLoadingDayBookings] = useState(false);
-  const [isInitialLoading, setIsInitialLoading] = useState(true); 
+  const [monthBookings, setMonthBookings] = useState<MonthBooking[]>([
+    {
+      id: "plc-b-1",
+      bookingDate: getDateString(year, monthIndex, 15),
+      status: "Approved",
+      startTime: "10:00 AM",
+      endTime: "11:30 AM",
+      approvedBy: "usr_maria_03",
+    },
+    {
+      id: "plc-b-2",
+      bookingDate: getDateString(year, monthIndex, 20),
+      status: "Pending",
+      startTime: "02:00 PM",
+      endTime: "03:30 PM",
+    },
+  ]);
+  const [dayBookings, setDayBookings] = useState<Booking[]>([
+    {
+      id: "plc-b-1",
+      subject: "CS211 - Data Structures & Algorithms",
+      startTime: "10:00 AM",
+      endTime: "11:30 AM",
+      status: "Approved",
+      description: "Need help reviewing AVL trees and Graph representations.",
+      bookingDate: getDateString(year, monthIndex, selectedDate || 15),
+      studentId: "usr_mock_wildcat_01",
+      approvedBy: "usr_maria_03",
+      Tutor: {
+        id: "usr_maria_03",
+        fullName: "Maria Santos",
+        avatarURL: "/Cit Logo.svg",
+      },
+      Accounts: {
+        fullName: "Teknoy Student",
+        course: "BS Computer Science",
+        year: "3rd Year",
+        studentID: "22-1234-567",
+        avatarURL: "/Cit Logo.svg",
+      },
+    },
+  ]);
+  const [historyBookings, setHistoryBookings] = useState<Booking[]>([
+    {
+      id: "plc-h-1",
+      subject: "MATH101 - Differential Calculus",
+      startTime: "09:00 AM",
+      endTime: "10:30 AM",
+      status: "Completed",
+      description: "Limits and Derivatives practice problems.",
+      bookingDate: getDateString(year, monthIndex, 5),
+      studentId: "usr_mock_wildcat_01",
+      Tutor: {
+        id: "usr_alex_02",
+        fullName: "Alex Rivera",
+        avatarURL: "/Cit Logo.svg",
+      },
+      TutorRatings: [{ rating: 5, review: "Great explanation on chain rule!" }],
+    },
+  ]);
 
-  const [isTutor, setIsTutor] = useState(false);
-  const [myRejections, setMyRejections] = useState<string[]>([]);
-  
-  // State to store actual rating values, not just IDs
-  const [myRatingsMap, setMyRatingsMap] = useState<RatingsMap>(new Map());
-
-  // Refs to track state without re-rendering
-  const isFetchingRef = useRef(false);
-  const isFirstLoad = useRef(true);
+  const [isLoadingDayBookings] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(false);
+  const [isTutor] = useState(false);
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const user = await getCurrentUserDetails();
-      if (user) {
-        setCurrentUser(user);
-        if (user?.role?.includes("Tutor")) {
-          setIsTutor(true);
-        }
-      } else {
-        setIsInitialLoading(false);
-      }
-    };
-    fetchUser();
+    getCurrentUserDetails().then((user) => {
+      if (user) setCurrentUser(user);
+      setIsInitialLoading(false);
+    });
   }, []);
 
-  // --- 1. HELPERS ---
-
-  const fetchMyRatings = useCallback(async () => {
-    if (!currentUser) return new Map();
-    
-    const { data } = await supabase
-      .from("TutorRatings")
-      .select("booking_id, rating, review")
-      .eq("student_id", currentUser.id);
-    
-    const map = new Map<string, TutorRating>();
-    
-    if (data) {
-        data.forEach((row: any) => {
-            map.set(row.booking_id, { rating: row.rating, review: row.review });
-        });
-    }
-    
-    setMyRatingsMap(map);
-    return map;
-  }, [currentUser]);
-
-  const fetchMyRejections = useCallback(async () => {
-    if (!currentUser || !isTutor) return;
-    const { data } = await supabase
-      .from("TutorRejections")
-      .select("bookingId")
-      .eq("tutorId", currentUser.id);
-
-    if (data) {
-      setMyRejections(data.map((r: any) => r.bookingId || r.bookingid));
-    }
-  }, [currentUser, isTutor]);
-
-  // --- 2. FETCH FUNCTIONS ---
-
-  const fetchMonthBookings = useCallback(async () => {
-    if (!currentUser) return;
-
-    const startStr = getDateString(year, monthIndex, 1);
-    const lastDay = new Date(year, monthIndex + 1, 0).getDate();
-    const endStr = getDateString(year, monthIndex, lastDay);
-
-    let query = supabase
-      .from("PLCBookings")
-      .select("*")
-      .gte("bookingDate", startStr)
-      .lte("bookingDate", endStr)
-      .in("status", ["Pending", "Approved", "Rejected", "Completed"]);
-
-    if (!isTutor) query = query.eq("studentId", currentUser.id);
-
-    const { data, error } = await query;
-
-    if (error) {
-      console.error("Error fetching month bookings:", JSON.stringify(error, null, 2));
-      setMonthBookings([]); 
-    }
-
-    if (data) {
-      const filtered = isTutor
-        ? data.filter(b => b.status === 'Approved' ? b.approvedBy === currentUser.id : true)
-        : data;
-      setMonthBookings(filtered);
-    }
-  }, [currentUser, year, monthIndex, isTutor]);
-
-  const fetchDayBookings = useCallback(async (silent = false, passedMap: RatingsMap | null = null) => {
-    if (!currentUser) return;
-
-    let targetDay = selectedDate;
-    if (!targetDay) {
-      const now = new Date();
-      if (now.getFullYear() === year && now.getMonth() === monthIndex) {
-        targetDay = now.getDate();
-      } else {
-        targetDay = 1;
-      }
-    }
-
-    if (!silent) setIsLoadingDayBookings(true);
-
-    const dateQuery = getDateString(year, monthIndex, targetDay);
-
-    // --- UPDATED: Added avatarURL to Tutor selection ---
-    let query = supabase
-      .from("PLCBookings")
-      .select(`
-        *, 
-        Accounts:Accounts!PLCBookings_studentId_fkey (fullName, course, year, studentID, avatarURL), 
-        Tutor:Accounts!PLCBookings_approvedBy_fkey (id, fullName, avatarURL)
-      `)
-      .eq("bookingDate", dateQuery)
-      .in("status", ["Pending", "Approved", "Rejected", "Completed"])
-      .order("createdAt", { ascending: false });
-
-    if (!isTutor) query = query.eq("studentId", currentUser.id);
-
-    const { data, error } = await query as { data: Booking[] | null; error: any };
-
-    if (error) {
-      console.error("Error fetching day bookings:", JSON.stringify(error, null, 2));
-      setDayBookings([]); 
-    }
-
-    if (data) {
-      let filtered = isTutor
-        ? data.filter(b => b.status === 'Approved' ? b.approvedBy === currentUser.id : true)
-        : data;
-
-      const now = new Date();
-      filtered = filtered.filter((b) => {
-        if (b.status === "Pending") {
-          const bookingDateTime = new Date(`${b.bookingDate}T${b.startTime}`);
-          if (bookingDateTime < now) return false;
-        }
-        return true;
-      });
-
-      // Use passed map or fallback to state
-      const mapToUse = passedMap || myRatingsMap;
-      
-      const mappedData = filtered.map((booking) => {
-        const ratingData = mapToUse.get(booking.id);
-        
-        return {
-          ...booking,
-          hasRejected: myRejections.includes(booking.id),
-          TutorRatings: ratingData ? [ratingData] : [],
-        };
-      });
-
-      setDayBookings(mappedData);
-    } else {
-       setDayBookings([]);
-    }
-
-    if (!silent) setIsLoadingDayBookings(false);
-  }, [currentUser, selectedDate, monthIndex, year, isTutor, myRejections, myRatingsMap]);
-
-  const fetchHistoryBookings = useCallback(async (passedMap: RatingsMap | null = null) => {
-    if (!currentUser) return;
-    
-    // --- UPDATED: Added avatarURL to Tutor selection ---
-    let query = supabase
-      .from("PLCBookingHistory")
-      .select(`
-        *, 
-        Accounts:Accounts!plcbookinghistory_studentid_fkey (fullName, course, year, studentID, avatarURL), 
-        Tutor:Accounts!plcbookinghistory_approvedby_fkey (id, fullName, avatarURL)
-      `)
-      .order("bookingDate", { ascending: false });
-
-    if (!isTutor) {
-      query = query.eq("studentId", currentUser.id);
-    } else {
-      query = query.eq("approvedBy", currentUser.id);
-    }
-
-    const { data, error } = await query;
-    
-    if (error) {
-      console.error("Error fetching history:", JSON.stringify(error, null, 2));
-      setHistoryBookings([]); 
-    }
-    
-    if (data) {
-      const mapToUse = passedMap || myRatingsMap;
-      
-      const mappedHistory = data.map((booking: any) => {
-        const ratingData = mapToUse.get(booking.id);
-        
-        return {
-          ...booking,
-          TutorRatings: ratingData ? [ratingData] : [],
-        };
-      });
-
-      setHistoryBookings(mappedHistory);
-    }
-  }, [currentUser, isTutor, myRatingsMap]);
-
-  // --- 3. CENTRAL REFRESH ---
-  const refreshBookings = useCallback(async (silent = false) => {
-    if (isFetchingRef.current) return;
-    isFetchingRef.current = true;
-
-    if (!silent) setIsInitialLoading(true);
-    
-    try {
-      const freshRatingsMap = await fetchMyRatings();
-      
-      await Promise.all([
-        fetchMyRejections(),
-        fetchMonthBookings(),
-        fetchDayBookings(silent, freshRatingsMap), 
-        fetchHistoryBookings(freshRatingsMap)      
-      ]);
-    } catch (error) {
-      console.error("Critical error during refreshBookings:", error);
-    } finally {
-      isFetchingRef.current = false;
-      if (!silent) setIsInitialLoading(false);
-    }
-  }, [fetchMyRatings, fetchMyRejections, fetchMonthBookings, fetchDayBookings, fetchHistoryBookings]);
-
-  const isCleaningUpRef = useRef(false);
-
-  // --- 4. CLEANUP ENGINE (WITH LOGGING FOR DEBUGGING) ---
-  const cleanupExpired = useCallback(async () => {
-    // 1. Thread Lock
-    if (isCleaningUpRef.current) return;
-
-    // 2. Tab Lock (Prevent spamming)
-    const LOCK_KEY = 'plc_cleanup_lock';
-    const lastRun = typeof window !== 'undefined' ? localStorage.getItem(LOCK_KEY) : '0';
-    const now = Date.now();
-    
-    // Check every 60 seconds (60000ms) to reduce database load
-    if (lastRun && (now - parseInt(lastRun)) < 60000) {
-      return; 
-    }
-
-    if (typeof window !== 'undefined') {
-        localStorage.setItem(LOCK_KEY, now.toString());
-    }
-
-    isCleaningUpRef.current = true;
-
-    // 3. Get Current Date/Time
-    const today = new Date();
-    const dateStr = getDateString(today.getFullYear(), today.getMonth(), today.getDate());
-    const timeStr = today.toLocaleTimeString('en-GB', { hour12: false }); // "HH:MM:SS"
-
-    try {
-      console.log(`[PLC Cleanup] Triggered at ${timeStr}. Date: ${dateStr}`);
-
-      // Call the Database Function
-      const { data, error } = await supabase.rpc('cleanup_expired_bookings', {
-        check_date: dateStr,
-        check_time: timeStr
-      });
-
-      if (error) {
-        console.error("❌ Cleanup RPC FAILED!");
-        console.error("Full Error:", JSON.stringify(error, null, 2));
-      } else {
-        console.log("✅ Cleanup RPC Success!", data);
-        refreshBookings(true);
-      }
-    } catch (err) {
-      console.error("❌ Unexpected Cleanup Error:", err);
-    } finally {
-      isCleaningUpRef.current = false;
-    }
-  }, [refreshBookings]);
-
-  // --- UTILS & ACTIONS ---
-  const getBookingStats = async (bookingId: string) => {
-    const { data, error } = await supabase.rpc("get_booking_stats", { booking_id: bookingId });
-    if (error || !data) return { totalTutors: 0, rejectionCount: 0 };
-    return { totalTutors: data.totalTutors || 0, rejectionCount: data.rejectionCount || 0 };
-  };
-
   const cancelBooking = async (bookingId: string) => {
-    const { error } = await supabase.from("PLCBookings").delete().eq("id", bookingId);
-    if (!error) refreshBookings(false);
+    setDayBookings((prev) => prev.filter((b) => b.id !== bookingId));
+    setMonthBookings((prev) => prev.filter((b) => b.id !== bookingId));
   };
 
-  // --- UPDATED DELETE HISTORY WITH LOGGING ---
   const deleteHistoryBooking = async (bookingId: string) => {
-    const { error } = await supabase
-      .from("PLCBookingHistory")
-      .delete()
-      .eq("id", bookingId);
-
-    if (error) {
-      console.error("Failed to delete history:", error.message);
-      alert(`Delete failed: ${error.message}. Check your database permissions.`);
-    } else {
-      refreshBookings(false);
-    }
+    setHistoryBookings((prev) => prev.filter((b) => b.id !== bookingId));
   };
 
   const approveBooking = async (bookingId: string) => {
-    if (!currentUser) return;
-    const { error } = await supabase
-      .from("PLCBookings")
-      .update({ status: "Approved", approvedBy: currentUser.id })
-      .eq("id", bookingId);
-    if (!error) refreshBookings(false);
-  }
+    setDayBookings((prev) =>
+      prev.map((b) => (b.id === bookingId ? { ...b, status: "Approved" } : b))
+    );
+  };
 
-  // --- FIXED: DENY BOOKING (REMOVED DUPLICATE LOGIC) ---
   const denyBooking = async (bookingId: string) => {
-    const { error } = await supabase.rpc("deny_booking", { booking_id: bookingId });
-    
-    if (!error) {
-      setMyRejections(prev => [...prev, bookingId]);
-      refreshBookings(false);
-    }
+    setDayBookings((prev) =>
+      prev.map((b) => (b.id === bookingId ? { ...b, status: "Rejected" } : b))
+    );
   };
 
-  const rateTutor = async (bookingId: string, tutorId: string, rating: number, review: string) => {
-    if (!currentUser) return;
-    
-    // 1. Insert the rating
-    const { error } = await supabase.from("TutorRatings").insert({
-      booking_id: bookingId,
-      student_id: currentUser.id,
-      tutor_id: tutorId,
-      rating,
-      review
-    });
-
-    if (error) {
-      console.error("Error rating tutor:", error);
-      throw error;
-    }
-
-    // 2. Archive the booking (UI updates happen automatically via listeners)
-    const { error: archiveError } = await supabase.rpc('archive_booking_on_rate', { 
-      target_booking_id: bookingId 
-    });
-
-    if (archiveError) {
-      console.warn("Archive warning (might already be archived):", archiveError.message);
-    }
-    
-    // 3. --- NEW: Send Chat Message ---
-    try {
-      // Get correct user IDs for conversation lookup
-      const { user_a_id, user_b_id } = getSortedUserPair(currentUser.id, tutorId);
-      
-      // Attempt to find existing conversation
-      let conversationId = null;
-      const { data: existingConvo } = await supabase
-        .from("Conversations")
-        .select("id")
-        .eq("user_a_id", user_a_id)
-        .eq("user_b_id", user_b_id)
-        .maybeSingle();
-        
-      if (existingConvo) {
-        conversationId = existingConvo.id;
-      } else {
-        // If no conversation exists, create one
-        const { data: newConvo, error: createError } = await supabase
-          .from("Conversations")
-          .insert({ 
-            user_a_id, 
-            user_b_id, 
-            last_message_at: new Date().toISOString() 
-          })
-          .select("id")
-          .single();
-          
-        if (!createError && newConvo) {
-          conversationId = newConvo.id;
-        }
-      }
-      
-      // If we have a conversation ID, insert the message
-      if (conversationId) {
-        // Format the star rating visual
-        const stars = "⭐".repeat(rating);
-        // Format message
-        const messageContent = `I rated you ${rating} stars! ${stars}\n\n"${review}"`;
-        
-        await supabase.from("Messages").insert({
-          conversation_id: conversationId,
-          sender_id: currentUser.id,
-          content: messageContent
-        });
-      }
-    } catch (chatError) {
-      // We log the error but do not throw it, so the rating process itself doesn't appear to fail to the user
-      console.error("Failed to send rating chat message:", chatError);
-    }
-    
-    refreshBookings(false);
+  const getBookingStats = async (_bookingId: string) => {
+    return { totalTutors: 5, rejectionCount: 0 };
   };
 
-  // --- EFFECTS ---
+  const refreshBookings = async () => {};
 
-  // 1. MAIN DATA FETCHING
-  useEffect(() => {
-    if (currentUser) {
-      const shouldShowLoader = isFirstLoad.current;
-      refreshBookings(!shouldShowLoader); 
-      if (shouldShowLoader) {
-        isFirstLoad.current = false;
-      }
-    }
-  }, [currentUser, year, monthIndex, selectedDate, isTutor]);
-
-  // 2. CLEANUP ON MOUNT
-  useEffect(() => {
-    if (currentUser) {
-        cleanupExpired();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser]); 
-
-  // 3. LIVE TIMER
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const now = new Date();
-      
-      setDayBookings(prev => {
-        const hasExpiredItem = prev.some(b => {
-          if (b.status !== 'Pending') return false;
-          const bookingTime = new Date(`${b.bookingDate}T${b.startTime}`);
-          return bookingTime < now;
-        });
-
-        if (hasExpiredItem) {
-          return prev.filter(b => {
-            if (b.status === 'Pending') {
-              const bookingTime = new Date(`${b.bookingDate}T${b.startTime}`);
-              return bookingTime >= now;
+  const rateTutor = async (
+    bookingId: string,
+    _tutorId: string,
+    rating: number,
+    review: string
+  ) => {
+    setHistoryBookings((prev) =>
+      prev.map((b) =>
+        b.id === bookingId
+          ? {
+              ...b,
+              TutorRatings: [{ rating, review }],
             }
-            return true;
-          });
-        }
-        return prev;
-      });
-
-      cleanupExpired();
-
-    }, 5000); 
-    return () => clearInterval(interval);
-  }, [cleanupExpired]);
-
-  // 4. Realtime Subscription (FIXED: Added PLCBookings listener)
-  useEffect(() => {
-    if (!currentUser) return;
-
-    const channel = supabase
-      .channel('plc-bookings-realtime')
-      // --- ADDED THIS LINE TO FIX REALTIME UPDATES ---
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'PLCBookings' }, () => { refreshBookings(true); })
-      // ------------------------------------------------
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'TutorRatings' }, () => { refreshBookings(true); })
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'PLCBookingHistory' },
-        () => {
-            setTimeout(() => refreshBookings(true), 500);
-        }
+          : b
       )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [currentUser, refreshBookings]);
+    );
+  };
 
   return {
     currentUser,
@@ -588,38 +217,22 @@ export const usePLCBookings = (
 };
 
 export const usePLCYearBookings = (year: number) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [yearBookings, setYearBookings] = useState<MonthBooking[]>([]);
-  const [isTutor, setIsTutor] = useState(false);
+  const [yearBookings] = useState<MonthBooking[]>([
+    {
+      id: "plc-b-1",
+      bookingDate: `${year}-03-15`,
+      status: "Approved",
+      startTime: "10:00 AM",
+      endTime: "11:30 AM",
+    },
+    {
+      id: "plc-b-2",
+      bookingDate: `${year}-03-20`,
+      status: "Pending",
+      startTime: "02:00 PM",
+      endTime: "03:30 PM",
+    },
+  ]);
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      const user = await getCurrentUserDetails();
-      setCurrentUser(user);
-      if (user?.role?.includes("Tutor")) setIsTutor(true);
-    };
-    fetchUser();
-  }, []);
-
-  const fetchYearBookings = useCallback(async () => {
-    if (!currentUser) return;
-    const startStr = `${year}-01-01`;
-    const endStr = `${year}-12-31`;
-    let query = supabase.from("PLCBookings").select("*").gte("bookingDate", startStr).lte("bookingDate", endStr);
-    if (!isTutor) query = query.eq("studentId", currentUser.id);
-    const { data, error } = await query;
-    if (data) {
-      let filtered = data;
-      if (isTutor) {
-        filtered = filtered.filter(b => {
-          if (b.status === 'Approved') return b.approvedBy === currentUser.id;
-          return true;
-        });
-      }
-      setYearBookings(filtered);
-    }
-  }, [currentUser, year, isTutor]);
-
-  useEffect(() => { fetchYearBookings(); }, [fetchYearBookings]);
   return { yearBookings, getDateString };
 };

@@ -1,6 +1,9 @@
-// lib/supabaseClient.ts
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@supabase/supabase-js";
 
-// This is now your ONE AND ONLY Supabase client for "use client" components.
-// We export it so other files can import it.
-export const supabase = createClientComponentClient();
+const supabaseUrl =
+  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://mock-wildcat.supabase.co";
+const supabaseAnonKey =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock-anon-key";
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);

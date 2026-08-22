@@ -1,10 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Search, MessagesSquare, ArrowLeft, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { getSortedUserPair } from "../../../../../../supabase/Lib/Message/auth";
-import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
 import { getCurrentUserDetails } from "../../../../../../supabase/Lib/General/getUser";
 import type { User } from "../../../../../../supabase/Lib/General/user";
 import Avatar from "@/app/component/ReusableComponent/Avatar";
@@ -61,211 +59,72 @@ export default function ChatSidebar() {
     router.refresh();
   };
 
+  const mockConversations: Conversation[] = [
+    {
+      id: "convo-1",
+      user_a_id: "usr_mock_wildcat_01",
+      user_b_id: "usr_maria_03",
+      last_message_at: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
+      is_favorite: true,
+      is_blocked: false,
+      is_communication_blocked: false,
+      otherUser: {
+        id: "usr_maria_03",
+        fullName: "Maria Santos (PLC Tutor)",
+        avatarURL: "/Cit Logo.svg",
+      },
+      lastMessageContent: "Hello! Looking forward to our PLC session tomorrow.",
+      unreadCount: 1,
+    },
+    {
+      id: "convo-2",
+      user_a_id: "usr_mock_wildcat_01",
+      user_b_id: "usr_alex_02",
+      last_message_at: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+      is_favorite: false,
+      is_blocked: false,
+      is_communication_blocked: false,
+      otherUser: {
+        id: "usr_alex_02",
+        fullName: "Alex Rivera",
+        avatarURL: "/Cit Logo.svg",
+      },
+      lastMessageContent: "Hey! Did you check the new announcement?",
+      unreadCount: 0,
+    },
+  ];
+
   useEffect(() => {
-    const fetchUser = async () => {
-      const user = await getCurrentUserDetails();
+    getCurrentUserDetails().then((user) => {
       setCurrentUser(user);
-      if (!user) {
-        setLoading(false);
-      }
-    };
-    fetchUser();
+      setConversations(mockConversations);
+      setLoading(false);
+    });
   }, []);
 
   const currentUserId = currentUser?.id;
 
-  const fetchConversations = useCallback(async (userId: string) => {
-    setLoading(true);
-
-    const { data, error } = await supabase
-      .from("Conversations")
-      .select(
-        `
-        id, user_a_id, user_b_id, last_message_at,
-        user_a_is_favorite, user_b_is_favorite, 
-        user_a_is_blocked_by_b, user_b_is_blocked_by_a,
-        Messages(content, created_at, sender_id, read_at) 
-      `
-      )
-      .or(`user_a_id.eq.${userId},user_b_id.eq.${userId}`)
-      .order("last_message_at", { ascending: false });
-
-    if (error) {
-      console.error("Error fetching conversations:", error);
-      setLoading(false);
+  useEffect(() => {
+    if (search.trim().length === 0) {
+      setSearchResults([]);
+      setIsSearching(false);
       return;
     }
-
-    const otherUserIds = data.map((convo) =>
-      convo.user_a_id === userId ? convo.user_b_id : convo.user_a_id
+    setIsSearching(true);
+    const mockUsers: OtherAccount[] = [
+      { id: "usr_alex_02", fullName: "Alex Rivera", avatarURL: "/Cit Logo.svg" },
+      { id: "usr_maria_03", fullName: "Maria Santos", avatarURL: "/Cit Logo.svg" },
+      { id: "usr_david_04", fullName: "David Lim", avatarURL: "/Cit Logo.svg" },
+    ];
+    const filtered = mockUsers.filter((u) =>
+      u.fullName.toLowerCase().includes(search.toLowerCase())
     );
-    const { data: accountsData } = await supabase
-      .from("Accounts")
-      .select("id, fullName, avatarURL")
-      .in("id", otherUserIds);
-    const accountsMap = new Map(
-      (accountsData || []).map((acc) => [acc.id, acc])
-    );
-
-    const processedConversations: Conversation[] = data.map((convo) => {
-      const isCurrentUserA = convo.user_a_id === userId;
-      const otherUserId = isCurrentUserA ? convo.user_b_id : convo.user_a_id;
-      const otherUser = accountsMap.get(otherUserId) || {
-        id: otherUserId,
-        fullName: "Unknown User",
-        avatarURL: null,
-      };
-
-      const is_communication_blocked =
-        convo.user_a_is_blocked_by_b || convo.user_b_is_blocked_by_a;
-
-      const is_favorite = isCurrentUserA
-        ? convo.user_a_is_favorite
-        : convo.user_b_is_favorite;
-
-      const lastMessage = Array.isArray(convo.Messages)
-        ? [...convo.Messages].sort(
-            (a, b) =>
-              new Date(b.created_at).getTime() -
-              new Date(a.created_at).getTime()
-          )[0]?.content
-        : null;
-
-      const unreadCount = Array.isArray(convo.Messages)
-        ? convo.Messages.filter(
-            (msg) => msg.sender_id === otherUserId && msg.read_at === null
-          ).length
-        : 0;
-
-      return {
-        is_communication_blocked: is_communication_blocked,
-        id: convo.id,
-        user_a_id: convo.user_a_id,
-        user_b_id: convo.user_b_id,
-        last_message_at: convo.last_message_at,
-        is_favorite: is_favorite,
-        is_blocked: isCurrentUserA
-          ? convo.user_b_is_blocked_by_a
-          : convo.user_a_is_blocked_by_b,
-        otherUser: otherUser,
-        lastMessageContent: lastMessage || "",
-        unreadCount: unreadCount,
-      };
-    });
-
-    setConversations(processedConversations);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    const performSearch = async () => {
-      if (search.trim().length === 0) {
-        setSearchResults([]);
-        setIsSearching(false);
-        return;
-      }
-      if (!currentUserId) return;
-      setIsSearching(true);
-
-      const { data, error } = await supabase
-        .from("Accounts")
-        .select("id, fullName, avatarURL")
-        .ilike("fullName", `%${search}%`)
-        .neq("id", currentUserId)
-        .limit(10);
-
-      if (error) {
-        console.error("Error searching accounts:", error);
-      }
-      if (data) {
-        setSearchResults(data as OtherAccount[]);
-      }
-      setIsSearching(false);
-    };
-
-    const delayDebounceFn = setTimeout(() => {
-      performSearch();
-    }, 300);
-
-    return () => clearTimeout(delayDebounceFn);
-  }, [search, currentUserId]);
-
-  useEffect(() => {
-    if (!currentUserId) return;
-
-    if (search.length === 0) {
-      fetchConversations(currentUserId);
-    }
-
-    const channel = supabase
-      .channel("chats_list_changes")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "Messages" },
-        () => {
-          fetchConversations(currentUserId);
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "Messages" },
-        () => {
-          fetchConversations(currentUserId);
-        }
-      )
-      // Added listener for Conversations table updates to reflect block/favorite changes immediately
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "Conversations" },
-        () => {
-          fetchConversations(currentUserId);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [currentUserId, fetchConversations, search]);
+    setSearchResults(filtered);
+    setIsSearching(false);
+  }, [search]);
 
   const handleUserClick = async (targetUser: OtherAccount) => {
-    if (!currentUser?.id) return;
-
-    const { user_a_id, user_b_id } = getSortedUserPair(
-      currentUser.id,
-      targetUser.id
-    );
-
-    const { data: existingConvo, error } = await supabase
-      .from("Conversations")
-      .select("id")
-      .eq("user_a_id", user_a_id)
-      .eq("user_b_id", user_b_id)
-      .single();
-
-    if (error && error.code !== "PGRST116") {
-      console.error("Error checking for existing conversation:", error);
-      return;
-    }
-    if (existingConvo) {
-      router.push(`/Message/${existingConvo.id}`);
-    } else {
-      const { data: newConvo, error: createError } = await supabase
-        .from("Conversations")
-        .insert({
-          user_a_id: user_a_id,
-          user_b_id: user_b_id,
-        })
-        .select("id")
-        .single();
-
-      if (createError) {
-        console.error("Error creating new conversation:", createError);
-        return;
-      }
-      router.push(`/Message/${newConvo.id}`);
-    }
-
+    router.push(`/Message/new/${targetUser.id}`);
     setSearch("");
   };
 
@@ -282,9 +141,7 @@ export default function ChatSidebar() {
     (c) => !c.is_favorite && !c.is_blocked
   );
 
-  const handleUpdate = () => {
-    if (currentUserId) fetchConversations(currentUserId);
-  };
+  const handleUpdate = () => {};
 
   if (!currentUser && !loading) {
     return (

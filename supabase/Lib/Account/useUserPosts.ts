@@ -1,49 +1,39 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { supabase } from "../General/supabaseClient";
+import { useState } from "react";
 import { PostUI } from "@/app/component/General/Announcement/Utils/types";
-// 1. Import the relative time formatter instead of the fixed one
 import formatPostDate from "@/app/component/General/Announcement/Utils/formatDate";
 
-export function useUserPosts(userId: string | undefined) {
-  const [posts, setPosts] = useState<PostUI[]>([]);
-  const [loading, setLoading] = useState(true);
+export function useUserPosts(_userId: string | undefined) {
+  const [posts] = useState<PostUI[]>([
+    {
+      id: "feed-1",
+      title: "",
+      description:
+        "Good luck to everyone preparing for the programming practicals this week! Remember to review pointers, recursion, and dynamic memory allocation. You got this Wildcats! 🐾💻",
+      images: [],
+      tags: ["Study", "Wildcats"],
+      type: "feed",
+      visibility: "global",
+      author_id: "usr_mock_wildcat_01",
+      created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+      date: formatPostDate(new Date(Date.now() - 1000 * 60 * 30).toISOString()),
+    },
+    {
+      id: "feed-2",
+      title: "",
+      description:
+        "Excited for the CIT Innovation Summit! Working with the team on showcasing our project at the main auditorium.",
+      images: [],
+      tags: ["Innovation", "CIT"],
+      type: "feed",
+      visibility: "global",
+      author_id: "usr_mock_wildcat_01",
+      created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+      date: formatPostDate(new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString()),
+    },
+  ]);
+  const [loading] = useState(false);
 
-  const fetchPosts = useCallback(async () => {
-    if (!userId) return;
-    setLoading(true);
-
-    const { data, error } = await supabase
-      .from("Feeds")
-      .select("*")
-      .eq("author_id", userId)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Error fetching user feeds:", error);
-    } else if (data) {
-      const formatted: PostUI[] = data.map((p) => ({
-        id: p.id,
-        title: "", 
-        description: p.content, 
-        images: p.images || [],
-        tags: [], 
-        type: "feed", 
-        visibility: "global", 
-        author_id: p.author_id,
-        created_at: p.created_at,
-        // 2. Use formatPostDate here
-        date: formatPostDate(p.created_at), 
-      }));
-      setPosts(formatted);
-    }
-    setLoading(false);
-  }, [userId]);
-
-  useEffect(() => {
-    fetchPosts();
-  }, [fetchPosts]);
-
-  return { posts, loading, refetch: fetchPosts };
+  return { posts, loading, refetch: async () => {} };
 }

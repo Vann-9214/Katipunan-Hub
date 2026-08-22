@@ -3,9 +3,7 @@
 import { useState, useEffect } from "react";
 import { Send } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { getSortedUserPair } from "../../../../../../supabase/Lib/Message/auth";
 
-import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
 import { getCurrentUserDetails } from "../../../../../../supabase/Lib/General/getUser";
 import type { User } from "../../../../../../supabase/Lib/General/user";
 
@@ -38,36 +36,23 @@ export default function NewConversationWindow() {
     fetchUser();
   }, []);
 
-  // 2. **FIXED**: Fetch the "other user's" details
+  // 2. Fetch or mock the "other user's" details
   useEffect(() => {
     if (!targetUserId) {
       setLoading(false);
       return;
     }
 
-    const fetchOtherUserData = async () => {
-      try {
-        const { data: accountData, error } = await supabase
-          .from("Accounts")
-          .select("id, fullName, avatarURL")
-          .eq("id", targetUserId)
-          .single();
-
-        if (error) throw error; // RLS failure will be caught here
-
-        if (accountData) {
-          setOtherUser(accountData);
-        } else {
-          console.error("No user found with that ID");
-        }
-      } catch (error) {
-        console.error("Error fetching other user data:", error);
-      } finally {
-        setLoading(false); // Fixes "Loading..." bug
-      }
-    };
-
-    fetchOtherUserData();
+    setOtherUser({
+      id: targetUserId,
+      fullName: targetUserId.includes("maria")
+        ? "Maria Santos (PLC Tutor)"
+        : targetUserId.includes("alex")
+        ? "Alex Rivera"
+        : "Wildcat Peer",
+      avatarURL: "/Cit Logo.svg",
+    });
+    setLoading(false);
   }, [targetUserId]);
 
   // 3. Handle sending the FIRST message
@@ -75,44 +60,8 @@ export default function NewConversationWindow() {
     e.preventDefault();
     if (!newMessage.trim() || !currentUser?.id || !targetUserId) return;
 
-    // 1. Get sorted IDs
-    const { user_a_id, user_b_id } = getSortedUserPair(
-      currentUser.id,
-      targetUserId
-    );
-
-    // 2. Find or create the conversation
-    // Your RLS policy for CONVERSATIONS (INSERT) allows this
-    const { data: newConvo, error: convoError } = await supabase
-      .from("Conversations")
-      .upsert({
-        user_a_id: user_a_id,
-        user_b_id: user_b_id,
-        last_message_at: new Date().toISOString(),
-      })
-      .select("id")
-      .single();
-
-    if (convoError || !newConvo) {
-      console.error("Error creating conversation:", convoError);
-      return;
-    }
-
-    // 3. Insert the first message
-    // Your RLS policy for MESSAGES (INSERT) allows this
-    const { error: msgError } = await supabase.from("Messages").insert({
-      content: newMessage.trim(),
-      sender_id: currentUser.id,
-      conversation_id: newConvo.id,
-    });
-
-    if (msgError) {
-      console.error("Error sending message:", msgError);
-      return;
-    }
-
-    // 4. Redirect to the REAL chat page
-    router.replace(`/Message/${newConvo.id}`);
+    // Redirect to conversation in UI mode
+    router.replace(`/Message/convo-1`);
   };
 
   // --- Render ---

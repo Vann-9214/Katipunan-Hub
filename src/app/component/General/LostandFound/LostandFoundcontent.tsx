@@ -21,8 +21,8 @@ import PostItemModal, { ModalPostData } from "./PostItemModal";
 import PostViewModal from "./PostViewModal";
 
 import { useRouter } from "next/navigation";
-import { supabase } from "../../../../../supabase/Lib/General/supabaseClient";
 import BackgroundGradient from "@/app/component/ReusableComponent/BackgroundGradient";
+import { MOCK_LOST_AND_FOUND } from "../../../../../supabase/Lib/mockData";
 
 // --- FONTS ---
 const montserrat = Montserrat({
@@ -72,22 +72,7 @@ export type Post = {
   inquiries: Inquiry[];
 };
 
-interface SupabasePostItem {
-  id: string;
-  user_id: string;
-  type: string;
-  status: string;
-  image_url: string | null;
-  title: string;
-  lost_date: string;
-  location: string;
-  description: string;
-  category: string;
-  created_at: string;
-  Accounts: {
-    fullName: string;
-  } | null;
-}
+
 
 // --- ANIMATION CONFIGS ---
 const liquidSpring: Transition = {
@@ -133,113 +118,13 @@ const categoryIcons: { [key in Category]?: React.ReactNode } = {
 // --- MAIN COMPONENT ---
 export default function LostandFoundContent({ user }: { user: User | null }) {
   const router = useRouter();
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [posts, setPosts] = useState<Post[]>(MOCK_LOST_AND_FOUND);
+  const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    fetchPosts();
   }, []);
-
-  // --- Realtime Subscription ---
-  useEffect(() => {
-    const channel = supabase
-      .channel("realtime-lost-and-found")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "LostAndFoundPosts" },
-        async (payload) => {
-          if (payload.eventType === "DELETE") {
-            setPosts((prev) => prev.filter((p) => p.id !== payload.old.id));
-            return;
-          }
-
-          const { data, error } = await supabase
-            .from("LostAndFoundPosts")
-            .select(`*, Accounts (fullName)`)
-            .eq("id", payload.new.id)
-            .single();
-
-          if (data && !error) {
-            const item = data as SupabasePostItem;
-            const newPost: Post = {
-              id: item.id,
-              userId: item.user_id,
-              type: item.type as "Lost" | "Found",
-              status: item.status as "Open" | "Resolved",
-              imageUrl:
-                item.image_url ||
-                (item.type === "Found" ? "/found.svg" : "/lost.svg"),
-              title: item.title,
-              postedBy: item.Accounts?.fullName || "Anonymous",
-              lostOn: item.lost_date || "",
-              location: item.location || "",
-              description: item.description || "",
-              category: (item.category as Category) || "Other",
-              createdAt: item.created_at,
-              inquiries: [],
-            };
-
-            setPosts((prev) => {
-              if (payload.eventType === "UPDATE") {
-                return prev.map((p) => (p.id === newPost.id ? newPost : p));
-              }
-              return [newPost, ...prev];
-            });
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  const fetchPosts = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("LostAndFoundPosts")
-        .select(
-          `
-          *,
-          Accounts (
-            fullName
-          )
-        `
-        )
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-
-      if (data) {
-        const formattedPosts: Post[] = data.map((item: SupabasePostItem) => ({
-          id: item.id,
-          userId: item.user_id,
-          type: item.type as "Lost" | "Found",
-          status: item.status as "Open" | "Resolved",
-          imageUrl:
-            item.image_url ||
-            (item.type === "Found" ? "/found.svg" : "/lost.svg"),
-          title: item.title,
-          postedBy: item.Accounts?.fullName || "Anonymous",
-          lostOn: item.lost_date || "",
-          location: item.location || "",
-          description: item.description || "",
-          category: (item.category as Category) || "Other",
-          createdAt: item.created_at,
-          inquiries: [],
-        }));
-        setPosts(formattedPosts);
-      }
-    } catch (err) {
-      console.error("Error fetching posts:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const [showStarOptions, setShowStarOptions] = useState<boolean>(false);
   const [activeStarFilter, setActiveStarFilter] = useState("All");
@@ -325,127 +210,43 @@ export default function LostandFoundContent({ user }: { user: User | null }) {
 
   // --- Handlers ---
   const handlePublishPost = async (data: ModalPostData) => {
-    if (!user) {
-      alert("You must be logged in to post.");
-      return;
-    }
+    const newPost: Post = {
+      id: `laf-${Date.now()}`,
+      userId: user?.id || "usr_mock_wildcat_01",
+      title: data.itemName,
+      description: data.itemDescription,
+      type: data.itemType,
+      location: data.itemLocation,
+      category:
+        data.itemCategory === "Select Category"
+          ? "Other"
+          : (data.itemCategory as Category),
+      lostOn: "Just Now",
+      imageUrl: data.itemType === "Found" ? "/found.svg" : "/lost.svg",
+      status: "Open",
+      postedBy: (user?.fullName as string) || (user?.name as string) || "Teknoy Student",
+      createdAt: new Date().toISOString(),
+      inquiries: [],
+    };
 
-    try {
-      let publicUrl = null;
-
-      if (data.attachment) {
-        const fileExt = data.attachment.name.split(".").pop();
-        const fileName = `${Date.now()}_${Math.random()}.${fileExt}`;
-        const filePath = `${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from("lost-and-found")
-          .upload(filePath, data.attachment);
-
-        if (uploadError) throw uploadError;
-
-        const { data: publicUrlData } = supabase.storage
-          .from("lost-and-found")
-          .getPublicUrl(filePath);
-
-        publicUrl = publicUrlData.publicUrl;
-      }
-
-      const { error: insertError } = await supabase
-        .from("LostAndFoundPosts")
-        .insert({
-          user_id: user.id,
-          title: data.itemName,
-          description: data.itemDescription,
-          type: data.itemType,
-          location: data.itemLocation,
-          category:
-            data.itemCategory === "Select Category"
-              ? "Other"
-              : data.itemCategory,
-          lost_date: new Date().toLocaleDateString(),
-          image_url: publicUrl,
-          status: "Open",
-        })
-        .select()
-        .single();
-
-      if (insertError) throw insertError;
-
-      setShowPostModal(false);
-    } catch (error) {
-      console.error("Error publishing post:", error);
-      alert("Failed to publish post. Please try again.");
-    }
+    setPosts((prev) => [newPost, ...prev]);
+    setShowPostModal(false);
   };
 
   const handleStatusUpdate = async (
     postId: number | string,
     newStatus: "Open" | "Resolved"
   ) => {
-    try {
-      const { error } = await supabase
-        .from("LostAndFoundPosts")
-        .update({ status: newStatus })
-        .eq("id", postId);
-
-      if (error) throw error;
-      setSelectedPost((prev) => (prev ? { ...prev, status: newStatus } : null));
-    } catch (error) {
-      console.error("Error updating status:", error);
-      alert("Failed to update status.");
-    }
+    setPosts((prev) =>
+      prev.map((p) => (p.id === postId ? { ...p, status: newStatus } : p))
+    );
+    setSelectedPost((prev) => (prev ? { ...prev, status: newStatus } : null));
   };
 
   // --- UPDATED SMART CHAT LOGIC ---
   const handleOpenChat = async () => {
     if (!selectedPost || !selectedPost.userId) return;
-
-    // Prevent chatting with self
-    if (user && user.id === selectedPost.userId) {
-      alert("You cannot chat with yourself.");
-      return;
-    }
-
-    if (!user) {
-      alert("Please log in to chat.");
-      return;
-    }
-
-    const targetId = selectedPost.userId;
-
-    try {
-      // 1. Fetch conversations where user is a participant
-      const { data: conversations, error } = await supabase
-        .from("Conversations")
-        .select("id, user_a_id, user_b_id")
-        .or(`user_a_id.eq.${user.id},user_b_id.eq.${user.id}`);
-
-      if (error) {
-        console.error("Error checking conversations:", error);
-        // Fallback: Just go to new message page
-        navigateToNewChat(targetId);
-        return;
-      }
-
-      // 2. Filter to find the one with the target user
-      const existingConv = conversations?.find(
-        (c) =>
-          (c.user_a_id === user.id && c.user_b_id === targetId) ||
-          (c.user_a_id === targetId && c.user_b_id === user.id)
-      );
-
-      if (existingConv) {
-        // Conversation exists -> Go to it
-        router.push(`/Message/${existingConv.id}`);
-      } else {
-        // No conversation -> Go to New Message page
-        navigateToNewChat(targetId);
-      }
-    } catch (err) {
-      console.error("Unexpected error in chat redirect:", err);
-      navigateToNewChat(targetId);
-    }
+    navigateToNewChat(selectedPost.userId);
   };
 
   // Helper to construct the new chat URL

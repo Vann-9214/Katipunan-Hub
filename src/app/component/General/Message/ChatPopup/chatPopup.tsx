@@ -1,11 +1,8 @@
 "use client";
 
 import { Search, Maximize2, Loader2 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
-import { getCurrentUserDetails } from "../../../../../../supabase/Lib/General/getUser";
-import type { User } from "../../../../../../supabase/Lib/General/user";
 import { ConversationItem } from "../Utils/types";
 import PopupConversationItem from "./popupConversationitem";
 import { motion, Variants } from "framer-motion";
@@ -36,166 +33,44 @@ const itemVariants: Variants = {
   hidden: { opacity: 0, y: 10 },
 };
 
+const mockPopupConversations: ConversationItem[] = [
+  {
+    id: "convo-1",
+    user_a_id: "usr_mock_wildcat_01",
+    user_b_id: "usr_maria_03",
+    otherUserName: "Maria Santos (PLC Tutor)",
+    lastMessagePreview: "Sounds great! See you tomorrow at the PLC hub.",
+    avatarURL: "/Cit Logo.svg",
+    timestamp: "10:30 AM",
+    unreadCount: 1,
+  },
+  {
+    id: "convo-2",
+    user_a_id: "usr_mock_wildcat_01",
+    user_b_id: "usr_alex_02",
+    otherUserName: "Alex Rivera",
+    lastMessagePreview: "Hey! Did you check the new announcement?",
+    avatarURL: "/Cit Logo.svg",
+    timestamp: "Yesterday",
+    unreadCount: 0,
+  },
+];
+
 // Main Chat Popup Component
 export default function ChatPopup() {
   const [search, setSearch] = useState("");
-  const [conversations, setConversations] = useState<ConversationItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [conversations, setConversations] = useState<ConversationItem[]>(
+    mockPopupConversations
+  );
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // 1. Fetch current user on mount
+  const currentUserId = "usr_mock_wildcat_01";
+
   useEffect(() => {
-    const fetchUser = async () => {
-      const user = await getCurrentUserDetails();
-      setCurrentUser(user);
-    };
-    fetchUser();
+    setConversations(mockPopupConversations);
+    setLoading(false);
   }, []);
-
-  const currentUserId = currentUser?.id;
-
-  // 2. Reusable Data Fetching Function (Refactored for Realtime)
-  const fetchConversationsData = useCallback(
-    async (isBackgroundUpdate = false) => {
-      if (!currentUserId) {
-        if (!isBackgroundUpdate) setLoading(false);
-        return;
-      }
-
-      // Only show loading spinner on initial load, not on realtime updates
-      if (!isBackgroundUpdate) setLoading(true);
-
-      try {
-        // 1. Fetch conversations (top 5)
-        const { data: convoData, error: convoError } = await supabase
-          .from("Conversations")
-          .select(
-            `id, user_a_id, user_b_id, last_message_at, user_a_is_blocked_by_b, user_b_is_blocked_by_a`
-          )
-          .or(`user_a_id.eq.${currentUserId},user_b_id.eq.${currentUserId}`)
-          .order("last_message_at", { ascending: false })
-          .limit(10); // Fetched slightly more to filter blocked
-
-        if (convoError) {
-          console.error("Error fetching popup conversations:", convoError);
-          if (!isBackgroundUpdate) setLoading(false);
-          return;
-        }
-
-        // 2. Filter blocked conversations
-        const visibleConversations = convoData.filter((convo) => {
-          const isUserA = currentUserId === convo.user_a_id;
-          // Filter if I BLOCKED THEM
-          const blockedByMe = isUserA
-            ? convo.user_b_is_blocked_by_a
-            : convo.user_a_is_blocked_by_b;
-          return !blockedByMe;
-        });
-
-        // 3. Extract other user IDs and fetch accounts
-        const otherUserIds = visibleConversations.map((convo) =>
-          convo.user_a_id === currentUserId ? convo.user_b_id : convo.user_a_id
-        );
-        const { data: accountsData } = await supabase
-          .from("Accounts")
-          .select("id, fullName, avatarURL")
-          .in("id", otherUserIds);
-        const accountsMap = new Map(
-          (accountsData || []).map((acc) => [acc.id, acc])
-        );
-
-        // 4. Fetch last message content and unread count
-        const conversationPromises = visibleConversations.map(async (convo) => {
-          const otherUserId =
-            convo.user_a_id === currentUserId
-              ? convo.user_b_id
-              : convo.user_a_id;
-          const otherUser = accountsMap.get(otherUserId) || {
-            id: otherUserId,
-            fullName: "Unknown User",
-            avatarURL: null,
-          };
-
-          const { data: lastMsgData } = await supabase
-            .from("Messages")
-            .select("content, created_at")
-            .eq("conversation_id", convo.id)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          // This query counts exactly how many messages are unread in THIS specific chat
-          const { count: unreadCount } = await supabase
-            .from("Messages")
-            .select("id", { count: "exact", head: true })
-            .eq("sender_id", otherUserId) // Messages from the OTHER person
-            .eq("conversation_id", convo.id) // In THIS conversation
-            .is("read_at", null);
-
-          const lastMessage = lastMsgData?.content || "Start a chat...";
-          const timestamp = lastMsgData?.created_at
-            ? new Date(lastMsgData.created_at).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-            : "";
-
-          return {
-            id: convo.id,
-            user_a_id: convo.user_a_id,
-            user_b_id: convo.user_b_id,
-            otherUserName: otherUser.fullName,
-            lastMessagePreview: lastMessage,
-            avatarURL: otherUser.avatarURL,
-            timestamp: timestamp,
-            unreadCount: unreadCount || 0,
-          } as ConversationItem;
-        });
-
-        const processedConversations = await Promise.all(conversationPromises);
-        // Take top 5 after filtering
-        setConversations(processedConversations.slice(0, 5));
-      } catch (err) {
-        console.error("Error processing conversation data:", err);
-      } finally {
-        if (!isBackgroundUpdate) setLoading(false);
-      }
-    },
-    [currentUserId]
-  );
-
-  // 3. Initial Load Effect
-  useEffect(() => {
-    fetchConversationsData();
-  }, [fetchConversationsData]);
-
-  // 4. Realtime Subscription Effect (NEW)
-  useEffect(() => {
-    if (!currentUserId) return;
-
-    const channel = supabase
-      .channel("chat_popup_realtime")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "Messages" },
-        () => {
-          fetchConversationsData(true);
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "Conversations" },
-        () => {
-          fetchConversationsData(true);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [currentUserId, fetchConversationsData]);
 
   const filteredConversations = conversations.filter((convo) =>
     convo.otherUserName.toLowerCase().includes(search.toLowerCase())
@@ -208,9 +83,7 @@ export default function ChatPopup() {
     }, 50);
   };
 
-  const handleUpdate = () => {
-    fetchConversationsData(true);
-  };
+  const handleUpdate = () => {};
 
   return (
     // --- WRAPPER (Gold Gradient) ---
