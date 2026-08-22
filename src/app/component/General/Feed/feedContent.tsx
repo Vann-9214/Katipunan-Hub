@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { supabase } from "../../../../../supabase/Lib/General/supabaseClient";
 import { getCurrentUserDetails } from "../../../../../supabase/Lib/General/getUser";
 import {
   getFeeds,
@@ -37,15 +36,6 @@ const DEFAULT_FILTERS: FilterState = {
 
 // --- OPTIMIZATION CONSTANTS: Define posts per page for pagination ---
 const POSTS_PER_PAGE = 10;
-
-// --- FIX: Define the shape of the database row for Realtime events ---
-type FeedTableRow = {
-  id: string;
-  content: string;
-  images: string[] | null;
-  created_at: string;
-  author_id: string;
-};
 
 export default function FeedsContent() {
   const [user, setUser] = useState<User | null>(null);
@@ -123,80 +113,7 @@ export default function FeedsContent() {
     fetchPosts(page === 0);
   }, [page, fetchPosts]);
 
-  // --- OPTIMIZED: Realtime listener no longer calls fetchPosts (Fixes Refetch Storm) ---
-  useEffect(() => {
-    const channel = supabase
-      .channel("realtime-feeds")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "Feeds" },
-        // --- PERFORMANCE FIX: Prepend the new post to state instead of re-fetching everything ---
-        async (payload) => {
-          // FIX 1: Cast to explicit type instead of any
-          const newFeed = payload.new as FeedTableRow;
 
-          // Fetch author details for the new post only (minimal database impact)
-          const { data: authorData } = await supabase
-            .from("Accounts")
-            .select("id, fullName, avatarURL, role")
-            .eq("id", newFeed.author_id)
-            .maybeSingle();
-
-          if (authorData) {
-            const newPostWithAuthor: FeedPost = {
-              id: newFeed.id,
-              content: newFeed.content,
-              images: newFeed.images || [],
-              created_at: newFeed.created_at,
-              author: authorData,
-            };
-            // Prepend the new post to the posts array
-            setPosts((prevPosts) => [newPostWithAuthor, ...prevPosts]);
-            // Reset page counter so next scroll starts from the top.
-            setPage(0);
-          }
-        }
-      )
-      .on(
-        // Handle UPDATES via Realtime to keep the existing list fresh
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "Feeds" },
-        (payload) => {
-          // FIX 2: Cast to explicit type instead of any
-          const updatedFeed = payload.new as FeedTableRow;
-
-          setPosts((prevPosts) =>
-            prevPosts.map((post) =>
-              post.id === updatedFeed.id
-                ? {
-                    ...post,
-                    content: updatedFeed.content,
-                    images: updatedFeed.images || [], // Added fallback for safety
-                  }
-                : post
-            )
-          );
-        }
-      )
-      .on(
-        // Handle DELETES via Realtime
-        "postgres_changes",
-        { event: "DELETE", schema: "public", table: "Feeds" },
-        (payload) => {
-          // FIX 3: Cast to explicit type instead of any
-          const deletedFeed = payload.old as FeedTableRow;
-
-          setPosts((prevPosts) =>
-            prevPosts.filter((post) => post.id !== deletedFeed.id)
-          );
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
 
   // --- EXISTING: SCROLL TO POST LOGIC (Unchanged) ---
   useEffect(() => {
@@ -356,10 +273,9 @@ export default function FeedsContent() {
                       post.author.id === user.id
                         ? async () => {
                             if (confirm("Delete this post?")) {
-                              await supabase
-                                .from("Feeds")
-                                .delete()
-                                .eq("id", post.id);
+                              setPosts((prev) =>
+                                prev.filter((p) => p.id !== post.id)
+                              );
                             }
                           }
                         : undefined

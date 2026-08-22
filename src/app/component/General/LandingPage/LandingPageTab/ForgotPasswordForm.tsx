@@ -33,10 +33,7 @@ export default function ForgotPasswordForm({
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
 
-  // --- NEW: Sync the 6 boxes to your existing 'token' state ---
-  useEffect(() => {
-    setToken(otp.join(""));
-  }, [otp]);
+
 
   useEffect(() => {
     if (step === "code") {

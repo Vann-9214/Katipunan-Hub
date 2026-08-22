@@ -1,14 +1,12 @@
 // supabase/Lib/addPosts.ts
-import { supabase } from "../../General/supabaseClient";
-
 export type AddPostParams = {
   title: string;
   description: string;
   images?: string[];
   tags?: string[];
   type: "announcement" | "highlight";
-  authorId: string; // required
-  visibility?: string | null; // 'global' or course string like 'cba'
+  authorId: string;
+  visibility?: string | null;
 };
 
 export async function addPost({
@@ -20,37 +18,17 @@ export async function addPost({
   authorId,
   visibility = null,
 }: AddPostParams) {
-  if (!authorId) {
-    throw new Error("Author ID missing. Cannot create post.");
-  }
-
-  const payload: any = {
+  const newPost = {
+    id: `post-${Date.now()}`,
     title,
     description,
     images,
     tags,
     type,
-    author_id: authorId,
+    author_id: authorId || "usr_mock_wildcat_01",
+    visibility: visibility || "global",
+    created_at: new Date().toISOString(),
   };
 
-  if (visibility !== undefined) {
-    payload.visibility = visibility;
-  }
-
-
-  const { data, error } = await supabase
-    .from("Posts")
-    .insert(payload)
-    .select("*")
-    .single();
-
-  // 👇 Console log after response
-  if (error) {
-    console.error("🔴 [AddPost] Insert failed:", error);
-    throw error;
-  } else {
-    console.log("🟢 [AddPost] Insert successful:", data);
-  }
-
-  return data;
+  return newPost;
 }

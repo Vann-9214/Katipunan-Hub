@@ -7,7 +7,6 @@ import {
   PostedEvent,
   PersonalEvent,
   MenuType,
-  DBEvent,
 } from "@/app/component/General/Calendar/types";
 import EventModal from "@/app/component/General/Calendar/EventModal";
 import ReminderPanel from "@/app/component/General/Calendar/ReminderPanel";
@@ -16,7 +15,6 @@ import LoadingScreen from "@/app/component/ReusableComponent/LoadingScreen";
 import CalendarMenu from "@/app/component/General/Calendar/CalendarMenu";
 import CalendarViews from "@/app/component/General/Calendar/CalendarViews";
 import { getPhilippineHolidays } from "@/app/component/General/Calendar/calendarUtils";
-import { supabase } from "../../../../../supabase/Lib/General/supabaseClient";
 import { getCurrentUserDetails } from "../../../../../supabase/Lib/General/getUser";
 import BackgroundGradient from "@/app/component/ReusableComponent/BackgroundGradient";
 import { Calendar as CalendarIcon, LayoutGrid } from "lucide-react";
@@ -78,98 +76,72 @@ export default function CalendarContent() {
   const isReminderMaximized = maximizedPanel === "Reminder";
 
   // ---------------------
-  // Fetching Logic
+  // Fetching Logic (UI Mode)
   // ---------------------
   const fetchEvents = async () => {
-    try {
-      const user = await getCurrentUserDetails();
-      if (!user) {
-        setIsLoading(false);
-        return;
-      }
-
+    const user = await getCurrentUserDetails();
+    if (user) {
       const role = user.role || "";
-      const isUserAdmin = role.includes("Platform Administrator");
-      setIsAdmin(isUserAdmin);
-
-      const { data, error } = await supabase.from("Events").select("*");
-
-      if (error) throw error;
-
-      if (data) {
-        const dbEvents = data as DBEvent[];
-
-        // Filter Personal Events: Must match user ID
-        const pEvents: PersonalEvent[] = dbEvents
-          .filter((e) => e.audience === "Personal" && e.user_id === user.id)
-          .map((e) => ({
-            name: e.title,
-            year: e.year,
-            month: e.month,
-            day: e.day,
-          }));
-
-        // Global events - show to everyone
-        const gEvents: PostedEvent[] = dbEvents
-          .filter((e) => e.audience === "Global")
-          .map((e) => ({
-            id: e.id,
-            title: e.title,
-            course:
-              e.courses && e.courses.length > 0
-                ? e.courses.join(", ")
-                : "All Courses",
-            audience: "Global",
-            year: e.year,
-            month: e.month,
-            day: e.day,
-            date: e.date,
-          }));
-
-        setPersonalEvents(pEvents);
-        setPostedEvents(gEvents);
-      }
-    } catch (err) {
-      console.error("Error fetching events:", err);
-    } finally {
-      setIsLoading(false);
+      setIsAdmin(role.includes("Platform Administrator") || role.includes("Moderator"));
     }
+
+    const now = new Date();
+    const curYear = now.getFullYear();
+    const curMonth = now.getMonth() + 1;
+    const monthName = now.toLocaleString("default", { month: "long" });
+
+    setPersonalEvents([
+      {
+        name: "CS211 Practical Exam Review",
+        year: curYear,
+        month: curMonth,
+        day: 15,
+      },
+      {
+        name: "Project Presentation Preparation",
+        year: curYear,
+        month: curMonth,
+        day: 22,
+      },
+    ]);
+
+    setPostedEvents([
+      {
+        id: "evt-1",
+        title: "CIT University Innovation Summit 2025",
+        course: "All Courses",
+        audience: "Global",
+        year: curYear,
+        month: curMonth,
+        day: 18,
+        date: `${monthName} 18, ${curYear}`,
+      },
+      {
+        id: "evt-2",
+        title: "Midterm Examinations Period",
+        course: "All Courses",
+        audience: "Global",
+        year: curYear,
+        month: curMonth,
+        day: 25,
+        date: `${monthName} 25, ${curYear}`,
+      },
+    ]);
+
+    setReminders([
+      "Submit Web Development milestones",
+      "Reserve PLC Tutoring session for CS211",
+    ]);
+
+    setIsLoading(false);
   };
 
   const handleDeletePostedEvent = async (eventId: string) => {
-    if (!isAdmin) return;
-
-    try {
-      const { error } = await supabase
-        .from("Events")
-        .delete()
-        .eq("id", eventId);
-
-      if (error) throw error;
-      setPostedEvents((prev) => prev.filter((e) => e.id !== eventId));
-    } catch (err) {
-      console.error("Error deleting event:", err);
-      alert("Failed to delete event. Please try again.");
-    }
+    setPostedEvents((prev) => prev.filter((e) => e.id !== eventId));
   };
 
   useEffect(() => {
     fetchEvents();
-
-    const channel = supabase
-      .channel("events-calendar-changes")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "Events" },
-        () => {
-          fetchEvents();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
   // ---------------------

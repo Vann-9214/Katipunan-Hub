@@ -3,8 +3,6 @@
 import { useState, useEffect } from "react";
 import { X, Loader2, Calendar, Clock } from "lucide-react";
 import { Montserrat, PT_Sans } from "next/font/google";
-import { supabase } from "../../../../../supabase/Lib/General/supabaseClient";
-import { getCurrentUserDetails } from "../../../../../supabase/Lib/General/getUser";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 
 const montserrat = Montserrat({ subsets: ["latin"], weight: ["600", "700"] });
@@ -149,30 +147,7 @@ export default function BookingModal({
       // 1. Validate Time
       validateTime(formData.startTime, formData.endTime, selectedDate);
 
-      // 2. Get User
-      const user = await getCurrentUserDetails();
-      if (!user) throw new Error("You must be logged in to book a session.");
-
-      // 3. Format Date for DB (YYYY-MM-DD)
-      const offset = selectedDate.getTimezoneOffset();
-      const dateForDB = new Date(selectedDate.getTime() - offset * 60 * 1000)
-        .toISOString()
-        .split("T")[0];
-
-      // 4. Insert to Supabase
-      const { error: insertError } = await supabase.from("PLCBookings").insert({
-        studentId: user.id,
-        bookingDate: dateForDB,
-        startTime: formData.startTime,
-        endTime: formData.endTime,
-        subject: formData.subject,
-        description: formData.description,
-        status: "Pending",
-      });
-
-      if (insertError) throw insertError;
-
-      // 5. Reset and Close
+      // 2. Reset and Close
       if (onSuccess) onSuccess();
       onClose();
     } catch (err: unknown) {

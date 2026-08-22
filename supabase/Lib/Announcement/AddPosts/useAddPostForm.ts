@@ -6,7 +6,6 @@ import type { PostUI, NewPostPayload, UpdatePostPayload } from "@/app/component/
 import type { UploadButtonHandle } from "@/app/component/General/Announcement/Utils/types";
 import { deleteUrlsFromBucket } from "./storage";
 import { createFeedPost } from "../../Feeds/feeds";
-import { supabase } from "../../General/supabaseClient";
 
 // Props Interface
 export interface UseAddPostFormProps {
@@ -64,27 +63,10 @@ export const useAddPostForm = ({
     setPostType(currentType ?? "announcement");
   }, [currentType]);
 
-  // --- NEW: Fetch previously used tags ---
+  // --- Mock suggested tags ---
   useEffect(() => {
     if (postType === "feed") return;
-
-    const fetchTags = async () => {
-      const { data, error } = await supabase
-        .from("Posts")
-        .select("tags")
-        .not("tags", "is", null); // Ensure tags array is not null
-
-      if (!error && data) {
-        // 1. Flatten all tag arrays
-        const allTags = data.flatMap((post) => post.tags || []);
-        // 2. Get unique tags using Set
-        const uniqueTags = Array.from(new Set(allTags));
-        // 3. Limit to top 20 (optional, keeps UI clean)
-        setSuggestedTags(uniqueTags.slice(0, 20));
-      }
-    };
-
-    fetchTags();
+    setSuggestedTags(["CITWildcats", "Teknoy", "AcademicUpdate", "CampusLife", "CCS"]);
   }, [postType]);
 
   useEffect(() => {

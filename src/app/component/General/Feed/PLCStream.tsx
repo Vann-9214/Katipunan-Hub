@@ -6,7 +6,6 @@ import { PLCHighlight } from "../../../../../supabase/Lib/Feeds/types";
 import Avatar from "@/app/component/ReusableComponent/Avatar";
 import { Star, Quote, Award, Crown } from "lucide-react";
 import LoadingScreen from "@/app/component/ReusableComponent/LoadingScreen";
-import { supabase } from "../../../../../supabase/Lib/General/supabaseClient";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
@@ -22,21 +21,6 @@ export default function PLCStream() {
 
   useEffect(() => {
     fetchHighlights();
-
-    const channel = supabase
-      .channel("plc-highlights-realtime")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "TutorRatings" },
-        () => {
-          fetchHighlights();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
   if (loading)

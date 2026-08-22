@@ -8,7 +8,7 @@ import {
   useCallback,
   useDeferredValue,
 } from "react";
-import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
+
 import LoadingScreen from "@/app/component/ReusableComponent/LoadingScreen";
 import HomepageTab from "@/app/component/ReusableComponent/HomepageTab/HomepageTab";
 import AnnouncementLeftBar from "./AnnouncementLeftBar";
@@ -19,7 +19,6 @@ import BackgroundGradient from "@/app/component/ReusableComponent/BackgroundGrad
 
 // --- Types ---
 import {
-  type DBPostRow,
   type PostUI,
   type NewPostPayload,
   type UpdatePostPayload,
@@ -29,10 +28,9 @@ import {
 import type { User } from "../../../../../../supabase/Lib/General/user";
 
 // --- Constants & Utils ---
-import { VISIBILITY, programToCollege } from "../Utils/constants";
+import { programToCollege } from "../Utils/constants";
 import { shapePostForUI } from "./utils";
 import { getCurrentUserDetails } from "../../../../../../supabase/Lib/General/getUser";
-import { getDateRange } from "../../../../../../supabase/Lib/Announcement/Filter/supabase-helper";
 import { MOCK_ANNOUNCEMENTS } from "../../../../../../supabase/Lib/mockData";
 
 // --- Default State ---
@@ -137,56 +135,34 @@ export default function AnnouncementPageContent() {
   );
 
   const fetchPosts = useCallback(
-    async (currentFilters: FilterState, uc: string | null) => {
-      try {
-        let query = supabase
-          .from("Posts")
-          .select("*")
-          .in("type", ["announcement", "highlight"]);
+    async (currentFilters: FilterState, collegeCode: string | null) => {
+      let filtered = [...MOCK_ANNOUNCEMENTS];
 
-        // Apply Filters
-        const dateRange = getDateRange(currentFilters.date);
-        if (dateRange) {
-          query = query.gte("created_at", dateRange.startDate);
-          query = query.lte("created_at", dateRange.endDate);
-        }
-
-        if (currentFilters.visibility === "Global") {
-          query = query.eq("visibility", VISIBILITY.GLOBAL);
-        } else if (currentFilters.visibility === "Course" && uc) {
-          query = query.eq("visibility", uc);
-        }
-
-        if (uc) {
-          query = query.or(
-            `visibility.eq.${VISIBILITY.GLOBAL},visibility.eq.${uc},visibility.is.null`
-          );
-        } else {
-          query = query.or(
-            `visibility.eq.${VISIBILITY.GLOBAL},visibility.is.null`
-          );
-        }
-
-        const isAscending = currentFilters.sort === "Oldest First";
-        query = query.order("created_at", { ascending: isAscending });
-
-        const { data, error } = await query;
-
-        if (error) {
-          console.error("Error fetching posts:", error);
-          setPosts([]);
-          return;
-        }
-
-        const rows = Array.isArray(data) ? data : [];
-        const mapped = rows
-          .map((row) => shapePostForUI(row as DBPostRow))
-          .filter((x): x is PostUI => x !== null);
-
-        setPosts(mapped);
-      } catch (err: unknown) {
-        console.error("Unexpected error fetching posts:", err);
+      if (currentFilters.visibility === "Global") {
+        filtered = filtered.filter(
+          (p) =>
+            p.visibility === "Global" ||
+            p.visibility === "global" ||
+            !p.visibility
+        );
+      } else if (currentFilters.visibility === "Course" && collegeCode) {
+        filtered = filtered.filter(
+          (p) =>
+            p.visibility?.toLowerCase() === collegeCode.toLowerCase() ||
+            p.visibility === "Global" ||
+            p.visibility === "global"
+        );
       }
+
+      if (currentFilters.sort === "Oldest First") {
+        filtered = [...filtered].reverse();
+      }
+
+      const mapped = filtered
+        .map((row) => shapePostForUI(row))
+        .filter((x): x is PostUI => x !== null);
+
+      setPosts(mapped);
     },
     []
   );
@@ -194,25 +170,6 @@ export default function AnnouncementPageContent() {
   // --- Initial Fetch ---
   useEffect(() => {
     fetchPosts(filters, userCollegeCode);
-  }, [filters, userCollegeCode, fetchPosts]);
-
-  // --- NEW: Realtime Subscription for Announcements ---
-  useEffect(() => {
-    const channel = supabase
-      .channel("realtime-announcements")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "Posts" },
-        () => {
-          // When any post changes, re-fetch with current filters
-          fetchPosts(filters, userCollegeCode);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [filters, userCollegeCode, fetchPosts]);
 
   // --- Handlers ---

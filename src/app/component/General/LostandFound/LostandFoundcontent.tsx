@@ -119,7 +119,7 @@ const categoryIcons: { [key in Category]?: React.ReactNode } = {
 export default function LostandFoundContent({ user }: { user: User | null }) {
   const router = useRouter();
   const [posts, setPosts] = useState<Post[]>(MOCK_LOST_AND_FOUND);
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {

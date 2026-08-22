@@ -7,16 +7,15 @@ import { MoreHorizontal, Star, Ban, Trash2, RotateCcw } from "lucide-react";
 import { Conversation } from "../Utils/types";
 import Avatar from "@/app/component/ReusableComponent/Avatar";
 import { motion } from "framer-motion";
-import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
+
 
 export default function ConversationItem({
   conversation,
   onUpdate,
-  currentUserId,
 }: {
   conversation: Conversation;
   onUpdate: () => void;
-  currentUserId: string | undefined;
+  currentUserId?: string | undefined;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -74,71 +73,28 @@ export default function ConversationItem({
   const handleFavorite = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!currentUserId) return;
-
-    try {
-      const isUserA = currentUserId === conversation.user_a_id;
-      const updateField = isUserA ? "user_a_is_favorite" : "user_b_is_favorite";
-
-      const { error } = await supabase
-        .from("Conversations")
-        .update({ [updateField]: !conversation.is_favorite })
-        .eq("id", conversation.id);
-
-      if (error) throw error;
-      onUpdate();
-    } catch (err) {
-      console.error("Error toggling favorite:", err);
-    }
+    conversation.is_favorite = !conversation.is_favorite;
+    onUpdate();
     setIsMenuOpen(false);
   };
 
   const handleBlock = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!currentUserId) return;
-
-    try {
-      const isUserA = currentUserId === conversation.user_a_id;
-      const updateField = isUserA
-        ? "user_b_is_blocked_by_a"
-        : "user_a_is_blocked_by_b";
-
-      const { error } = await supabase
-        .from("Conversations")
-        .update({ [updateField]: !conversation.is_blocked })
-        .eq("id", conversation.id);
-
-      if (error) throw error;
-      onUpdate();
-    } catch (err) {
-      console.error("Error toggling block:", err);
-    }
+    conversation.is_blocked = !conversation.is_blocked;
+    onUpdate();
     setIsMenuOpen(false);
   };
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!currentUserId) return;
-
-    if (!confirm("Are you sure? This will delete the chat for both users.")) {
+    if (!confirm("Are you sure? This will delete the chat.")) {
       setIsMenuOpen(false);
       return;
     }
-
-    try {
-      const { error } = await supabase
-        .from("Conversations")
-        .delete()
-        .eq("id", conversation.id);
-
-      if (error) throw error;
-      if (isActive) router.push("/Message");
-      onUpdate();
-    } catch (err) {
-      console.error("Error deleting conversation:", err);
-    }
+    if (isActive) router.push("/Message");
+    onUpdate();
     setIsMenuOpen(false);
   };
 

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
-import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
 import { getCurrentUserDetails } from "../../../../../../supabase/Lib/General/getUser";
 import type { User } from "../../../../../../supabase/Lib/General/user";
 import { OtherUser, Message } from "../Utils/types";
@@ -70,8 +69,7 @@ export default function ConversationWindow() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [otherUser, setOtherUser] = useState<OtherUser | null>(null);
 
-  // --- CHANGE 1: ADD STATE FOR BLOCKED STATUS ---
-  const [isCommunicationBlocked, setIsCommunicationBlocked] = useState(false);
+  const [isCommunicationBlocked] = useState(false);
 
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
 
@@ -82,37 +80,37 @@ export default function ConversationWindow() {
   // --- Reply State ---
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
 
-  const mockInitialMessages: Message[] = [
-    {
-      id: "msg-1",
-      conversation_id: conversationId,
-      sender_id: "usr_maria_03",
-      content:
-        "Hello! I saw your request for Data Structures tutoring. What topics would you like to focus on?",
-      created_at: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-      read_at: new Date().toISOString(),
-    },
-    {
-      id: "msg-2",
-      conversation_id: conversationId,
-      sender_id: "usr_mock_wildcat_01",
-      content:
-        "Hi Maria! I'd love to review Graph algorithms, especially BFS/DFS and Dijkstra's algorithm.",
-      created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-      read_at: new Date().toISOString(),
-    },
-    {
-      id: "msg-3",
-      conversation_id: conversationId,
-      sender_id: "usr_maria_03",
-      content: "Sounds great! See you tomorrow at the PLC hub.",
-      created_at: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-      read_at: null,
-    },
-  ];
-
   /* User Fetcher & Initial Load */
   useEffect(() => {
+    const mockInitialMessages: Message[] = [
+      {
+        id: "msg-1",
+        conversation_id: conversationId,
+        sender_id: "usr_maria_03",
+        content:
+          "Hello! I saw your request for Data Structures tutoring. What topics would you like to focus on?",
+        created_at: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+        read_at: new Date().toISOString(),
+      },
+      {
+        id: "msg-2",
+        conversation_id: conversationId,
+        sender_id: "usr_mock_wildcat_01",
+        content:
+          "Hi Maria! I'd love to review Graph algorithms, especially BFS/DFS and Dijkstra's algorithm.",
+        created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+        read_at: new Date().toISOString(),
+      },
+      {
+        id: "msg-3",
+        conversation_id: conversationId,
+        sender_id: "usr_maria_03",
+        content: "Sounds great! See you tomorrow at the PLC hub.",
+        created_at: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
+        read_at: null,
+      },
+    ];
+
     getCurrentUserDetails().then((user) => {
       setCurrentUser(user);
       setOtherUser({
@@ -129,105 +127,9 @@ export default function ConversationWindow() {
     });
   }, [conversationId]);
 
-  /* Mark Messages as Read Logic */
-  useEffect(() => {
-    if (!conversationId || !currentUser?.id) return;
-
-    const markAsRead = async () => {
-      const { error } = await supabase.rpc("mark_messages_read", {
-        p_conversation_id: conversationId,
-      });
-
-      if (error) {
-        console.error("Error marking messages as read:", error);
-      }
-    };
-
-    markAsRead();
-  }, [conversationId, currentUser?.id, messages.length]);
-
-  /* Realtime Subscription (Updated) */
-  useEffect(() => {
-    if (!conversationId) return;
-
-    const channel = supabase
-      .channel(`chat_room:${conversationId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*", // Listen to INSERT and UPDATE
-          schema: "public",
-          table: "Messages",
-          filter: `conversation_id=eq.${conversationId}`,
-        },
-        (payload) => {
-          const newMsg = payload.new as Message;
-
-          setMessages((current) => {
-            // Check if message already exists (UPDATE case)
-            if (current.some((msg) => msg.id === newMsg.id)) {
-              return current.map((msg) =>
-                msg.id === newMsg.id ? newMsg : msg
-              );
-            }
-            // New message (INSERT case)
-            return [...current, newMsg];
-          });
-        }
-      )
-      // Added listener to update block status in real-time
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "Conversations",
-          filter: `id=eq.${conversationId}`,
-        },
-        (payload) => {
-          const newData = payload.new as {
-            user_a_is_blocked_by_b: boolean;
-            user_b_is_blocked_by_a: boolean;
-          };
-
-          if (newData) {
-            const blocked =
-              newData.user_a_is_blocked_by_b || newData.user_b_is_blocked_by_a;
-            setIsCommunicationBlocked(blocked);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [conversationId]);
-
-  /* --- Upload Helper --- */
+  /* --- Upload Helper (UI Mode) --- */
   const uploadFile = async (file: File) => {
-    try {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${Date.now()}_${Math.random()
-        .toString(36)
-        .substring(7)}.${fileExt}`;
-      const filePath = `attachments/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("chat_attachments")
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data } = supabase.storage
-        .from("chat_attachments")
-        .getPublicUrl(filePath);
-
-      return data.publicUrl;
-    } catch (error) {
-      console.error("Upload error:", error);
-      return null;
-    }
+    return URL.createObjectURL(file);
   };
 
   /* Send Handler */

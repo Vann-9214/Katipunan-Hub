@@ -44,6 +44,41 @@ const listContainerVariants: Variants = {
   },
 };
 
+const MOCK_CONVERSATIONS: Conversation[] = [
+  {
+    id: "convo-1",
+    user_a_id: "usr_mock_wildcat_01",
+    user_b_id: "usr_maria_03",
+    last_message_at: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
+    is_favorite: true,
+    is_blocked: false,
+    is_communication_blocked: false,
+    otherUser: {
+      id: "usr_maria_03",
+      fullName: "Maria Santos (PLC Tutor)",
+      avatarURL: "/Cit Logo.svg",
+    },
+    lastMessageContent: "Hello! Looking forward to our PLC session tomorrow.",
+    unreadCount: 1,
+  },
+  {
+    id: "convo-2",
+    user_a_id: "usr_mock_wildcat_01",
+    user_b_id: "usr_alex_02",
+    last_message_at: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+    is_favorite: false,
+    is_blocked: false,
+    is_communication_blocked: false,
+    otherUser: {
+      id: "usr_alex_02",
+      fullName: "Alex Rivera",
+      avatarURL: "/Cit Logo.svg",
+    },
+    lastMessageContent: "Hey! Did you check the new announcement?",
+    unreadCount: 0,
+  },
+];
+
 export default function ChatSidebar() {
   const [search, setSearch] = useState("");
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -59,45 +94,10 @@ export default function ChatSidebar() {
     router.refresh();
   };
 
-  const mockConversations: Conversation[] = [
-    {
-      id: "convo-1",
-      user_a_id: "usr_mock_wildcat_01",
-      user_b_id: "usr_maria_03",
-      last_message_at: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-      is_favorite: true,
-      is_blocked: false,
-      is_communication_blocked: false,
-      otherUser: {
-        id: "usr_maria_03",
-        fullName: "Maria Santos (PLC Tutor)",
-        avatarURL: "/Cit Logo.svg",
-      },
-      lastMessageContent: "Hello! Looking forward to our PLC session tomorrow.",
-      unreadCount: 1,
-    },
-    {
-      id: "convo-2",
-      user_a_id: "usr_mock_wildcat_01",
-      user_b_id: "usr_alex_02",
-      last_message_at: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-      is_favorite: false,
-      is_blocked: false,
-      is_communication_blocked: false,
-      otherUser: {
-        id: "usr_alex_02",
-        fullName: "Alex Rivera",
-        avatarURL: "/Cit Logo.svg",
-      },
-      lastMessageContent: "Hey! Did you check the new announcement?",
-      unreadCount: 0,
-    },
-  ];
-
   useEffect(() => {
     getCurrentUserDetails().then((user) => {
       setCurrentUser(user);
-      setConversations(mockConversations);
+      setConversations(MOCK_CONVERSATIONS);
       setLoading(false);
     });
   }, []);

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Montserrat } from "next/font/google";
 import { PostedEvent } from "@/app/component/General/Calendar/types";
-import { supabase } from "../../../../../supabase/Lib/General/supabaseClient";
+
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -65,10 +65,6 @@ export default function EventModal({
   setShowAddEvent,
   onEventAdded,
 }: EventModalProps) {
-  const [userRole, setUserRole] = useState<string>("");
-  const [userId, setUserId] = useState<string>("");
-  const [userName, setUserName] = useState<string>("");
-
   const [selectedDate, setSelectedDate] = useState("");
   const [eventTitle, setEventTitle] = useState("");
   const [audience, setAudience] = useState("Personal");
@@ -87,51 +83,12 @@ export default function EventModal({
       const m = String(today.getMonth() + 1).padStart(2, "0");
       const d = String(today.getDate()).padStart(2, "0");
       setSelectedDate(`${y}-${m}-${d}`);
+      setAudience("Personal");
     }
   }, [showAddEvent]);
 
-  // Fetch current user role on mount
-  useEffect(() => {
-    let isMounted = true;
-    (async () => {
-      try {
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
-
-        if (userError || !user) {
-          console.error("No user found or not logged in.");
-          return;
-        }
-
-        if (isMounted) setUserId(user.id);
-
-        const { data: account } = await supabase
-          .from("Accounts")
-          .select("role, fullName")
-          .eq("id", user.id)
-          .maybeSingle();
-
-        if (isMounted && account) {
-          setUserRole(account.role || "");
-          setUserName(account.fullName || "");
-          setAudience("Personal");
-        }
-      } catch (err) {
-        console.error("Error getting user role:", err);
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, [showAddEvent]);
-
-  // Check if user is admin based on "contains" logic
-  const isAdmin = userRole.includes("Platform Administrator");
-
   // Define audience options - now only two options for admins
-  const audienceOptions = isAdmin ? ["Personal", "Global"] : ["Personal"];
+  const audienceOptions = ["Personal", "Global"];
 
   // Handle audience change - automatically set courses based on selection
   const handleAudienceChange = (type: string) => {
@@ -182,41 +139,9 @@ export default function EventModal({
       return;
     }
     setIsSubmitting(true);
-
-    try {
-      const dbPayloads = pendingEvents.map((evt) => {
-        let coursesArray: string[] | null = null;
-        if (evt.audience === "Global") {
-          if (evt.course) {
-            coursesArray = evt.course.split(", ");
-          } else {
-            coursesArray = [];
-          }
-        }
-        return {
-          user_id: userId,
-          title: evt.title,
-          date: evt.date!,
-          year: evt.year,
-          month: evt.month,
-          day: evt.day,
-          audience: evt.audience,
-          courses: coursesArray,
-          created_by_name: userName,
-          created_by_role: userRole,
-        };
-      });
-
-      const { error } = await supabase.from("Events").insert(dbPayloads);
-      if (error) throw error;
-      onEventAdded();
-      handleClose();
-    } catch (err: unknown) {
-      console.error(err);
-      alert("Failed to save events. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    onEventAdded();
+    handleClose();
+    setIsSubmitting(false);
   };
 
   const handleClose = () => {

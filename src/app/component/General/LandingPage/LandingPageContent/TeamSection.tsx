@@ -102,10 +102,11 @@ const TeamSection = () => {
               {/* Image Area */}
               <div className="h-[240px] w-full bg-gradient-to-b from-gray-700/50 to-gray-900/50 relative flex items-center justify-center overflow-hidden group-hover:shadow-inner transition-all">
                 {member.image ? (
-                  <img
+                  <Image
                     src={member.image}
                     alt={member.name}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    fill
+                    className="object-cover transition-transform duration-500 group-hover:scale-110"
                   />
                 ) : (
                   <div className="flex flex-col items-center gap-2 text-white/20 group-hover:text-white/40 transition-colors">

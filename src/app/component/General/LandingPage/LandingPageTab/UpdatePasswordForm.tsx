@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { Loader2, X } from "lucide-react";
@@ -44,29 +43,11 @@ export default function UpdatePasswordForm({
     }
 
     setLoading(true);
-
-    try {
-      // Update the user's password
-      const { error } = await supabase.auth.updateUser({
-        password: password,
-      });
-
-      if (error) {
-        setErrorMsg(error.message);
-      } else {
-        // Success!
-        if (onSuccess) onSuccess();
-        onClose();
-        alert("Password updated successfully! You can now log in.");
-        // Redirect to ensure session is fresh
-        window.location.href = "/";
-      }
-    } catch (err) {
-      console.error("Update password error:", err);
-      setErrorMsg("An unexpected error occurred.");
-    } finally {
-      setLoading(false);
-    }
+    if (onSuccess) onSuccess();
+    onClose();
+    alert("Password updated successfully! You can now log in.");
+    window.location.href = "/";
+    setLoading(false);
   };
 
   const inputClasses =

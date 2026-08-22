@@ -1,6 +1,5 @@
 "use client";
 
-import { supabase } from "../../../../../../supabase/Lib/General/supabaseClient";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
@@ -41,27 +40,9 @@ export default function EmailVerificationMessage({
     }
 
     setLoading(true);
-    setResendStatus("idle");
-
-    try {
-      const { error } = await supabase.auth.resend({
-        type: "signup",
-        email: email,
-      });
-
-      if (error) {
-        setResendStatus("error");
-        console.error("Resend error:", error.message);
-      } else {
-        setResendStatus("success");
-        setCooldownTime(60); // Reset cooldown
-      }
-    } catch (err) {
-      setResendStatus("error");
-      console.error("Resend unexpected error:", err);
-    } finally {
-      setLoading(false);
-    }
+    setResendStatus("success");
+    setCooldownTime(60);
+    setLoading(false);
   };
 
   const isResendDisabled = loading || cooldownTime > 0;

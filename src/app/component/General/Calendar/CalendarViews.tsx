@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { Montserrat, PT_Sans } from "next/font/google";
+import { Montserrat } from "next/font/google";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   Holiday,

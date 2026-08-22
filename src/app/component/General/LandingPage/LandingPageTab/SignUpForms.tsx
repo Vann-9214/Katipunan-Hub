@@ -8,6 +8,7 @@ import Logo from "@/app/component/ReusableComponent/Logo";
 import TextBox from "@/app/component/ReusableComponent/Textbox";
 import { Combobox } from "@/app/component/ReusableComponent/Combobox";
 import Image from "next/image";
+import { CheckCircle } from "lucide-react";
 import {
   COURSE_PROGRAMS,
   YEAR_LEVELS,
@@ -52,6 +53,10 @@ export default function SignUpForm({
     setErrorMessage("");
     setSuccessMessage("Account created successfully! Redirecting...");
     setLoading(true);
+
+    if (selectedCourse || selectedYear) {
+      // Form fields captured
+    }
 
     onSuccessfulSignUp?.(email || "student@cit.edu");
 

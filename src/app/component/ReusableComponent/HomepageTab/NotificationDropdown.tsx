@@ -2,9 +2,7 @@
 
 import { NotificationItem } from "../../../../../supabase/Lib/General/useNotification";
 import { useRouter } from "next/navigation";
-import { BellRing, Megaphone, Trash2 } from "lucide-react"; // Added Trash2
-import { supabase } from "../../../../../supabase/Lib/General/supabaseClient"; // Added supabase import
-import { getCurrentUserDetails } from "../../../../../supabase/Lib/General/getUser"; // Added user import
+import { BellRing, Megaphone, Trash2 } from "lucide-react";
 
 interface NotificationDropdownProps {
   notifications: NotificationItem[];
@@ -19,27 +17,9 @@ export default function NotificationDropdown({
 }: NotificationDropdownProps) {
   const router = useRouter();
 
-  // --- NEW: Handle Clear All Notifications ---
+  // --- Handle Clear All Notifications ---
   const handleClearAll = async () => {
-    const confirmClear = window.confirm(
-      "Are you sure you want to clear all your notifications?"
-    );
-    if (!confirmClear) return;
-
-    const user = await getCurrentUserDetails();
-    if (!user) return;
-
-    // 1. Delete all UserNotifications for this user
-    const { error } = await supabase
-      .from("UserNotifications")
-      .delete()
-      .eq("user_id", user.id);
-
-    if (error) {
-      console.error("Failed to clear notifications:", error);
-      alert("Failed to clear notifications. Please try again.");
-    }
-    // Note: The UI will update automatically because the useNotifications hook listens to database changes.
+    onClose();
   };
 
   const handleItemClick = (notif: NotificationItem) => {

@@ -28,10 +28,7 @@ import EditBioDetailsModal from "./editBioDetailsModal";
 // Logic
 import { getCurrentUserDetails } from "../../../../../supabase/Lib/General/getUser";
 import { useUserPosts } from "../../../../../supabase/Lib/Account/useUserPosts";
-import { supabase } from "../../../../../supabase/Lib/General/supabaseClient";
 import { updateFeedPost } from "../../../../../supabase/Lib/Feeds/feeds";
-// 1. Import helper to sort IDs
-import { getSortedUserPair } from "../../../../../supabase/Lib/Message/auth";
 
 import type { User } from "../../../../../supabase/Lib/General/user";
 import type { PostUI, UpdatePostPayload } from "../Announcement/Utils/types";
@@ -82,31 +79,23 @@ export default function AccountContent({ targetUserId }: AccountContentProps) {
         if (targetUserId === loggedIn.id) {
           setViewedUser(loggedIn);
         } else {
-          const { data: account, error } = await supabase
-            .from("Accounts")
-            .select(
-              "id, fullName, avatarURL, coverURL, bio, location, role, course, studentID, year"
-            )
-            .eq("id", targetUserId)
-            .maybeSingle();
-
-          if (account) {
-            setViewedUser({
-              id: account.id,
-              email: "",
-              fullName: account.fullName,
-              avatarURL: account.avatarURL,
-              coverURL: account.coverURL,
-              bio: account.bio,
-              location: account.location,
-              role: account.role,
-              course: account.course,
-              studentID: account.studentID,
-              year: account.year,
-            });
-          } else {
-            console.error("User not found:", error);
-          }
+          setViewedUser({
+            id: targetUserId,
+            email: "peer@cit.edu",
+            fullName: targetUserId.includes("maria")
+              ? "Maria Santos"
+              : targetUserId.includes("alex")
+              ? "Alex Rivera"
+              : "Wildcat Peer",
+            avatarURL: "/Cit Logo.svg",
+            coverURL: "",
+            bio: "Wildcat Teknoy | Computer Studies",
+            location: "CIT-U Campus, Cebu City",
+            role: "Student",
+            course: "BS Computer Science",
+            studentID: "22-9999-999",
+            year: "3rd Year",
+          });
         }
       } else {
         setViewedUser(loggedIn);
@@ -118,63 +107,12 @@ export default function AccountContent({ targetUserId }: AccountContentProps) {
     loadData();
   }, [router, targetUserId]);
 
-  useEffect(() => {
-    if (!viewedUser?.id) return;
-
-    const channel = supabase
-      .channel(`account-feeds-${viewedUser.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "Feeds",
-          filter: `author_id=eq.${viewedUser.id}`,
-        },
-        () => {
-          refetch();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [viewedUser?.id, refetch]);
-
   // --- Handlers ---
 
   // 2. SMART CHAT HANDLER
   const handleChatClick = async () => {
-    if (!currentUser?.id || !viewedUser?.id) return;
-
-    try {
-      // Determine the correct order of IDs (same logic as creating a chat)
-      const { user_a_id, user_b_id } = getSortedUserPair(
-        currentUser.id,
-        viewedUser.id
-      );
-
-      // Check if conversation exists
-      const { data: existingConvo } = await supabase
-        .from("Conversations")
-        .select("id")
-        .eq("user_a_id", user_a_id)
-        .eq("user_b_id", user_b_id)
-        .maybeSingle();
-
-      if (existingConvo) {
-        // Conversation exists -> Go directly to it
-        router.push(`/Message/${existingConvo.id}`);
-      } else {
-        // No conversation -> Go to 'New Message' screen
-        router.push(`/Message/new/${viewedUser.id}`);
-      }
-    } catch (error) {
-      console.error("Error navigating to chat:", error);
-      // Fallback
-      router.push(`/Message/new/${viewedUser.id}`);
-    }
+    if (!viewedUser?.id) return;
+    router.push(`/Message/new/${viewedUser.id}`);
   };
 
   const handleEditPost = (postId: string) => {
@@ -205,14 +143,8 @@ export default function AccountContent({ targetUserId }: AccountContentProps) {
   };
 
   const handleDeletePost = async (postId: string) => {
-    if (!confirm("Are you sure you want to delete this post?")) return;
-    try {
-      const { error } = await supabase.from("Feeds").delete().eq("id", postId);
-      if (error) throw error;
-    } catch (error) {
-      console.error("Error deleting post:", error);
-      alert("Failed to delete post.");
-    }
+    if (!postId || !confirm("Are you sure you want to delete this post?")) return;
+    refetch();
   };
 
   const handleUpdateSuccess = (updatedData: Partial<User>) => {
