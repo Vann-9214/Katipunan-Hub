@@ -9,7 +9,6 @@ import {
   Calendar,
   Mail,
   BookOpen,
-  MessageCircle,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -29,8 +28,6 @@ import EditBioDetailsModal from "./editBioDetailsModal";
 import { getCurrentUserDetails } from "@/database/supabase/General/getUser";
 import { useUserPosts } from "@/database/supabase/Account/useUserPosts";
 import { supabase } from "@/database/supabase/General/supabaseClient";
-// 1. Import helper to sort IDs
-import { getSortedUserPair } from "@/database/supabase/Message/auth";
 
 import type { User } from "@/database/supabase/General/user";
 import type { PostUI, UpdatePostPayload } from "../Announcement/Utils/types";
@@ -143,39 +140,6 @@ export default function AccountContent({ targetUserId }: AccountContentProps) {
 
   // --- Handlers ---
 
-  // 2. SMART CHAT HANDLER
-  const handleChatClick = async () => {
-    if (!currentUser?.id || !viewedUser?.id) return;
-
-    try {
-      // Determine the correct order of IDs (same logic as creating a chat)
-      const { user_a_id, user_b_id } = getSortedUserPair(
-        currentUser.id,
-        viewedUser.id
-      );
-
-      // Check if conversation exists
-      const { data: existingConvo } = await supabase
-        .from("Conversations")
-        .select("id")
-        .eq("user_a_id", user_a_id)
-        .eq("user_b_id", user_b_id)
-        .maybeSingle();
-
-      if (existingConvo) {
-        // Conversation exists -> Go directly to it
-        router.push(`/Message/${existingConvo.id}`);
-      } else {
-        // No conversation -> Go to 'New Message' screen
-        router.push(`/Message/new/${viewedUser.id}`);
-      }
-    } catch (error) {
-      console.error("Error navigating to chat:", error);
-      // Fallback
-      router.push(`/Message/new/${viewedUser.id}`);
-    }
-  };
-
   const handleEditPost = (postId: string) => {
     const postToEdit = posts.find((p) => p.id === postId);
     if (!postToEdit) return;
@@ -280,7 +244,7 @@ export default function AccountContent({ targetUserId }: AccountContentProps) {
                   </div>
 
                   {/* Action Button */}
-                  {isOwner ? (
+                  {isOwner && (
                     <div className="mb-6 md:mb-4 flex-shrink-0">
                       <motion.button
                         whileHover={{ scale: 1.05 }}
@@ -290,19 +254,6 @@ export default function AccountContent({ targetUserId }: AccountContentProps) {
                       >
                         <Pen size={16} className="text-[#EFBF04]" />
                         <span className="font-montserrat">Edit Profile</span>
-                      </motion.button>
-                    </div>
-                  ) : (
-                    <div className="mb-6 md:mb-4 flex-shrink-0">
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        // 3. Attach new handler here
-                        onClick={handleChatClick}
-                        className="bg-white/10 cursor-pointer hover:bg-white/20 border border-white/30 text-white px-5 py-2.5 rounded-xl font-semibold flex items-center gap-2 transition-all shadow-lg backdrop-blur-sm"
-                      >
-                        <MessageCircle size={16} className="text-[#EFBF04]" />
-                        <span className="font-montserrat">Chat</span>
                       </motion.button>
                     </div>
                   )}

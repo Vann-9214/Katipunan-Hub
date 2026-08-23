@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import {
   X,
-  MessageCircle,
   CheckCircle2,
   RefreshCcw,
   Lock,
@@ -29,7 +28,6 @@ interface PostViewModalProps {
   isOwner: boolean;
   onClose: () => void;
   onStatusChange: (postId: string, newStatus: "Open" | "Resolved") => void;
-  onChat: () => void;
 }
 
 export default function PostViewModal({
@@ -37,7 +35,6 @@ export default function PostViewModal({
   isOwner,
   onClose,
   onStatusChange,
-  onChat,
 }: PostViewModalProps) {
   // Helper for status badges
   const isResolved = post.status === "Resolved";
@@ -205,44 +202,38 @@ export default function PostViewModal({
           </div>
 
           {/* Footer Actions */}
-          <div className="flex-shrink-0 mt-6 pt-6 border-t border-gray-100">
-            {isOwner ? (
-              <div className="w-full">
-                {post.status === "Open" ? (
-                  <button
-                    onClick={() => onStatusChange(post.id, "Resolved")}
-                    className={`${montserrat.className} w-full py-3.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2`}
-                  >
-                    <CheckCircle2 size={18} />
-                    Mark as Resolved
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => onStatusChange(post.id, "Open")}
-                    className={`${montserrat.className} w-full py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition-all flex items-center justify-center gap-2`}
-                  >
-                    <RefreshCcw size={18} />
-                    Re-open Post
-                  </button>
-                )}
-              </div>
-            ) : isResolved ? (
-              <div
-                className={`${montserrat.className} w-full py-3.5 bg-gray-100 text-gray-400 rounded-xl font-bold text-sm flex items-center justify-center gap-2 cursor-not-allowed border border-gray-200`}
-              >
-                <Lock size={16} />
-                <span>This post has been resolved</span>
-              </div>
-            ) : (
-              <button
-                onClick={onChat}
-                className={`${montserrat.className} w-full py-3.5 bg-[#8B0E0E] hover:bg-[#720b0b] text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-red-900/20 flex items-center justify-center gap-2 transform active:scale-[0.98]`}
-              >
-                <MessageCircle size={20} />
-                Chat with Uploader
-              </button>
-            )}
-          </div>
+          {(isOwner || isResolved) && (
+            <div className="flex-shrink-0 mt-6 pt-6 border-t border-gray-100">
+              {isOwner ? (
+                <div className="w-full">
+                  {post.status === "Open" ? (
+                    <button
+                      onClick={() => onStatusChange(post.id, "Resolved")}
+                      className={`${montserrat.className} w-full py-3.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2`}
+                    >
+                      <CheckCircle2 size={18} />
+                      Mark as Resolved
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => onStatusChange(post.id, "Open")}
+                      className={`${montserrat.className} w-full py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition-all flex items-center justify-center gap-2`}
+                    >
+                      <RefreshCcw size={18} />
+                      Re-open Post
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div
+                  className={`${montserrat.className} w-full py-3.5 bg-gray-100 text-gray-400 rounded-xl font-bold text-sm flex items-center justify-center gap-2 cursor-not-allowed border border-gray-200`}
+                >
+                  <Lock size={16} />
+                  <span>This post has been resolved</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </motion.div>
     </motion.div>

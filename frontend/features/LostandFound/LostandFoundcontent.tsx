@@ -397,68 +397,6 @@ export default function LostandFoundContent({ user }: { user: User | null }) {
     }
   };
 
-  // --- UPDATED SMART CHAT LOGIC ---
-  const handleOpenChat = async () => {
-    if (!selectedPost || !selectedPost.userId) return;
-
-    // Prevent chatting with self
-    if (user && user.id === selectedPost.userId) {
-      alert("You cannot chat with yourself.");
-      return;
-    }
-
-    if (!user) {
-      alert("Please log in to chat.");
-      return;
-    }
-
-    const targetId = selectedPost.userId;
-
-    try {
-      // 1. Fetch conversations where user is a participant
-      const { data: conversations, error } = await supabase
-        .from("Conversations")
-        .select("id, user_a_id, user_b_id")
-        .or(`user_a_id.eq.${user.id},user_b_id.eq.${user.id}`);
-
-      if (error) {
-        console.error("Error checking conversations:", error);
-        // Fallback: Just go to new message page
-        navigateToNewChat(targetId);
-        return;
-      }
-
-      // 2. Filter to find the one with the target user
-      const existingConv = conversations?.find(
-        (c) =>
-          (c.user_a_id === user.id && c.user_b_id === targetId) ||
-          (c.user_a_id === targetId && c.user_b_id === user.id)
-      );
-
-      if (existingConv) {
-        // Conversation exists -> Go to it
-        router.push(`/Message/${existingConv.id}`);
-      } else {
-        // No conversation -> Go to New Message page
-        navigateToNewChat(targetId);
-      }
-    } catch (err) {
-      console.error("Unexpected error in chat redirect:", err);
-      navigateToNewChat(targetId);
-    }
-  };
-
-  // Helper to construct the new chat URL
-  const navigateToNewChat = (targetId: string) => {
-    if (!selectedPost) return;
-    const inquiryMessage = `Hello, I'm inquiring about the "${selectedPost.title}" (${selectedPost.type}) you posted in Lost & Found.`;
-    router.push(
-      `/Message/new/${targetId}?initialMessage=${encodeURIComponent(
-        inquiryMessage
-      )}`
-    );
-  };
-
   return (
     <div className="min-h-screen w-full pb-12 relative flex flex-col">
       <BackgroundGradient />
@@ -752,7 +690,6 @@ export default function LostandFoundContent({ user }: { user: User | null }) {
                   onStatusChange={(id, status) =>
                     handleStatusUpdate(id, status)
                   }
-                  onChat={handleOpenChat}
                 />
               )}
             </AnimatePresence>
