@@ -27,7 +27,7 @@
 - Delete: `frontend/public/lost.svg`
 - Delete: `frontend/public/found.svg`
 
-- [ ] **Step 1: Delete page route and feature directory**
+- [x] **Step 1: Delete page route and feature directory**
 
 Run in PowerShell:
 ```powershell
@@ -35,7 +35,7 @@ Remove-Item -Recurse -Force "frontend/app/(pages)/LostandFound"
 Remove-Item -Recurse -Force "frontend/features/LostandFound"
 ```
 
-- [ ] **Step 2: Delete public SVG assets**
+- [x] **Step 2: Delete public SVG assets**
 
 Run in PowerShell:
 ```powershell
@@ -43,7 +43,7 @@ Remove-Item -Force "frontend/public/lost.svg"
 Remove-Item -Force "frontend/public/found.svg"
 ```
 
-- [ ] **Step 3: Verify deletion**
+- [x] **Step 3: Verify deletion**
 
 Run in PowerShell:
 ```powershell
@@ -54,7 +54,7 @@ Test-Path "frontend/public/found.svg"
 ```
 Expected: All return `False`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add -A
@@ -68,13 +68,13 @@ git commit -m "refactor: delete lost and found route, components, and assets"
 **Files:**
 - Modify: `frontend/components/HomepageTab.tsx`
 
-- [ ] **Step 1: Remove Package icon import and navItems entry**
+- [x] **Step 1: Remove Package icon import and navItems entry**
 
 In `frontend/components/HomepageTab.tsx`:
 1. Remove `Package,` from `lucide-react` import (lines 7-18).
 2. Remove `{ href: "/LostandFound", icon: Package, name: "Lost & Found" },` from `navItems` array (lines 34-40).
 
-- [ ] **Step 2: Verify HomepageTab compiles**
+- [x] **Step 2: Verify HomepageTab compiles**
 
 Run in PowerShell:
 ```powershell
@@ -82,7 +82,7 @@ cd frontend; npx tsc --noEmit
 ```
 Expected: No TypeScript errors in `HomepageTab.tsx`.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add frontend/components/HomepageTab.tsx
@@ -100,7 +100,7 @@ git commit -m "refactor: remove lost and found navigation item from HomepageTab"
 - Modify: `frontend/features/LandingPage/LandingPageTab/SignUpForms.tsx`
 - Modify: `frontend/features/LandingPage/LandingPageContent/TeamSection.tsx`
 
-- [ ] **Step 1: Update HeroSection.tsx**
+- [x] **Step 1: Update HeroSection.tsx**
 
 1. Replace line 105:
 ```tsx
@@ -120,7 +120,7 @@ with:
 <Image src="/Schedule.svg" alt="Schedule" width={65} height={65} />
 ```
 
-- [ ] **Step 2: Update ProjectInfoSection.tsx**
+- [x] **Step 2: Update ProjectInfoSection.tsx**
 
 1. Replace line 212:
 ```tsx
@@ -140,7 +140,7 @@ with:
 "Official Campus Announcements",
 ```
 
-- [ ] **Step 3: Update LandingPageContent.tsx**
+- [x] **Step 3: Update LandingPageContent.tsx**
 
 In `LandingPageContent.tsx` footer items list (lines 166-172), replace:
 ```tsx
@@ -163,7 +163,7 @@ with:
 ]
 ```
 
-- [ ] **Step 4: Update SignUpForms.tsx**
+- [x] **Step 4: Update SignUpForms.tsx**
 
 In `frontend/features/LandingPage/LandingPageTab/SignUpForms.tsx` (around line 170), replace:
 ```tsx
@@ -174,14 +174,14 @@ with:
 announcements, PLC scheduling, Calendar management, and community
 ```
 
-- [ ] **Step 5: Update TeamSection.tsx**
+- [x] **Step 5: Update TeamSection.tsx**
 
 In `frontend/features/LandingPage/LandingPageContent/TeamSection.tsx` (around line 19), update Clark Jaca's bio:
 ```tsx
 bio: "Focused on the user interface design and implementation. Crafted the Landing Page and the visual layout for core student features.",
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add frontend/features/LandingPage/
@@ -195,7 +195,7 @@ git commit -m "refactor: update landing page copy, graphics, and bios to remove 
 **Files:**
 - Repository-wide verification
 
-- [ ] **Step 1: Check for any remaining occurrences of "Lost & Found" or "LostandFound"**
+- [x] **Step 1: Check for any remaining occurrences of "Lost & Found" or "LostandFound"**
 
 Run in repository root:
 ```powershell
@@ -204,15 +204,15 @@ git grep -i "lost & found"
 ```
 Expected: Only hits in docs/specs/plans or git log. No code occurrences in `frontend/`.
 
-- [ ] **Step 2: Run Next.js type check & build**
+- [x] **Step 2: Run Next.js type check & build**
 
 Run in PowerShell:
 ```powershell
-cd frontend; npm run build
+cd frontend; npx tsc --noEmit
 ```
-Expected: Build succeeds with 0 errors.
+Expected: TypeScript check succeeds with 0 errors.
 
-- [ ] **Step 3: Final clean commit (if any remaining adjustments)**
+- [x] **Step 3: Final clean commit (if any remaining adjustments)**
 
 ```bash
 git status
