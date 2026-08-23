@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useId } from "react";
 import { supabase } from "./supabaseClient";
 import type { User } from "./user";
-import { programToCollege } from "@/features/Announcement/Utils/constants";
+import { programToCollege } from "@/features/Announcement/utils/constants";
 
 export interface NotificationItem {
   id: string;

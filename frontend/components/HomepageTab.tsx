@@ -1,23 +1,24 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import NavigationButton from "./navigationButtons";
 import Logo from "./Logo";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
   Megaphone,
-  Newspaper,
   BookOpenText,
   CalendarDays,
   Search,
   User as UserIcon,
   Loader2,
   ChevronRight,
+  Trophy,
 } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
 import Avatar from "./Avatar";
-import AccountDropdown from "../features/Account/accountDropdown";
+import AccountDropdown from "@/features/Account/components/AccountDropdown";
 import type { User } from "@/database/supabase/General/user";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/database/supabase/General/supabaseClient";
@@ -31,7 +32,7 @@ interface HomepageTabProps {
 
 const navItems = [
   { href: "/Announcement", icon: Megaphone, name: "News" },
-  { href: "/Feeds", icon: Newspaper, name: "Feeds" },
+  { href: "/Leaderboard", icon: Trophy, name: "Leaderboard" },
   { href: "/PLC", icon: BookOpenText, name: "PLC" },
   { href: "/Calendar", icon: CalendarDays, name: "Calendar" },
 ];
@@ -39,7 +40,7 @@ const navItems = [
 // Type for our Unified Search Result
 interface GlobalSearchResult {
   id: string;
-  type: "user" | "news" | "plc" | "feed";
+  type: "user" | "news" | "plc";
   title: string;
   subtitle: string;
   url: string;
