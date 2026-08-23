@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { User, LogOut, ChevronRight } from "lucide-react";
-import Avatar from "../../components/Avatar";
+import Avatar from "@/components/Avatar";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/database/supabase/General/supabaseClient";
+import { signOutUser } from "@/database/supabase/Account/signOutUser";
 import type { User as AppUser } from "@/database/supabase/General/user";
 import { motion, Variants } from "framer-motion";
 
@@ -45,7 +45,7 @@ export default function AccountDropdown({
 
   // Handler
   const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
+    const { error } = await signOutUser();
 
     if (error) {
       console.error("Error logging out:", error.message);

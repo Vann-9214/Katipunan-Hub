@@ -13,15 +13,15 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import type { User } from "@/database/supabase/General/user";
-import FormInput from "./formInput";
+import FormInput from "./FormInput";
 import { uploadAvatar } from "@/database/supabase/Account/uploadAvatar";
 import { uploadCover } from "@/database/supabase/Account/coverPhoto";
 import { updateUserAccount } from "@/database/supabase/Account/updateUserAccount";
 import { removeUserImage } from "@/database/supabase/Account/removeImage";
 import Cropper, { Area } from "react-easy-crop";
-import { getCroppedImg } from "@/database/supabase/Account/getCroppped";
-import { motion } from "framer-motion"; // Added for smooth entry
-import { Montserrat } from "next/font/google"; // Font
+import { getCroppedImg } from "../utils/getCroppedImg";
+import { motion } from "framer-motion";
+import { Montserrat } from "next/font/google";
 
 const montserrat = Montserrat({ subsets: ["latin"], weight: ["600", "700"] });
 
@@ -100,9 +100,6 @@ export default function EditMainProfileModal({
     if (!tempImageSrc || !croppedAreaPixels || !cropMode) return;
 
     try {
-      /* Determine the shape based on cropMode.
-         If 'cover', use 'rect' to prevent the utility from clipping it into a circle/round shape.
-      */
       const shape = cropMode === "avatar" ? "round" : "rect";
       const croppedBlob = await getCroppedImg(
         tempImageSrc,
@@ -197,7 +194,7 @@ export default function EditMainProfileModal({
     }
   };
 
-  // --- CROPPER VIEW (Dark Theme Preserved) ---
+  // --- CROPPER VIEW ---
   if (cropMode && tempImageSrc) {
     return (
       <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
@@ -267,7 +264,7 @@ export default function EditMainProfileModal({
     );
   }
 
-  // --- MAIN FORM (Themed) ---
+  // --- MAIN FORM ---
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       {/* Gold Border Wrapper */}

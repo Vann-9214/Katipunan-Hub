@@ -1,5 +1,5 @@
-import AccountPage from "@/features/Account/accountContent";
+import AccountContent from "@/features/Account/AccountContent";
 
 export default function Page() {
-  return <AccountPage />;
+  return <AccountContent />;
 }

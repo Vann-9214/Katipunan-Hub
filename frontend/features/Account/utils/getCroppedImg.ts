@@ -10,7 +10,7 @@ import { Area } from "react-easy-crop";
 export async function getCroppedImg(
   imageSrc: string,
   crop: Area,
-  shape: "round" | "rect" = "round" // 1. Added shape parameter with default to 'round'
+  shape: "round" | "rect" = "round"
 ): Promise<Blob | null> {
   const image = new Image();
   // Allow cross-origin images for canvas
@@ -32,9 +32,7 @@ export async function getCroppedImg(
   canvas.width = crop.width;
   canvas.height = crop.height;
 
-  // --- Start of Clipping Logic ---
-
-  // 2. Only apply circle clip if the shape is 'round'
+  // Circle clip for avatar
   if (shape === "round") {
     ctx.beginPath();
     ctx.arc(
@@ -49,9 +47,7 @@ export async function getCroppedImg(
     ctx.clip();
   }
 
-  // --- End of Clipping Logic ---
-
-  // 3. Draw the image
+  // Draw image
   ctx.drawImage(
     image,
     crop.x,
@@ -64,7 +60,7 @@ export async function getCroppedImg(
     crop.height
   );
 
-  // Get the new image as a PNG blob (to support transparency)
+  // Return PNG Blob
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (!blob) {
@@ -73,6 +69,6 @@ export async function getCroppedImg(
         return;
       }
       resolve(blob);
-    }, "image/png"); // Force PNG for transparency
+    }, "image/png");
   });
 }

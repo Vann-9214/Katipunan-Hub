@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import AccountContent from "@/features/Account/accountContent";
+import AccountContent from "@/features/Account/AccountContent";
 
 export default function ProfilePage() {
   const params = useParams();
