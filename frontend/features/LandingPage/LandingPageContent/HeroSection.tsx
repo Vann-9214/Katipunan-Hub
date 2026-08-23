@@ -154,7 +154,7 @@ const HeroSection = ({
             className="absolute top-10 right-10 z-30"
           >
             <GlassCard className="p-5 hover:bg-white/40 transition-colors border-white/40 shadow-xl">
-              <Image src="/Chat.svg" alt="Chat" width={55} height={55} />
+              <Image src="/Cit Logo.svg" alt="CIT" width={55} height={55} />
             </GlassCard>
           </motion.div>
 

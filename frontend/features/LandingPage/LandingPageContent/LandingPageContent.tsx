@@ -7,12 +7,9 @@ import { Mail, Globe } from "lucide-react";
 
 // --- Section Imports ---
 import HeroSection from "./HeroSection";
-import ProjectInfoSection from "./ProjectInfoSection";
-import TechStackSection from "./TechStackContent";
-import LandingPageTab, { AuthMode } from "../LandingPageTab/LandingPageTab"; // Import AuthMode type
-import TeamSection from "./TeamSection";
+import LandingPageTab, { AuthMode } from "../LandingPageTab/LandingPageTab";
 
-// --- INTRO ANIMATION COMPONENT (Keep your intro as is) ---
+// --- INTRO ANIMATION COMPONENT ---
 const IntroOverlay = ({ onComplete }: { onComplete: () => void }) => {
   return (
     <motion.div
@@ -84,8 +81,8 @@ export default function LandingPageContent() {
 
   // Trigger function for "Get Started" button
   const handleOpenSignUp = () => {
-    setDirection(1); // Set slide animation direction
-    setAuthMode("signup"); // Open modal in sign up mode
+    setDirection(1);
+    setAuthMode("signup");
   };
 
   useEffect(() => {
@@ -104,8 +101,8 @@ export default function LandingPageContent() {
         )}
       </AnimatePresence>
 
-      <div className="min-h-screen w-full relative overflow-x-hidden font-sans flex flex-col">
-        {/* --- FIXED TAB BAR (Now Controlled via Props) --- */}
+      <div className="min-h-screen w-full relative overflow-x-hidden font-sans flex flex-col justify-between">
+        {/* --- FIXED TAB BAR --- */}
         <motion.div
           initial={{ y: -100 }}
           animate={introFinished ? { y: 0 } : { y: -100 }}
@@ -121,88 +118,54 @@ export default function LandingPageContent() {
         </motion.div>
 
         <div className="flex flex-col w-full flex-grow">
-          {/* 1. HERO SECTION (Pass handler) */}
+          {/* HERO & AUTHENTICATION SECTION */}
           <HeroSection
             startAnimation={introFinished}
-            onGetStarted={handleOpenSignUp} // <--- Pass the trigger here
+            onGetStarted={handleOpenSignUp}
           />
 
-          {/* 2. PROJECT OBJECTIVES & ABOUT */}
-          <ProjectInfoSection />
-
-          {/* 3. TECH STACK */}
-          <TechStackSection />
-
-          {/* 4. TEAM MEMBERS */}
-          <TeamSection />
-
-          {/* 5. PROFESSIONAL FOOTER */}
-          <footer className="bg-[#0f0f0f] text-white pt-16 pb-8 border-t border-white/5 relative z-20 font-montserrat overflow-hidden">
+          {/* PROFESSIONAL FOOTER */}
+          <footer className="bg-[#0f0f0f] text-white pt-12 pb-8 border-t border-white/5 relative z-20 font-montserrat overflow-hidden">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-full bg-[#8B0E0E] opacity-[0.03] blur-[100px] pointer-events-none" />
 
             <div className="max-w-4xl mx-auto px-6 lg:px-8 text-center relative z-10">
               <motion.div
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.8 }}
-                className="flex flex-col items-center gap-8 mb-12"
+                transition={{ duration: 0.6 }}
+                className="flex flex-col items-center gap-6 mb-8"
               >
-                <div className="flex flex-col items-center gap-4">
+                <div className="flex flex-col items-center gap-3">
                   <div className="p-2 bg-white/5 rounded-2xl border border-white/5 hover:border-[#EFBF04]/30 transition-colors duration-500">
-                    <Logo width={60} height={70} unclickable showText={false} />
+                    <Logo width={50} height={60} unclickable showText={false} />
                   </div>
-                  <span className="font-bold text-2xl tracking-widest text-white uppercase">
+                  <span className="font-bold text-xl tracking-widest text-white uppercase">
                     Katipunan Hub
                   </span>
                   <p className="text-gray-400 text-sm max-w-md mx-auto leading-relaxed">
-                    The official centralized platform for the CIT community.
-                    Connecting students, streaming resources, and unifying our
-                    voices.
+                    The centralized official platform for the Cebu Institute of Technology - University community.
                   </p>
                 </div>
 
-                <div className="flex flex-wrap justify-center gap-x-8 gap-y-3 text-sm font-medium text-gray-400">
-                  {[
-                    "Home",
-                    "Announcements",
-                    "Peer Learning Center",
-                    "Calendar",
-                    "Community Feed",
-                  ].map((item) => (
-                    <span
-                      key={item}
-                      className="hover:text-[#EFBF04] transition-colors cursor-pointer"
-                    >
-                      {item}
-                    </span>
-                  ))}
-                </div>
-
                 <div className="flex gap-4">
-                  <div className="w-10 h-10 rounded-full bg-white/5 border border-white/5 flex items-center justify-center hover:bg-[#EFBF04] hover:text-[#8B0E0E] transition-all duration-300 cursor-pointer group hover:-translate-y-1">
+                  <div className="w-9 h-9 rounded-full bg-white/5 border border-white/5 flex items-center justify-center hover:bg-[#EFBF04] hover:text-[#8B0E0E] transition-all duration-300 cursor-pointer group hover:-translate-y-1">
                     <Globe
-                      size={18}
+                      size={16}
                       className="group-hover:scale-110 transition-transform"
                     />
                   </div>
-                  <div className="w-10 h-10 rounded-full bg-white/5 border border-white/5 flex items-center justify-center hover:bg-[#EFBF04] hover:text-[#8B0E0E] transition-all duration-300 cursor-pointer group hover:-translate-y-1">
+                  <div className="w-9 h-9 rounded-full bg-white/5 border border-white/5 flex items-center justify-center hover:bg-[#EFBF04] hover:text-[#8B0E0E] transition-all duration-300 cursor-pointer group hover:-translate-y-1">
                     <Mail
-                      size={18}
+                      size={16}
                       className="group-hover:scale-110 transition-transform"
                     />
                   </div>
                 </div>
               </motion.div>
 
-              <motion.div
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.2, duration: 0.8 }}
-                className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-600"
-              >
-                <p>© 2025 Katipunan Hub. All rights reserved.</p>
+              <div className="pt-6 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-500">
+                <p>© {new Date().getFullYear()} Katipunan Hub. All rights reserved.</p>
                 <div className="flex gap-6">
                   <span className="hover:text-white cursor-pointer transition-colors">
                     Privacy Policy
@@ -211,7 +174,7 @@ export default function LandingPageContent() {
                     Terms of Service
                   </span>
                 </div>
-              </motion.div>
+              </div>
             </div>
           </footer>
         </div>
