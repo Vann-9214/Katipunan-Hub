@@ -10,14 +10,12 @@ import {
   Newspaper,
   BookOpenText,
   CalendarDays,
-  Package,
   Search,
   User as UserIcon,
   Loader2,
   ChevronRight,
 } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
-import ChatPopup from "../features/Message/ChatPopup/chatPopup";
 import Avatar from "./Avatar";
 import AccountDropdown from "../features/Account/accountDropdown";
 import type { User } from "@/database/supabase/General/user";
@@ -36,7 +34,6 @@ const navItems = [
   { href: "/Feeds", icon: Newspaper, name: "Feeds" },
   { href: "/PLC", icon: BookOpenText, name: "PLC" },
   { href: "/Calendar", icon: CalendarDays, name: "Calendar" },
-  { href: "/LostandFound", icon: Package, name: "Lost & Found" },
 ];
 
 // Type for our Unified Search Result
