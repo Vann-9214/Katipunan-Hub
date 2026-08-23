@@ -51,9 +51,7 @@ export default function HomepageTab({ user }: HomepageTabProps) {
   const router = useRouter();
 
   // --- STATE ---
-  const [isChatPopupOpen, setIsChatPopupOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [chatUnreadCount, setChatUnreadCount] = useState(0);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
 
   // Search State
@@ -69,13 +67,11 @@ export default function HomepageTab({ user }: HomepageTabProps) {
   const normalize = (p: string) =>
     p.endsWith("/") && p !== "/" ? p.slice(0, -1) : p;
   const currentPath = normalize(pathname);
-  const isOnMessagePage = pathname.startsWith("/Message");
 
   // --- EFFECTS ---
 
   // Close dropdowns on route change
   useEffect(() => {
-    setIsChatPopupOpen(false);
     setIsProfileOpen(false);
     setIsNotificationOpen(false);
     setShowSearchDropdown(false);
@@ -172,47 +168,9 @@ export default function HomepageTab({ user }: HomepageTabProps) {
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery, user?.id]);
 
-  // Fetch Chat Badge
-  const fetchChatUnreadCount = useCallback(async () => {
-    if (!user?.id) return;
-    try {
-      const { data, error } = await supabase
-        .from("Messages")
-        .select("conversation_id")
-        .neq("sender_id", user.id)
-        .is("read_at", null);
-      if (error || !data) return;
-      const uniqueConversations = new Set(
-        data.map((msg) => msg.conversation_id)
-      );
-      setChatUnreadCount(uniqueConversations.size);
-    } catch (err) {
-      console.error("Error fetching chat unread count:", err);
-    }
-  }, [user?.id]);
-
-  useEffect(() => {
-    if (!user?.id) return;
-    fetchChatUnreadCount();
-    const channel = supabase
-      .channel(`homepage_chat_badge_${user.id}_${Date.now()}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "Messages" },
-        () => {
-          fetchChatUnreadCount();
-        }
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user?.id, fetchChatUnreadCount]);
-
   const handleBellClick = () => {
     if (!isNotificationOpen) markAsRead();
     setIsNotificationOpen(!isNotificationOpen);
-    setIsChatPopupOpen(false);
     setIsProfileOpen(false);
   };
 
@@ -391,62 +349,6 @@ export default function HomepageTab({ user }: HomepageTabProps) {
 
       {/* --- RIGHT: USER ICONS --- */}
       <div className="flex gap-2 sm:gap-4 lg:gap-8 items-center justify-end relative flex-shrink-0 ml-2 z-10">
-        {/* Chat Icon */}
-        {!isOnMessagePage && (
-          <div className="relative flex-shrink-0">
-            <motion.button
-              onClick={() => setIsChatPopupOpen(!isChatPopupOpen)}
-              className="rounded-full cursor-pointer transition-all bg-white/10 hover:bg-white/20 flex items-center justify-center relative border border-white/5 hover:border-[#FFD700]/50"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-            >
-              <div className="p-2">
-                <Image
-                  src="/Chat.svg"
-                  alt="Chat"
-                  width={28}
-                  height={28}
-                  className="invert brightness-0 opacity-90"
-                />
-              </div>
-
-              <AnimatePresence>
-                {chatUnreadCount > 0 && (
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    exit={{ scale: 0 }}
-                    className="absolute -top-1 -right-1 bg-[#FFD700] text-[#4e0505] text-[10px] sm:text-xs font-bold rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center border-2 border-[#3a0000] shadow-lg z-10"
-                  >
-                    {chatUnreadCount > 9 ? "9+" : chatUnreadCount}
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </motion.button>
-
-            <AnimatePresence>
-              {isChatPopupOpen && (
-                <>
-                  <motion.div
-                    key="chat-popup"
-                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                    className="absolute top-16 right-0 z-30 w-[280px] sm:w-[350px] origin-top-right"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <ChatPopup />
-                  </motion.div>
-                  <div
-                    className="fixed inset-0 z-20"
-                    onClick={() => setIsChatPopupOpen(false)}
-                  />
-                </>
-              )}
-            </AnimatePresence>
-          </div>
-        )}
-
         {/* Notification Bell */}
         <div className="relative flex-shrink-0">
           <motion.button
