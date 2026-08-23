@@ -12,6 +12,8 @@ import {
   FileText,
   Hash,
   Loader2,
+  MessageSquare,
+  ExternalLink,
 } from "lucide-react";
 import { Montserrat, PT_Sans } from "next/font/google";
 import Avatar from "@/components/Avatar";
@@ -351,7 +353,7 @@ export default function FullDetails({
                           computedStatus === "Starting..." ||
                           computedStatus === "Completed") &&
                         booking.tutorName ? (
-                          <div className="flex items-center justify-between">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
                             <div className="flex items-center gap-3">
                               {/* --- UPDATED: Use Avatar Component for Tutor --- */}
                               <Avatar
@@ -368,26 +370,41 @@ export default function FullDetails({
                                 </p>
                               </div>
                             </div>
-                            {hasRated && !isRejected && !isTutor && (
-                              <div className="flex flex-col items-end">
-                                <div className="flex gap-0.5">
-                                  {[...Array(5)].map((_, i) => (
-                                    <Star
-                                      key={i}
-                                      size={14}
-                                      className={
-                                        i < ratingData!.rating
-                                          ? "fill-[#EFBF04] text-[#EFBF04]"
-                                          : "text-gray-200"
-                                      }
-                                    />
-                                  ))}
+
+                            <div className="flex items-center gap-3">
+                              {/* External Communication Link */}
+                              <a
+                                href={`https://teams.microsoft.com/l/chat/0/0?users=${encodeURIComponent(booking.tutorName ? `${booking.tutorName.toLowerCase().replace(/\s+/g, ".")}@cit.edu` : "")}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#EFBF04] hover:bg-[#FFD700] text-[#4e0505] text-xs font-bold font-montserrat transition-all shadow-xs"
+                              >
+                                <MessageSquare size={13} />
+                                <span>Teams Chat</span>
+                                <ExternalLink size={11} />
+                              </a>
+
+                              {hasRated && !isRejected && !isTutor && (
+                                <div className="flex flex-col items-end">
+                                  <div className="flex gap-0.5">
+                                    {[...Array(5)].map((_, i) => (
+                                      <Star
+                                        key={i}
+                                        size={14}
+                                        className={
+                                          i < ratingData!.rating
+                                            ? "fill-[#EFBF04] text-[#EFBF04]"
+                                            : "text-gray-200"
+                                        }
+                                      />
+                                    ))}
+                                  </div>
+                                  <span className="text-[10px] text-gray-400 font-medium mt-1">
+                                    You rated this
+                                  </span>
                                 </div>
-                                <span className="text-[10px] text-gray-400 font-medium mt-1">
-                                  You rated this session
-                                </span>
-                              </div>
-                            )}
+                              )}
+                            </div>
                           </div>
                         ) : (
                           <div className="flex items-center gap-3 text-gray-500 bg-gray-50 p-3 rounded-lg border border-gray-200/60">

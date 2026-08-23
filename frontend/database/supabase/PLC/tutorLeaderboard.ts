@@ -1,0 +1,65 @@
+import { supabase } from "../General/supabaseClient";
+import { PLCHighlight } from "./leaderboardTypes";
+
+// --- Fetch PLC "Hall of Fame" (Optimized N+1 Query) ---
+export async function getPLCHighlights(): Promise<PLCHighlight[]> {
+  // 1. Fetch ALL ratings
+  const { data: ratingsData, error } = await supabase
+    .from("TutorRatings")
+    .select(`
+      id,
+      rating,
+      review,
+      created_at,
+      booking_id,
+      Tutor:Accounts!TutorRatings_tutor_id_fkey (id, fullName, avatarURL),
+      Student:Accounts!TutorRatings_student_id_fkey (fullName)
+    `)
+    .order("rating", { ascending: false }) 
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching PLC highlights:", error);
+    return [];
+  }
+
+  if (!ratingsData || ratingsData.length === 0) return [];
+
+  // 2. Extract all unique booking IDs
+  const bookingIds = ratingsData.map((item: any) => item.booking_id);
+
+  // 3. Batch fetch subjects from PLCBookingHistory
+  const { data: historyBookings } = await supabase
+    .from("PLCBookingHistory")
+    .select("id, subject")
+    .in("id", bookingIds);
+
+  const historyMap = new Map(historyBookings?.map((b: any) => [b.id, b.subject]));
+
+  // 4. Batch fetch subjects from PLCBookings
+  const { data: activeBookings } = await supabase
+    .from("PLCBookings")
+    .select("id, subject")
+    .in("id", bookingIds);
+
+  const activeMap = new Map(activeBookings?.map((a: any) => [a.id, a.subject]));
+
+  // 5. Consolidate and enrich data
+  const enrichedData = ratingsData.map((item: any) => {
+    const subject = historyMap.get(item.booking_id) || activeMap.get(item.booking_id) || "Session";
+
+    return {
+      id: item.id,
+      tutorId: item.Tutor?.id || "", 
+      tutorName: item.Tutor?.fullName || "Unknown Tutor",
+      tutorAvatar: item.Tutor?.avatarURL || null,
+      studentName: item.Student?.fullName || "Anonymous",
+      rating: item.rating,
+      review: item.review,
+      subject: subject,
+      created_at: item.created_at,
+    };
+  });
+
+  return enrichedData;
+}
