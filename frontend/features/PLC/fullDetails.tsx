@@ -6,7 +6,6 @@ import {
   Check,
   Ban,
   Trash2,
-  MessageCircle,
   Star,
   Calendar,
   Clock,
@@ -18,12 +17,6 @@ import { Montserrat, PT_Sans } from "next/font/google";
 import Avatar from "@/components/Avatar";
 import RateTutorModal from "./rateTutorModal";
 import { motion, AnimatePresence } from "framer-motion";
-
-// --- CHAT IMPORTS ---
-import { useRouter } from "next/navigation";
-import { supabase } from "@/database/supabase/General/supabaseClient";
-import { getCurrentUserDetails } from "@/database/supabase/General/getUser";
-import { getSortedUserPair } from "@/database/supabase/Message/auth";
 
 /* Fonts */
 const montserrat = Montserrat({
@@ -127,8 +120,6 @@ export default function FullDetails({
 }: RequestSessionModalProps) {
   const [now, setNow] = useState(new Date());
   const [isRateModalOpen, setIsRateModalOpen] = useState(false);
-  const [isChatLoading, setIsChatLoading] = useState(false);
-  const router = useRouter();
 
   // Real-time clock
   useEffect(() => {
@@ -195,101 +186,6 @@ export default function FullDetails({
           "bg-[#EFBF04]/10 text-[#EFBF04] border-[#EFBF04]/30 animate-pulse";
     }
   }
-
-  // Chat Logic
-  const handleChatClick = async () => {
-    if (isChatLoading) return;
-    setIsChatLoading(true);
-
-    try {
-      const user = await getCurrentUserDetails();
-      if (!user) {
-        alert("You must be logged in to chat.");
-        setIsChatLoading(false);
-        return;
-      }
-
-      let targetUserId = "";
-      if (isTutor) {
-        targetUserId = booking?.studentId || "";
-      } else {
-        targetUserId = booking?.Tutor?.id || "";
-      }
-
-      if (!targetUserId) {
-        alert("Cannot find user to chat with.");
-        setIsChatLoading(false);
-        return;
-      }
-
-      const dateStr = formatDate(booking?.bookingDate || "");
-      const timeStr = formatTimeRange(
-        booking?.startTime || "",
-        booking?.endTime
-      );
-      const subject = booking?.subject || "our session";
-
-      let messageContent = "";
-
-      if (isTutor) {
-        messageContent = `Hi! I'll be your tutor for ${subject} on ${dateStr} at ${timeStr}. Do you have any specific topics you want to cover?`;
-      } else {
-        messageContent = `Hi! I'm looking forward to our ${subject} session on ${dateStr} at ${timeStr}. Let me know if there's anything I should prepare!`;
-      }
-
-      const { user_a_id, user_b_id } = getSortedUserPair(user.id, targetUserId);
-
-      let conversationId = null;
-      const { data: existingConvo } = await supabase
-        .from("Conversations")
-        .select("id")
-        .eq("user_a_id", user_a_id)
-        .eq("user_b_id", user_b_id)
-        .single();
-
-      if (existingConvo) {
-        conversationId = existingConvo.id;
-      } else {
-        const { data: newConvo, error: createError } = await supabase
-          .from("Conversations")
-          .insert({
-            user_a_id,
-            user_b_id,
-            last_message_at: new Date().toISOString(),
-          })
-          .select("id")
-          .single();
-
-        if (createError || !newConvo) throw createError;
-        conversationId = newConvo.id;
-      }
-
-      const { data: existingMessages } = await supabase
-        .from("Messages")
-        .select("id")
-        .eq("conversation_id", conversationId)
-        .eq("content", messageContent)
-        .limit(1);
-
-      const isDuplicate = existingMessages && existingMessages.length > 0;
-
-      if (!isDuplicate) {
-        const { error: msgError } = await supabase.from("Messages").insert({
-          conversation_id: conversationId,
-          sender_id: user.id,
-          content: messageContent,
-        });
-
-        if (msgError) throw msgError;
-      }
-
-      router.push(`/Message/${conversationId}`);
-    } catch (error) {
-      console.error("Error starting chat:", error);
-      alert("Failed to start chat.");
-      setIsChatLoading(false);
-    }
-  };
 
   const ratingData =
     booking?.TutorRatings && booking.TutorRatings.length > 0
@@ -548,22 +444,6 @@ export default function FullDetails({
                           className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-50 border border-red-100 text-red-600 font-bold hover:bg-red-100 transition-all text-sm cursor-pointer"
                         >
                           <Trash2 size={16} /> Delete
-                        </button>
-                      )}
-
-                      {/* APPROVED: CHAT */}
-                      {computedStatus === "Approved" && (
-                        <button
-                          onClick={handleChatClick}
-                          disabled={isChatLoading}
-                          className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#FFB74D] to-[#F57C00] text-white font-bold hover:brightness-110 shadow-md transition-all hover:scale-105 disabled:opacity-70 text-sm cursor-pointer"
-                        >
-                          {isChatLoading ? (
-                            <Loader2 size={16} className="animate-spin" />
-                          ) : (
-                            <MessageCircle size={16} />
-                          )}
-                          {isChatLoading ? "Opening..." : "Chat"}
                         </button>
                       )}
 

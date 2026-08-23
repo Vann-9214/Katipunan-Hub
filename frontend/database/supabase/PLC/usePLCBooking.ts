@@ -4,8 +4,6 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../General/supabaseClient";
 import { getCurrentUserDetails } from "../General/getUser";
 import type { User } from "../General/user";
-// 1. Import the auth helper for chat
-import { getSortedUserPair } from "../Message/auth";
 
 // --- Types ---
 export interface Booking {
@@ -437,57 +435,6 @@ export const usePLCBookings = (
 
     if (archiveError) {
       console.warn("Archive warning (might already be archived):", archiveError.message);
-    }
-    
-    // 3. --- NEW: Send Chat Message ---
-    try {
-      // Get correct user IDs for conversation lookup
-      const { user_a_id, user_b_id } = getSortedUserPair(currentUser.id, tutorId);
-      
-      // Attempt to find existing conversation
-      let conversationId = null;
-      const { data: existingConvo } = await supabase
-        .from("Conversations")
-        .select("id")
-        .eq("user_a_id", user_a_id)
-        .eq("user_b_id", user_b_id)
-        .maybeSingle();
-        
-      if (existingConvo) {
-        conversationId = existingConvo.id;
-      } else {
-        // If no conversation exists, create one
-        const { data: newConvo, error: createError } = await supabase
-          .from("Conversations")
-          .insert({ 
-            user_a_id, 
-            user_b_id, 
-            last_message_at: new Date().toISOString() 
-          })
-          .select("id")
-          .single();
-          
-        if (!createError && newConvo) {
-          conversationId = newConvo.id;
-        }
-      }
-      
-      // If we have a conversation ID, insert the message
-      if (conversationId) {
-        // Format the star rating visual
-        const stars = "⭐".repeat(rating);
-        // Format message
-        const messageContent = `I rated you ${rating} stars! ${stars}\n\n"${review}"`;
-        
-        await supabase.from("Messages").insert({
-          conversation_id: conversationId,
-          sender_id: currentUser.id,
-          content: messageContent
-        });
-      }
-    } catch (chatError) {
-      // We log the error but do not throw it, so the rating process itself doesn't appear to fail to the user
-      console.error("Failed to send rating chat message:", chatError);
     }
     
     refreshBookings(false);
