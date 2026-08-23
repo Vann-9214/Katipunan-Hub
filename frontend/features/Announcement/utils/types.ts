@@ -39,7 +39,6 @@ export interface CurrentUser {
 
 /**
  * Represents the raw data structure of a row from the "Posts" table in Supabase.
- * This should match your database schema exactly.
  */
 export interface DBPostRow {
   id: string;
@@ -47,49 +46,46 @@ export interface DBPostRow {
   description: string;
   images: string[] | null;
   tags: string[] | null;
-  type: "announcement"; // Added 'feed'
+  type: "announcement";
   author_id: string;
-  created_at: string; // ISO timestamp string
-  updated_at: string; // ISO timestamp string
+  created_at: string;
+  updated_at: string;
   visibility: string | null;
 }
 
 /**
  * Represents a Post object after being processed for display in the UI.
- * (e.g., dates formatted, null arrays empty). This is the shape for your `posts` state.
  */
 export interface PostUI {
   id: string;
   title: string;
   description: string;
-  date: string; // Formatted date string for display (e.g., "Oct 30, 2025")
-  images: string[]; // Normalized to always be an array
-  tags: string[]; // Normalized to always be an array
-  type: "announcement"; // Added 'feed'
+  date: string;
+  images: string[];
+  tags: string[];
+  type: "announcement";
   visibility: string | null;
   author_id: string;
-  created_at: string; // Raw ISO string, kept for accurate sorting
+  created_at: string;
 }
 
 // --- Component Prop Types ---
 
 /**
  * Data payload required for creating a new post.
- * Used by `onAddPost` in `AddPostsProps`.
  */
 export interface NewPostPayload {
   title: string;
   description: string;
   images: string[] | null;
   tags: string[] | null;
-  type: "announcement"; // Added 'feed'
+  type: "announcement";
   visibility: string | null;
   author_id: string;
 }
 
 /**
  * Data payload required for updating an existing post.
- * Used by `onUpdatePost` in `AddPostsProps`.
  */
 export interface UpdatePostPayload {
   id: string;
@@ -97,7 +93,7 @@ export interface UpdatePostPayload {
   description: string;
   images: string[] | null;
   tags: string[] | null;
-  type: "announcement"; // Added 'feed'
+  type: "announcement";
   visibility: string | null;
 }
 
@@ -109,25 +105,7 @@ export interface AddPostsProps {
   onUpdatePost?: (post: UpdatePostPayload) => Promise<void> | void;
   externalOpen?: boolean;
   onExternalClose?: () => void;
-  initialPost?: PostUI | null; // Use the UI shape for consistency
-  currentType?: "announcement"; // Added 'feed'
-  authorId?: string; // The ID of the user creating the post
-}
-
-/**
- * Props for the `UploadButton` component.
- */
-export interface UploadButtonProps {
-  onUpload?: (files: string[]) => void;
-  predefinedImages?: string[];
-}
-
-/**
- * Ref handle for the `UploadButton` component, allowing parent
- * to call its internal methods.
- */
-export interface UploadButtonHandle {
-  uploadAndGetFinalUrls: () => Promise<string[]>;
-  getRemovedUrls: () => string[];
-  isDirty: () => boolean; // Added to check for changes
+  initialPost?: PostUI | null;
+  currentType?: "announcement";
+  authorId?: string | null;
 }

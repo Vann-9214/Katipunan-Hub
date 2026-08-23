@@ -83,8 +83,6 @@ export const collegeitems = [
   },
 ];
 
-// AnnouncementPageContent/constants.ts
-
 // small visibility constants for easy reuse
 export const VISIBILITY = {
   GLOBAL: "global",
@@ -140,4 +138,3 @@ export const programToCollege: Record<string, string> = {
   // Agriculture
   "agriculture": "cagr",
 };
-// ----------------------
