@@ -167,7 +167,7 @@ export default function SignUpForm({
             Create your student account to instantly{" "}
             <span className="font-semibold">unify</span> your campus life. Gain{" "}
             <span className="font-semibold">integrated access</span> to official
-            announcements, PLC scheduling, Lost & Found resources, and community
+            announcements, PLC scheduling, Calendar management, and community
             feeds.
           </p>
         </div>

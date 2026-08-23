@@ -167,7 +167,7 @@ export default function LandingPageContent() {
                     "Home",
                     "Announcements",
                     "Peer Learning Center",
-                    "Lost & Found",
+                    "Calendar",
                     "Community Feed",
                   ].map((item) => (
                     <span

@@ -102,7 +102,7 @@ const HeroSection = ({
             variants={itemVariants}
             className="text-lg md:text-xl text-gray-100 font-medium max-w-lg mb-10 leading-relaxed font-montserrat"
           >
-            From school events to lost & found,{" "}
+            From campus news to student discussions,{" "}
             <span className="text-[#EFBF04] font-bold underline decoration-2 underline-offset-4">
               Katipunan Hub
             </span>{" "}
@@ -181,7 +181,7 @@ const HeroSection = ({
             className="absolute top-20 left-10 z-30"
           >
             <GlassCard className="p-5 hover:bg-white/40 transition-colors border-white/40 shadow-xl">
-              <Image src="/found.svg" alt="Found" width={65} height={65} />
+              <Image src="/Schedule.svg" alt="Schedule" width={65} height={65} />
             </GlassCard>
           </motion.div>
         </motion.div>

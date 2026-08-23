@@ -16,7 +16,7 @@ const TEAM_MEMBERS = [
   {
     name: "Clark Jaca",
     role: "Frontend Developer",
-    bio: "Focused on the user interface design and implementation. Crafted the Landing Page and the visual layout for the Lost and Found feature.",
+    bio: "Focused on the user interface design and implementation. Crafted the Landing Page and the visual layout for core student features.",
     skills: "React • UI Implementation • Frontend Design",
     image: "/Clark.jpg",
   },

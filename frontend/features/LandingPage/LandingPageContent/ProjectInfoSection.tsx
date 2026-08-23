@@ -209,7 +209,7 @@ const ProjectInfoSection = () => {
                   digital campus.
                 </p>
                 <p>
-                  It centralizes Announcements, Feeds, and Lost & Found. We also
+                  It centralizes Announcements, Feeds, and Academic Resources. We also
                   integrated a{" "}
                   <strong className="text-[#8B0E0E]">Smart Calendar</strong>{" "}
                   that lets students manage personal events.
@@ -221,7 +221,7 @@ const ProjectInfoSection = () => {
                   "Exclusive for CIT Students",
                   "Community Feed: Everyone can post freely", // NEW POINT
                   "Smart Calendar (Global & Personal)",
-                  "Integrated Lost & Found",
+                  "Official Campus Announcements",
                   "Direct PLC System Exposure",
                 ].map((item, idx) => (
                   <motion.li
