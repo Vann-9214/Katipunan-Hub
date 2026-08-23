@@ -2,7 +2,12 @@
 
 import React from "react";
 import Image from "next/image";
-import { Holiday, PersonalEvent, PostedEvent, FilterType } from "@/features/Calendar/types";
+import {
+  Holiday,
+  PersonalEvent,
+  PostedEvent,
+  FilterType,
+} from "@/features/Calendar/types";
 
 interface ScheduleEventsListProps {
   selectedFilter: FilterType;

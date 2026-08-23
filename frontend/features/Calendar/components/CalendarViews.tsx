@@ -2,15 +2,15 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { Montserrat, PT_Sans } from "next/font/google";
+import { Montserrat } from "next/font/google";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   Holiday,
   PostedEvent,
   PersonalEvent,
 } from "@/features/Calendar/types";
-import { getEventLabel, getEventColor } from "./calendarUtils";
-import EventDetailsModal from "@/features/Calendar/EventDetailsModal";
+import { getEventLabel, getEventColor } from "../utils/calendarUtils";
+import EventDetailsModal from "./EventDetailsModal";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -251,7 +251,6 @@ export default function CalendarViews({
                 return day > 0 && day <= daysInThisMonth ? day : null;
               });
 
-              // (Filter logic same as before...)
               const monthHolidays = holidaysForYear.filter(
                 (h) => h.month === monthIndex + 1
               );

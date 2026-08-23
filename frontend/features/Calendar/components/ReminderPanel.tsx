@@ -97,7 +97,7 @@ export default function ReminderPanel({
   };
 
   const displayDay = selectedDay || todayDate;
-  const formattedDate = `${displayDay} ${monthName}`; // Cleaned up formatting slightly
+  const formattedDate = `${displayDay} ${monthName}`;
 
   const postedEventsForDay = postedEvents.filter(
     (e) =>

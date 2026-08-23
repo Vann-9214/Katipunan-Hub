@@ -9,8 +9,8 @@ import {
   PostedEvent,
   FilterType,
 } from "@/features/Calendar/types";
-import ScheduleFilterSwitch from "@/features/Calendar/ScheduleFilterSwitch";
-import ScheduleEventsList from "@/features/Calendar/ScheduleEventsList";
+import ScheduleFilterSwitch from "./ScheduleFilterSwitch";
+import ScheduleEventsList from "./ScheduleEventsList";
 import PanelToggleSwitch from "./PanelToggleSwitch";
 
 const ptSans = PT_Sans({

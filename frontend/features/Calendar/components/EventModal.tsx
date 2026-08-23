@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { Montserrat } from "next/font/google";
 import { PostedEvent } from "@/features/Calendar/types";
-import { supabase } from "@/database/supabase/General/supabaseClient";
+import { getCurrentUserDetails } from "@/database/supabase/General/getUser";
+import { createEvents } from "@/database/supabase/Calendar";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -95,27 +96,16 @@ export default function EventModal({
     let isMounted = true;
     (async () => {
       try {
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
-
-        if (userError || !user) {
+        const user = await getCurrentUserDetails();
+        if (!user) {
           console.error("No user found or not logged in.");
           return;
         }
 
-        if (isMounted) setUserId(user.id);
-
-        const { data: account } = await supabase
-          .from("Accounts")
-          .select("role, fullName")
-          .eq("id", user.id)
-          .maybeSingle();
-
-        if (isMounted && account) {
-          setUserRole(account.role || "");
-          setUserName(account.fullName || "");
+        if (isMounted) {
+          setUserId(user.id);
+          setUserRole(user.role || "");
+          setUserName(user.fullName || "");
           setAudience("Personal");
         }
       } catch (err) {
@@ -207,7 +197,7 @@ export default function EventModal({
         };
       });
 
-      const { error } = await supabase.from("Events").insert(dbPayloads);
+      const { error } = await createEvents(dbPayloads);
       if (error) throw error;
       onEventAdded();
       handleClose();
