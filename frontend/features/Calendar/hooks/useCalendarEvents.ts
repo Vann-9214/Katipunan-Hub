@@ -8,7 +8,7 @@ import {
   subscribeToEvents,
   DBEvent,
 } from "@/database/supabase/Calendar";
-import type { PersonalEvent, PostedEvent } from "../types";
+import type { PersonalEvent, PostedEvent } from "../utils/types";
 
 export function useCalendarEvents() {
   const [isLoading, setIsLoading] = useState(true);

@@ -1,11 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { createPortal } from "react-dom";
 import { X, ChevronDown, School } from "lucide-react";
 import PostAudienceSelector from "./PostAudience";
 import TagEditor from "./TagEditor";
+import UploadImage from "./UploadImage";
 import { useAddPostForm } from "../hooks/useAddPostForm";
 import type { AddPostsProps } from "./AddPosts";
 import { collegeitems } from "../utils/constants";
@@ -21,6 +22,7 @@ export interface AddPostModalProps
 }
 
 export function AddPostModal(props: AddPostModalProps) {
+  const [mounted, setMounted] = useState(false);
   const { state, refs, handlers } = useAddPostForm(props);
   const {
     loading,
@@ -29,10 +31,16 @@ export function AddPostModal(props: AddPostModalProps) {
     isAudienceSelectorOpen,
     title,
     description,
+    images,
+    isUploadingImage,
     tags,
     modalTitle,
     suggestedTags,
   } = state;
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const displayName = "Cebu Institute of Technology - University";
 
@@ -54,7 +62,10 @@ export function AddPostModal(props: AddPostModalProps) {
     const sortedInitialTags = [...initialTags].sort().join(",");
     const isTagsDirty = sortedCurrentTags !== sortedInitialTags;
 
-    const hasChanges = isTitleDirty || isDescDirty || isTagsDirty;
+    const initialImages = props.initialPost?.images || [];
+    const isImagesDirty = images.join(",") !== initialImages.join(",");
+
+    const hasChanges = isTitleDirty || isDescDirty || isTagsDirty || isImagesDirty;
 
     if (hasChanges) {
       const confirmLeave = window.confirm(
@@ -239,6 +250,24 @@ export function AddPostModal(props: AddPostModalProps) {
                     />
                   </div>
 
+                  {/* Image Upload */}
+                  <div className="space-y-2">
+                    <label
+                      className={`${montserrat.className} block text-sm font-bold text-gray-700`}
+                    >
+                      Images / Poster{" "}
+                      <span className="text-gray-400 font-normal">
+                        (Optional)
+                      </span>
+                    </label>
+                    <UploadImage
+                      images={images}
+                      onUpload={handlers.handleImageUpload}
+                      onRemove={handlers.handleRemoveImage}
+                      isUploading={isUploadingImage}
+                    />
+                  </div>
+
                   {/* Tags */}
                   <div className="space-y-2">
                     <label
@@ -273,13 +302,15 @@ export function AddPostModal(props: AddPostModalProps) {
                   <motion.button
                     type="submit"
                     form="add-post-form"
-                    disabled={loading}
+                    disabled={loading || isUploadingImage}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     className={`${montserrat.className} min-w-[140px] cursor-pointer text-white bg-gradient-to-r from-[#8B0E0E] to-[#600a0a] hover:from-[#a31111] hover:to-[#750c0c] focus:ring-4 focus:ring-red-100 font-bold rounded-xl text-sm px-6 py-2.5 text-center disabled:bg-gray-300 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed disabled:shadow-none shadow-lg shadow-red-900/20 transition-all`}
                   >
-                    {loading
-                      ? "Publishing..."
+                    {loading || isUploadingImage
+                      ? isUploadingImage
+                        ? "Uploading Images..."
+                        : "Publishing..."
                       : props.initialPost
                       ? "Save Changes"
                       : "Publish Announcement"}
@@ -292,5 +323,7 @@ export function AddPostModal(props: AddPostModalProps) {
       </motion.div>
     </motion.div>
   );
+
+  if (!mounted) return null;
   return createPortal(modalContent, document.body);
 }

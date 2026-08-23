@@ -95,6 +95,7 @@ export default function AnnouncementFeed({
               canEdit={isAdmin}
               visibility={post.visibility}
               tags={post.tags}
+              images={post.images}
             />
           ))
         )}

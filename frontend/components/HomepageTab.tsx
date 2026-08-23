@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import NavigationButton from "./navigationButtons";
+import NavigationButton from "./NavigationButtons";
 import Logo from "./Logo";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -23,8 +23,7 @@ import type { User } from "@/database/supabase/General/user";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/database/supabase/General/supabaseClient";
 
-import { useNotifications } from "@/database/supabase/General/useNotification";
-import NotificationDropdown from "./NotificationDropdown";
+import { useNotifications, NotificationDropdown } from "@/features/Notification";
 
 interface HomepageTabProps {
   user: User | null;

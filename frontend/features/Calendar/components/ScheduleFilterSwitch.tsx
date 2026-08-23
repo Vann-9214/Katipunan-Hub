@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Montserrat } from "next/font/google";
-import { FilterType } from "@/features/Calendar/types";
+import { FilterType } from "@/features/Calendar/utils/types";
 
 const montserrat = Montserrat({
   subsets: ["latin"],

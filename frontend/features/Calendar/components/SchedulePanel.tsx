@@ -8,7 +8,7 @@ import {
   PersonalEvent,
   PostedEvent,
   FilterType,
-} from "@/features/Calendar/types";
+} from "@/features/Calendar/utils/types";
 import ScheduleFilterSwitch from "./ScheduleFilterSwitch";
 import ScheduleEventsList from "./ScheduleEventsList";
 import PanelToggleSwitch from "./PanelToggleSwitch";

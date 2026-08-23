@@ -7,7 +7,7 @@ import {
   Holiday,
   PostedEvent,
   PersonalEvent,
-} from "@/features/Calendar/types";
+} from "@/features/Calendar/utils/types";
 
 const montserrat = Montserrat({
   subsets: ["latin"],

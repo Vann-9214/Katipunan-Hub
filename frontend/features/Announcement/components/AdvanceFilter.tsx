@@ -31,6 +31,18 @@ const DEFAULT_FILTERS: FilterState = {
   visibility: "Global",
 };
 
+// --- FILTER TAG (Updated Gold Gradient) ---
+const FilterTag = ({ label }: { label: string }) => (
+  <motion.div
+    layout
+    className="flex h-[28px] items-center justify-center rounded-[10px] bg-gradient-to-br from-[#EFBF04] via-[#FFD700] to-[#D4AF37] px-[5px] shrink-0 shadow-sm"
+  >
+    <span className="text-[10px] font-montserrat font-bold text-white whitespace-nowrap">
+      {label}
+    </span>
+  </motion.div>
+);
+
 export default function AdvancedFilter({
   onChange,
   initialFilters = DEFAULT_FILTERS,
@@ -93,18 +105,6 @@ export default function AdvancedFilter({
     onChange(tempFilters);
     setIsOpen(false);
   };
-
-  // --- FILTER TAG (Updated Gold Gradient) ---
-  const FilterTag = ({ label }: { label: string }) => (
-    <motion.div
-      layout
-      className="flex h-[28px] items-center justify-center rounded-[10px] bg-gradient-to-br from-[#EFBF04] via-[#FFD700] to-[#D4AF37] px-[5px] shrink-0 shadow-sm"
-    >
-      <span className="text-[10px] font-montserrat font-bold text-white whitespace-nowrap">
-        {label}
-      </span>
-    </motion.div>
-  );
 
   // --- MODAL CONTENT ---
   const modalContent = (

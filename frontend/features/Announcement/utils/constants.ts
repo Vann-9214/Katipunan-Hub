@@ -83,10 +83,6 @@ export const collegeitems = [
   },
 ];
 
-// small visibility constants for easy reuse
-export const VISIBILITY = {
-  GLOBAL: "global",
-};
 
 // ----------------------
 // Program -> College map

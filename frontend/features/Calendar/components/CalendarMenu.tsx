@@ -3,7 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import { PT_Sans } from "next/font/google";
-import { MenuType } from "@/features/Calendar/types";
+import { MenuType } from "@/features/Calendar/utils/types";
 
 const ptSans = PT_Sans({
   subsets: ["latin"],

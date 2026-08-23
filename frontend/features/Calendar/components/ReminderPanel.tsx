@@ -7,7 +7,7 @@ import {
   PostedEvent,
   PersonalEvent,
   Holiday,
-} from "@/features/Calendar/types";
+} from "@/features/Calendar/utils/types";
 import PanelToggleSwitch from "./PanelToggleSwitch";
 
 const ptSans = PT_Sans({

@@ -1,6 +1,6 @@
 import { type DBPostRow, PostUI } from "./types";
 
-export function formatDateWithAmPm(ts: string | null | undefined) {
+function formatDateWithAmPm(ts: string | null | undefined) {
   if (!ts) return "";
   const d = new Date(ts);
   const yyyy = d.getFullYear();

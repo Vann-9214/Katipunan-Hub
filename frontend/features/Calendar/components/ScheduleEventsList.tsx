@@ -7,7 +7,7 @@ import {
   PersonalEvent,
   PostedEvent,
   FilterType,
-} from "@/features/Calendar/types";
+} from "@/features/Calendar/utils/types";
 
 interface ScheduleEventsListProps {
   selectedFilter: FilterType;

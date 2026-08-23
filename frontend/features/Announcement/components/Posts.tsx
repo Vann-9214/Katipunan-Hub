@@ -28,6 +28,7 @@ export default function Posts(props: PostsProps) {
     title = "Title",
     description = "Description",
     date = "Date",
+    images = [],
     onEdit,
     onDelete,
     canEdit = false,
@@ -147,6 +148,35 @@ export default function Posts(props: PostsProps) {
               >
                 {isExpanded ? "See less" : "See more"}
               </button>
+            )}
+
+            {/* Announcement Images */}
+            {images && images.length > 0 && (
+              <div
+                className={`mt-4 rounded-xl overflow-hidden ${
+                  images.length === 1
+                    ? "w-full"
+                    : "grid grid-cols-2 gap-2.5"
+                }`}
+              >
+                {images.map((imgUrl, index) => (
+                  <div
+                    key={imgUrl + index}
+                    className={`relative rounded-xl overflow-hidden bg-black/20 border border-white/10 ${
+                      images.length === 1
+                        ? "w-full h-[280px] md:h-[340px]"
+                        : "h-[160px] md:h-[190px]"
+                    }`}
+                  >
+                    <Image
+                      src={imgUrl}
+                      alt={`Announcement attachment ${index + 1}`}
+                      fill
+                      className="object-cover hover:scale-102 transition-transform duration-300"
+                    />
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>

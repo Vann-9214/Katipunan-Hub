@@ -8,7 +8,7 @@ import {
   Holiday,
   PostedEvent,
   PersonalEvent,
-} from "@/features/Calendar/types";
+} from "@/features/Calendar/utils/types";
 import { getEventLabel, getEventColor } from "../utils/calendarUtils";
 import EventDetailsModal from "./EventDetailsModal";
 

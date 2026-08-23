@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Montserrat } from "next/font/google";
-import { PostedEvent } from "@/features/Calendar/types";
+import { PostedEvent } from "@/features/Calendar/utils/types";
 import { getCurrentUserDetails } from "@/database/supabase/General/getUser";
 import { createEvents } from "@/database/supabase/Calendar";
 

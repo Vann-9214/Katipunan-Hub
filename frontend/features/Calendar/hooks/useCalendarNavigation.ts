@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import { MenuType } from "../types";
+import { MenuType } from "../utils/types";
 import { getPhilippineHolidays } from "../utils/calendarUtils";
 
 export type PanelType = "Schedule" | "Reminder";

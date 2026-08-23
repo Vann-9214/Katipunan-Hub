@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { PostUI, NewPostPayload, UpdatePostPayload } from "../utils/types";
 import { getAnnouncementTags } from "@/database/supabase/Announcement/getAnnouncementTags";
+import { uploadAnnouncementImage } from "@/database/supabase/Announcement";
 
 export interface UseAddPostFormProps {
   initialPost?: PostUI | null;
@@ -36,6 +37,8 @@ export const useAddPostForm = ({
   const [isAudienceSelectorOpen, setIsAudienceSelectorOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [images, setImages] = useState<string[]>([]);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
   const [postType, setPostType] = useState<"announcement">(currentType);
 
@@ -75,6 +78,7 @@ export const useAddPostForm = ({
       const descWithoutTags =
         initialPost.description?.replace(/\s*#\S+/g, "").trim() || "";
       setDescription(descWithoutTags);
+      setImages(initialPost.images ?? []);
       setTags(initialPost.tags ?? []);
       setPostType(initialPost.type ?? currentType ?? "announcement");
 
@@ -101,6 +105,45 @@ export const useAddPostForm = ({
     el.style.overflowY = el.scrollHeight > 210 ? "auto" : "hidden";
   };
 
+  const handleImageUpload = async (files: FileList | File[]) => {
+    const currentUserId = authorId || initialPost?.author_id;
+    if (!currentUserId) {
+      alert("Please make sure you are logged in before uploading images.");
+      return;
+    }
+
+    setIsUploadingImage(true);
+
+    try {
+      const fileArray = Array.from(files);
+      const uploadPromises = fileArray.map((file) =>
+        uploadAnnouncementImage(file, currentUserId)
+      );
+      const results = await Promise.all(uploadPromises);
+
+      const successfulUrls = results
+        .filter((r) => !r.error && r.url)
+        .map((r) => r.url as string);
+
+      if (successfulUrls.length > 0) {
+        setImages((prev) => [...prev, ...successfulUrls]);
+      }
+
+      if (successfulUrls.length < fileArray.length) {
+        alert("Some images could not be uploaded. Please try again.");
+      }
+    } catch (err) {
+      console.error("Error uploading images:", err);
+      alert("Failed to upload images.");
+    } finally {
+      if (isMountedRef.current) setIsUploadingImage(false);
+    }
+  };
+
+  const handleRemoveImage = (indexToRemove: number) => {
+    setImages((prev) => prev.filter((_, idx) => idx !== indexToRemove));
+  };
+
   const addTag = (t: string) => {
     const newTag = t.trim().replace(/\s+/g, "-");
     if (newTag && !tags.includes(newTag)) {
@@ -115,6 +158,7 @@ export const useAddPostForm = ({
   const clearLocalForm = () => {
     setTitle("");
     setDescription("");
+    setImages([]);
     setTags([]);
     setVisibleTo("global");
     setVisibleCollege(null);
@@ -130,7 +174,7 @@ export const useAddPostForm = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading) return;
+    if (loading || isUploadingImage) return;
     setLoading(true);
 
     try {
@@ -149,7 +193,7 @@ export const useAddPostForm = ({
       const payload = {
         title,
         description: combinedDescription,
-        images: null,
+        images: images.length > 0 ? images : null,
         tags: tags.length > 0 ? tags : null,
         type: postType,
         visibility: visibilityToStore,
@@ -192,6 +236,8 @@ export const useAddPostForm = ({
       isAudienceSelectorOpen,
       title,
       description,
+      images,
+      isUploadingImage,
       tags,
       postType,
       modalTitle,
@@ -204,6 +250,8 @@ export const useAddPostForm = ({
       handleSubmit,
       handleAudienceSelect,
       handleInput,
+      handleImageUpload,
+      handleRemoveImage,
       addTag,
       removeTag,
       openAudienceSelector: () => setIsAudienceSelectorOpen(true),

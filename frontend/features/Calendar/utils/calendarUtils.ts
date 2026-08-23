@@ -1,9 +1,9 @@
-import { Holiday } from "@/features/Calendar/types";
+import { Holiday } from "./types";
 
 // ---------------------
 // Easter Calculation
 // ---------------------
-export function computeEasterSunday(y: number): Date {
+function computeEasterSunday(y: number): Date {
   const a = y % 19;
   const b = Math.floor(y / 100);
   const c = y % 100;
@@ -24,7 +24,7 @@ export function computeEasterSunday(y: number): Date {
 // ---------------------
 // Last Monday of Month
 // ---------------------
-export function lastMondayOfMonth(y: number, month0Based: number) {
+function lastMondayOfMonth(y: number, month0Based: number) {
   const lastDay = new Date(y, month0Based + 1, 0);
   const dayOfWeek = lastDay.getDay();
   const offset = (dayOfWeek + 6) % 7;

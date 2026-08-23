@@ -107,6 +107,7 @@ export default function AnnouncementContent() {
     const targetId = searchParams.get("id");
 
     if (targetId && posts.length > 0) {
+      let resetTimer: ReturnType<typeof setTimeout> | null = null;
       const timer = setTimeout(() => {
         const element = document.getElementById(`post-${targetId}`);
         if (element) {
@@ -116,14 +117,17 @@ export default function AnnouncementContent() {
           element.style.transform = "scale(1.02)";
           element.style.boxShadow = "0 0 20px rgba(239, 191, 4, 0.6)";
 
-          setTimeout(() => {
+          resetTimer = setTimeout(() => {
             element.style.transform = "scale(1)";
             element.style.boxShadow = "none";
           }, 2000);
         }
       }, 600);
 
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+        if (resetTimer) clearTimeout(resetTimer);
+      };
     }
   }, [posts, searchParams]);
 
