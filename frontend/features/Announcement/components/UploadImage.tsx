@@ -4,6 +4,7 @@ import React, { useRef, useState } from "react";
 import Image from "next/image";
 import { ImagePlus, X, Loader2 } from "lucide-react";
 import { Montserrat, PT_Sans } from "next/font/google";
+import ImageLightboxModal from "./ImageLightboxModal";
 
 const montserrat = Montserrat({ subsets: ["latin"], weight: ["600", "700"] });
 const ptSans = PT_Sans({ subsets: ["latin"], weight: ["400", "700"] });
@@ -23,6 +24,7 @@ export default function UploadImage({
 }: UploadImageProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -101,22 +103,22 @@ export default function UploadImage({
           {images.map((url, idx) => (
             <div
               key={url + idx}
-              className="group relative h-28 rounded-xl overflow-hidden border border-gray-200 bg-gray-100 shadow-sm"
+              onClick={() => setPreviewIndex(idx)}
+              className="relative h-28 rounded-xl overflow-hidden border border-gray-200 bg-gray-100 shadow-sm cursor-pointer"
             >
               <Image
                 src={url}
                 alt={`Uploaded image ${idx + 1}`}
                 fill
-                className="object-cover transition-transform duration-200 group-hover:scale-105"
+                className="object-cover"
               />
-              <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   onRemove(idx);
                 }}
-                className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/60 hover:bg-red-600 text-white transition-colors cursor-pointer"
+                className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/60 hover:bg-red-600 text-white transition-colors cursor-pointer z-10"
                 title="Remove image"
               >
                 <X size={14} />
@@ -124,6 +126,17 @@ export default function UploadImage({
             </div>
           ))}
         </div>
+      )}
+
+      {/* Lightbox Modal for Uploaded Previews */}
+      {images.length > 0 && (
+        <ImageLightboxModal
+          isOpen={previewIndex !== null}
+          initialIndex={previewIndex ?? 0}
+          images={images}
+          title="Upload Preview"
+          onClose={() => setPreviewIndex(null)}
+        />
       )}
     </div>
   );

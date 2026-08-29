@@ -350,6 +350,7 @@ export default function AnnouncementContent() {
       <AnnouncementFeed
         isAdmin={isAdmin}
         currentUserId={currentUserId}
+        currentUser={currentUser}
         filteredPosts={filteredPosts}
         editorOpen={editorOpen}
         editingPost={editingPost}

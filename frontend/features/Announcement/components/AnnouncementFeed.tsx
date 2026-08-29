@@ -10,6 +10,11 @@ import { Megaphone } from "lucide-react";
 interface AnnouncementFeedProps {
   isAdmin: boolean;
   currentUserId: string;
+  currentUser?: {
+    id: string;
+    fullName?: string | null;
+    avatarURL?: string;
+  } | null;
   filteredPosts: PostUI[];
   editorOpen: boolean;
   editingPost: PostUI | null;
@@ -25,6 +30,7 @@ interface AnnouncementFeedProps {
 export default function AnnouncementFeed({
   isAdmin,
   currentUserId,
+  currentUser,
   filteredPosts,
   editorOpen,
   editingPost,
@@ -87,6 +93,7 @@ export default function AnnouncementFeed({
               postId={post.id!}
               type={post.type}
               userId={currentUserId}
+              currentUser={currentUser}
               title={post.title}
               description={post.description}
               date={formatPostDate(post.created_at || post.date)}

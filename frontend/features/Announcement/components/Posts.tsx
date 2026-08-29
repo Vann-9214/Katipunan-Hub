@@ -3,12 +3,24 @@
 import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import EditPostsButton from "./EditPostsButton";
+import ImageLightboxModal from "./ImageLightboxModal";
+import ReactionButton from "./ReactionButton";
+import ReactionSummary from "./ReactionSummary";
+import CommentButton from "./CommentButton";
+import { usePostReactions } from "../hooks/usePostReactions";
+import { useCommentCount } from "../hooks/useCommentCount";
+import { formatCommentCount } from "../utils/reactionsConfig";
 import { collegeitems } from "../utils/constants";
 
 // Component Interface
 export interface PostsProps {
   postId: string;
   userId?: string;
+  currentUser?: {
+    id: string;
+    fullName?: string | null;
+    avatarURL?: string;
+  } | null;
   title?: string;
   description?: string;
   date?: string;
@@ -25,6 +37,8 @@ export interface PostsProps {
 export default function Posts(props: PostsProps) {
   const {
     postId,
+    userId,
+    currentUser,
     title = "Title",
     description = "Description",
     date = "Date",
@@ -39,7 +53,33 @@ export default function Posts(props: PostsProps) {
   // Description Expansion Logic
   const [isExpanded, setIsExpanded] = useState(false);
   const [isSeeMoreVisible, setIsSeeMoreVisible] = useState(false);
+  const [modalState, setModalState] = useState<{
+    isOpen: boolean;
+    initialIndex: number;
+    focusCommentInput: boolean;
+  }>({
+    isOpen: false,
+    initialIndex: 0,
+    focusCommentInput: false,
+  });
   const descriptionRef = useRef<HTMLDivElement>(null);
+
+  const effectiveUser = currentUser || (userId ? { id: userId } : null);
+
+  const {
+    selectedReactionId,
+    reactionCount,
+    topReactions,
+    isLoading: isReactionsLoading,
+    isInitialLoading: isReactionsInitialLoading,
+    handleReactionSelect,
+    handleMainButtonClick,
+  } = usePostReactions({
+    postId,
+    userId: effectiveUser?.id,
+  });
+
+  const { commentCount } = useCommentCount(postId);
 
   useEffect(() => {
     const element = descriptionRef.current;
@@ -48,6 +88,26 @@ export default function Posts(props: PostsProps) {
       setIsSeeMoreVisible(hasOverflow);
     }
   }, [description, mode]);
+
+  const handleOpenPhoto = (index: number) => {
+    setModalState({
+      isOpen: true,
+      initialIndex: index,
+      focusCommentInput: false,
+    });
+  };
+
+  const handleOpenComments = () => {
+    setModalState({
+      isOpen: true,
+      initialIndex: 0,
+      focusCommentInput: true,
+    });
+  };
+
+  const handleCloseModal = () => {
+    setModalState((prev) => ({ ...prev, isOpen: false }));
+  };
 
   // Visibility / College Icon Logic
   const college = visibility
@@ -65,7 +125,7 @@ export default function Posts(props: PostsProps) {
         {/* Inner Content Wrapper */}
         <div className="w-full rounded-[20px] overflow-hidden flex flex-col bg-white">
           {/* Header & Body Section */}
-          <div className="bg-gradient-to-b from-[#4e0505] to-[#3a0000] text-white p-6 pb-7">
+          <div className="bg-gradient-to-b from-[#4e0505] to-[#3a0000] text-white p-6 pb-5">
             {/* Header */}
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3">
@@ -152,35 +212,226 @@ export default function Posts(props: PostsProps) {
 
             {/* Announcement Images */}
             {images && images.length > 0 && (
-              <div
-                className={`mt-4 rounded-xl overflow-hidden ${
-                  images.length === 1
-                    ? "w-full"
-                    : "grid grid-cols-2 gap-2.5"
-                }`}
-              >
-                {images.map((imgUrl, index) => (
+              <div className="mt-4 rounded-xl overflow-hidden">
+                {images.length === 1 ? (
                   <div
-                    key={imgUrl + index}
-                    className={`relative rounded-xl overflow-hidden bg-black/20 border border-white/10 ${
-                      images.length === 1
-                        ? "w-full h-[280px] md:h-[340px]"
-                        : "h-[160px] md:h-[190px]"
-                    }`}
+                    onClick={() => handleOpenPhoto(0)}
+                    className="relative w-full h-[280px] md:h-[340px] rounded-xl overflow-hidden bg-black/40 border border-white/10 cursor-pointer flex items-center justify-center"
                   >
+                    {/* Ambient Blur Background */}
                     <Image
-                      src={imgUrl}
-                      alt={`Announcement attachment ${index + 1}`}
+                      src={images[0]}
+                      alt=""
                       fill
-                      className="object-cover hover:scale-102 transition-transform duration-300"
+                      aria-hidden="true"
+                      className="object-cover blur-2xl opacity-40 scale-125 pointer-events-none select-none"
+                      unoptimized
+                    />
+                    <div className="absolute inset-0 bg-black/25 pointer-events-none" aria-hidden="true" />
+
+                    {/* Contained Sharp Image */}
+                    <Image
+                      src={images[0]}
+                      alt="Announcement attachment 1"
+                      fill
+                      sizes="(max-width: 768px) 100vw, 590px"
+                      className="relative z-10 object-contain drop-shadow-md"
+                      unoptimized
                     />
                   </div>
-                ))}
+                ) : images.length === 2 ? (
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {images.map((imgUrl, index) => (
+                      <div
+                        key={imgUrl + index}
+                        onClick={() => handleOpenPhoto(index)}
+                        className="relative h-[160px] md:h-[190px] rounded-xl overflow-hidden bg-black/40 border border-white/10 cursor-pointer flex items-center justify-center"
+                      >
+                        {/* Ambient Blur Background */}
+                        <Image
+                          src={imgUrl}
+                          alt=""
+                          fill
+                          aria-hidden="true"
+                          className="object-cover blur-2xl opacity-40 scale-125 pointer-events-none select-none"
+                          unoptimized
+                        />
+                        <div className="absolute inset-0 bg-black/25 pointer-events-none" aria-hidden="true" />
+
+                        {/* Contained Sharp Image */}
+                        <Image
+                          src={imgUrl}
+                          alt={`Announcement attachment ${index + 1}`}
+                          fill
+                          sizes="(max-width: 768px) 50vw, 290px"
+                          className="relative z-10 object-contain drop-shadow-md"
+                          unoptimized
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : images.length === 3 ? (
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div
+                      onClick={() => handleOpenPhoto(0)}
+                      className="col-span-2 relative h-[200px] md:h-[230px] rounded-xl overflow-hidden bg-black/40 border border-white/10 cursor-pointer flex items-center justify-center"
+                    >
+                      {/* Ambient Blur Background */}
+                      <Image
+                        src={images[0]}
+                        alt=""
+                        fill
+                        aria-hidden="true"
+                        className="object-cover blur-2xl opacity-40 scale-125 pointer-events-none select-none"
+                        unoptimized
+                      />
+                      <div className="absolute inset-0 bg-black/25 pointer-events-none" aria-hidden="true" />
+
+                      {/* Contained Sharp Image */}
+                      <Image
+                        src={images[0]}
+                        alt="Announcement attachment 1"
+                        fill
+                        sizes="(max-width: 768px) 100vw, 590px"
+                        className="relative z-10 object-contain drop-shadow-md"
+                        unoptimized
+                      />
+                    </div>
+                    {images.slice(1, 3).map((imgUrl, index) => (
+                      <div
+                        key={imgUrl + (index + 1)}
+                        onClick={() => handleOpenPhoto(index + 1)}
+                        className="relative h-[140px] md:h-[160px] rounded-xl overflow-hidden bg-black/40 border border-white/10 cursor-pointer flex items-center justify-center"
+                      >
+                        {/* Ambient Blur Background */}
+                        <Image
+                          src={imgUrl}
+                          alt=""
+                          fill
+                          aria-hidden="true"
+                          className="object-cover blur-2xl opacity-40 scale-125 pointer-events-none select-none"
+                          unoptimized
+                        />
+                        <div className="absolute inset-0 bg-black/25 pointer-events-none" aria-hidden="true" />
+
+                        {/* Contained Sharp Image */}
+                        <Image
+                          src={imgUrl}
+                          alt={`Announcement attachment ${index + 2}`}
+                          fill
+                          sizes="(max-width: 768px) 50vw, 290px"
+                          className="relative z-10 object-contain drop-shadow-md"
+                          unoptimized
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {images.slice(0, 4).map((imgUrl, index) => {
+                      const isFourthAndMore = index === 3 && images.length > 4;
+                      const extraCount = images.length - 4;
+                      return (
+                        <div
+                          key={imgUrl + index}
+                          onClick={() => handleOpenPhoto(index)}
+                          className="relative h-[140px] md:h-[160px] rounded-xl overflow-hidden bg-black/40 border border-white/10 cursor-pointer flex items-center justify-center"
+                        >
+                          {/* Ambient Blur Background */}
+                          <Image
+                            src={imgUrl}
+                            alt=""
+                            fill
+                            aria-hidden="true"
+                            className="object-cover blur-2xl opacity-40 scale-125 pointer-events-none select-none"
+                            unoptimized
+                          />
+                          <div className="absolute inset-0 bg-black/25 pointer-events-none" aria-hidden="true" />
+
+                          {/* Contained Sharp Image */}
+                          <Image
+                            src={imgUrl}
+                            alt={`Announcement attachment ${index + 1}`}
+                            fill
+                            sizes="(max-width: 768px) 50vw, 290px"
+                            className="relative z-10 object-contain drop-shadow-md"
+                            unoptimized
+                          />
+                          {isFourthAndMore && (
+                            <div className="absolute inset-0 z-20 bg-black/70 flex flex-col items-center justify-center text-white font-montserrat font-bold text-lg md:text-xl backdrop-blur-[2px]">
+                              <span>+{extraCount + 1}</span>
+                              <span className="text-xs font-normal text-[#EFBF04] font-ptsans">
+                                View all
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
           </div>
+
+          {/* Reactions & Comments Action Footer */}
+          {mode === "card" && (
+            <div className="bg-[#2a0404] border-t border-white/10 px-5 py-3 flex flex-col gap-2.5">
+              {/* Top Reaction & Comment Stats Summary */}
+              {((reactionCount !== null && reactionCount > 0) ||
+                commentCount > 0) && (
+                <div className="flex items-center justify-between text-xs text-white/70">
+                  <ReactionSummary
+                    topReactions={topReactions}
+                    totalCount={reactionCount}
+                    isLoading={isReactionsInitialLoading}
+                    postId={postId}
+                  />
+
+                  {commentCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleOpenComments}
+                      className="font-ptsans text-xs text-white/70 hover:underline hover:text-[#EFBF04] transition-colors cursor-pointer ml-auto"
+                    >
+                      {formatCommentCount(commentCount)}
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Action Buttons: Reaction Button + Comment Button */}
+              <div className="flex items-center gap-2.5">
+                <ReactionButton
+                  selectedReactionId={selectedReactionId}
+                  isLoading={isReactionsLoading}
+                  onReactionSelect={handleReactionSelect}
+                  onMainButtonClick={handleMainButtonClick}
+                />
+
+                <div className="flex-1">
+                  <CommentButton onClick={handleOpenComments} />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Unified Post Discussion & Image Modal */}
+      <ImageLightboxModal
+        isOpen={modalState.isOpen}
+        initialIndex={modalState.initialIndex}
+        images={images}
+        postId={postId}
+        postTitle={title}
+        postDescription={description}
+        postDate={date}
+        postVisibility={visibility}
+        currentUser={effectiveUser}
+        focusCommentInput={modalState.focusCommentInput}
+        onClose={handleCloseModal}
+      />
     </div>
   );
 }
