@@ -103,33 +103,56 @@ body.modal-open {
   height: 100% !important;
 }
 
-/* Hide overflow for most app containers while modal open,
-    but explicitly exclude elements marked `.modal-scroll`. */
+/* Hide overflow for background page containers while modal open,
+    but explicitly exclude elements marked `.modal-scroll` or inside portals. */
 body.modal-open .fixed.h-full,
-body.modal-open .overflow-auto:not(.modal-scroll),
-body.modal-open .overflow-y-auto:not(.modal-scroll),
-body.modal-open .overflow-scroll:not(.modal-scroll) {
+body.modal-open main .overflow-auto:not(.modal-scroll),
+body.modal-open main .overflow-y-auto:not(.modal-scroll),
+body.modal-open main .overflow-scroll:not(.modal-scroll) {
   overflow: hidden !important;
   -ms-overflow-style: none; /* IE 10+ */
   scrollbar-width: none; /* Firefox */
 }
 
 /* Allow scroll inside modal scrollable area */
+.modal-scroll,
 body.modal-open .modal-scroll {
-  overflow: auto !important;
+  overflow-y: auto !important;
   -webkit-overflow-scrolling: touch; /* smooth scrolling on mobile */
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(239, 191, 4, 0.4) transparent;
 }
 
 /* Don't hide the webkit scrollbar for the modal scroll area */
+.modal-scroll::-webkit-scrollbar,
 body.modal-open .modal-scroll::-webkit-scrollbar {
-  display: initial;
+  display: block !important;
+  width: 6px;
+}
+
+.modal-scroll::-webkit-scrollbar-track,
+body.modal-open .modal-scroll::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+}
+
+.modal-scroll::-webkit-scrollbar-thumb,
+body.modal-open .modal-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(239, 191, 4, 0.4);
+  border-radius: 8px;
+}
+
+.modal-scroll::-webkit-scrollbar-thumb:hover,
+body.modal-open .modal-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(239, 191, 4, 0.7);
 }
 
 /* For other elements we still want to hide webkit scrollbars (non-modal) */
 body.modal-open .fixed.h-full::-webkit-scrollbar,
-body.modal-open .overflow-y-auto:not(.modal-scroll)::-webkit-scrollbar,
-body.modal-open .overflow-auto:not(.modal-scroll)::-webkit-scrollbar,
-body.modal-open .overflow-scroll:not(.modal-scroll)::-webkit-scrollbar {
+body.modal-open main .overflow-y-auto:not(.modal-scroll)::-webkit-scrollbar,
+body.modal-open main .overflow-auto:not(.modal-scroll)::-webkit-scrollbar,
+body.modal-open main .overflow-scroll:not(.modal-scroll)::-webkit-scrollbar {
   display: none;
 }
 

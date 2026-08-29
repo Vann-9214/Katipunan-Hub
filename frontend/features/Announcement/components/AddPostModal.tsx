@@ -151,7 +151,7 @@ export function AddPostModal(props: AddPostModalProps) {
                 <form
                   id="add-post-form"
                   onSubmit={handlers.handleSubmit}
-                  className="flex flex-col gap-5 p-6 overflow-y-auto custom-scrollbar flex-1 bg-[#F9FAFB]"
+                  className="flex flex-col gap-5 p-6 overflow-y-auto modal-scroll min-h-0 flex-1 bg-[#F9FAFB]"
                 >
                   {/* Author / Audience */}
                   <div className="flex items-center gap-3">
