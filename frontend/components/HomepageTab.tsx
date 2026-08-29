@@ -192,8 +192,6 @@ export default function HomepageTab({ user }: HomepageTabProps) {
         borderImage: "linear-gradient(to right, #EFBF04, #FFD700, #D4AF37) 1",
       }}
     >
-      <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('/noise.png')] mix-blend-overlay" />
-
       {/* --- LEFT SECTION: LOGO + WILDCARD SEARCH --- */}
       <div className="flex items-center gap-6 flex-shrink-0 relative z-10">
         <div className="hidden min-[860px]:block">
