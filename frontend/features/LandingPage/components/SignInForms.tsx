@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { AlertCircle, ArrowRight } from "lucide-react";
@@ -20,7 +20,7 @@ interface SignInFormProps {
   onSwitchToVerification?: (email: string) => void;
 }
 
-export default function SignInForm({
+function SignInForm({
   onSwitchToSignUp,
   onSwitchToVerification,
 }: SignInFormProps) {
@@ -106,7 +106,10 @@ export default function SignInForm({
 
       {/* Right Side */}
       <div className="flex-1 bg-white flex flex-col justify-center items-center p-6 sm:p-8 relative overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-        <div className="w-full max-w-[420px] flex flex-col gap-5 h-full justify-center py-6">
+        {/* Anchored to the top rather than centred: centring would place the header and
+            toggle differently on each panel, since the two forms have different content
+            heights. Keep this block identical to the one in SignUpForms. */}
+        <div className="w-full max-w-[420px] flex flex-col gap-4 h-full pt-6 pb-6">
           <div className="flex flex-col gap-1 shrink-0">
             <div className="transform scale-90 origin-left">
               <Logo unclickable={true} width={45} height={55} />
@@ -121,7 +124,7 @@ export default function SignInForm({
             </div>
           </div>
 
-          <div className="w-full shrink-0 mb-5">
+          <div className="w-full shrink-0">
             <ToggleButton
               width="w-full"
               height="h-[40px]"
@@ -135,7 +138,7 @@ export default function SignInForm({
             />
           </div>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4 flex-1">
             <AnimatePresence>
               {errorMsg && (
                 <motion.div
@@ -173,7 +176,6 @@ export default function SignInForm({
 
             <div className="flex flex-col gap-3">
               <TextBox
-                autoFocus={true}
                 type="email"
                 placeholder="CIT Email"
                 value={email}
@@ -204,25 +206,30 @@ export default function SignInForm({
               </div>
             </div>
 
-            <Button
-              text={loading ? "Logging In..." : "Login"}
-              width="w-full"
-              height="h-[45px]"
-              textSize="text-[16px]"
-              type="submit"
-              bg="bg-[#8B0E0E] hover:bg-[#6d0b0b]"
-              className="rounded-[15px] font-bold shadow-lg shadow-maroon/20 mt-32"
-            />
+            {/* Trailing block: pinned to the bottom with its own fixed internal spacing so
+                the submit button lands at the same height as the one in SignUpForms,
+                independent of each form's field gap. Keep both copies identical. */}
+            <div className="mt-auto flex flex-col gap-2">
+              <Button
+                text={loading ? "Logging In..." : "Login"}
+                width="w-full"
+                height="h-[45px]"
+                textSize="text-[16px]"
+                type="submit"
+                bg="bg-[#8B0E0E] hover:bg-[#6d0b0b]"
+                className="rounded-[15px] font-bold shadow-lg shadow-maroon/20"
+              />
 
-            <div className="text-center text-xs font-ptsans text-gray-500 mt-1">
-              Don&apos;t have an account?{" "}
-              <button
-                type="button"
-                onClick={onSwitchToSignUp}
-                className="font-bold text-maroon hover:underline cursor-pointer"
-              >
-                Sign Up
-              </button>
+              <div className="text-center text-xs font-ptsans text-gray-500">
+                Don&apos;t have an account?{" "}
+                <button
+                  type="button"
+                  onClick={onSwitchToSignUp}
+                  className="font-bold text-maroon hover:underline cursor-pointer"
+                >
+                  Sign Up
+                </button>
+              </div>
             </div>
           </form>
         </div>
@@ -230,3 +237,8 @@ export default function SignInForm({
     </div>
   );
 }
+
+// Both auth panels stay mounted for the modal's lifetime so switching is pure transform
+// work. Memoising keeps an authMode change from re-reconciling both form trees, which cost
+// ~133ms of stalled frames on a 6x-throttled CPU right as the slide began.
+export default memo(SignInForm);

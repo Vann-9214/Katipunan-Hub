@@ -62,17 +62,19 @@ export const logoEntranceVariant: Variants = {
   },
 };
 
-export const modalSlideVariants: Variants = {
-  enter: (direction: number) => ({
-    x: direction > 0 ? "100%" : "-100%",
-    opacity: 1,
-  }),
-  center: {
-    x: 0,
-    opacity: 1,
-  },
-  exit: (direction: number) => ({
-    x: direction < 0 ? "100%" : "-100%",
-    opacity: 1,
-  }),
-};
+// The auth panels behave as a two-slide carousel: sign in always parks on the left,
+// sign up always parks on the right, and whichever is active sits at 0. That makes the
+// travel direction implicit, so no separate `direction` state is needed to keep them
+// in sync.
+export const AUTH_PANEL_RESTING_OFFSET = {
+  signin: "-100%",
+  signup: "100%",
+} as const;
+
+// Both panels travel together, so the swap is symmetric.
+// "expo out" — decisive start, long settle. Anything slower reads as sluggish.
+export const modalSlideTransition = {
+  type: "tween",
+  ease: [0.16, 1, 0.3, 1],
+  duration: 0.45,
+} as const;
