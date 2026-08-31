@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { motion } from "framer-motion";
 
 interface ToggleButtonProps {
@@ -27,6 +28,13 @@ export default function ToggleButton({
 }: ToggleButtonProps) {
   // Helper to determine which color to use for the sliding background
   const activeColor = active === "left" ? leftActiveBg : rightActiveBg;
+
+  // The pill's layoutId must be unique per ToggleButton instance. A hardcoded id would be
+  // shared by every toggle mounted at the same time — framer-motion then treats them as one
+  // element, so the pill jumps to whichever instance rendered last and disappears from the
+  // others. (The sign in / sign up panels are both mounted at once, so this is two toggles.)
+  // Sharing it between this instance's left and right buttons is what animates the slide.
+  const pillLayoutId = `toggle-pill-${useId()}`;
 
   return (
     <div
@@ -56,7 +64,7 @@ export default function ToggleButton({
         {/* THE SLIDING BACKGROUND (Only renders here if active is left) */}
         {active === "left" && (
           <motion.div
-            layoutId="toggle-pill"
+            layoutId={pillLayoutId}
             className={`absolute inset-0 rounded-[25px] ${activeColor} shadow-sm`}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
           />
@@ -80,7 +88,7 @@ export default function ToggleButton({
         {/* THE SLIDING BACKGROUND (Moves here if active is right) */}
         {active === "right" && (
           <motion.div
-            layoutId="toggle-pill"
+            layoutId={pillLayoutId}
             className={`absolute inset-0 rounded-[25px] ${activeColor} shadow-sm`}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
           />

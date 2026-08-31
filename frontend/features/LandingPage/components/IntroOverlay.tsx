@@ -26,22 +26,15 @@ export default function IntroOverlay({ onComplete }: IntroOverlayProps) {
         }}
       />
       <div className="relative flex flex-col items-center justify-center z-10">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 0.5, scale: 1.2 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          className="absolute w-[300px] h-[300px] bg-white blur-[80px] rounded-full pointer-events-none"
-        />
-        <motion.div
-          initial={{ opacity: 0, scale: 0.5, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          className="relative z-20 mb-8"
+        <div
+          className="relative z-20 mb-8 flex h-36 w-36 items-center justify-center overflow-hidden rounded-full border border-[#EFBF04]/30 bg-[#FFF6D6]/90"
+          style={{
+            clipPath: "circle(50% at 50% 50%)",
+            WebkitClipPath: "circle(50% at 50% 50%)",
+          }}
         >
-          <div className="drop-shadow-2xl">
-            <Logo width={120} height={140} unclickable showText={false} />
-          </div>
-        </motion.div>
+          <Logo width={98} height={120} unclickable showText={false} />
+        </div>
         <div className="overflow-hidden h-16 md:h-20 flex items-center relative z-20">
           <motion.h1
             initial={{ y: 100 }}

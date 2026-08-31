@@ -16,8 +16,6 @@ export default function LandingPageContent() {
     setIntroFinished,
     authMode,
     setAuthMode,
-    direction,
-    setDirection,
     openSignUp,
   } = useLandingPageAuth();
 
@@ -37,19 +35,18 @@ export default function LandingPageContent() {
         )}
       </AnimatePresence>
 
-      {/* --- FIXED TAB BAR --- */}
+      {/* --- FIXED TAB BAR ---
+          Purely a motion wrapper: LandingPageTab positions its own floating bar with
+          `fixed`, so this element has no height of its own. It must stay unstyled —
+          a background/border here renders as a 1px white hairline across the top of
+          the hero rather than as a navbar. */}
       <motion.div
         initial={{ y: -100 }}
         animate={introFinished ? { y: 0 } : { y: -100 }}
         transition={{ duration: 0.5 }}
-        className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-white/20 shadow-sm transition-all"
+        className="fixed top-0 left-0 right-0 z-50"
       >
-        <LandingPageTab
-          authMode={authMode}
-          setAuthMode={setAuthMode}
-          direction={direction}
-          setDirection={setDirection}
-        />
+        <LandingPageTab authMode={authMode} setAuthMode={setAuthMode} />
       </motion.div>
 
       <div className="flex flex-col w-full flex-grow">

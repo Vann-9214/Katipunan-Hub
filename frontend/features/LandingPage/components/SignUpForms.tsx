@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { CheckCircle } from "lucide-react";
@@ -23,7 +23,7 @@ interface SignUpFormProps {
   onSuccessfulSignUp?: (email: string) => void;
 }
 
-export default function SignUpForm({
+function SignUpForm({
   onSwitch,
   onSuccessfulSignUp,
 }: SignUpFormProps) {
@@ -169,13 +169,16 @@ export default function SignUpForm({
 
       {/* Right Side */}
       <div className="flex-1 bg-white flex flex-col justify-center items-center p-6 sm:p-8 relative overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] rounded-b-[30px] md:rounded-r-[30px] md:rounded-bl-none">
-        <div className="w-full max-w-[420px] flex flex-col gap-4 h-full justify-center py-6">
+        {/* Anchored to the top rather than centred: centring would place the header and
+            toggle differently on each panel, since the two forms have different content
+            heights. Keep this block identical to the one in SignInForms. */}
+        <div className="w-full max-w-[420px] flex flex-col gap-4 h-full pt-6 pb-6">
           <div className="flex flex-col gap-1 flex-shrink-0">
             <div className="transform scale-90 origin-left">
               <Logo unclickable={true} width={45} height={55} />
             </div>
             <div>
-              <h2 className="text-[26px] font-bold font-montserrat text-gray-900">
+              <h2 className="text-[28px] font-bold font-montserrat text-gray-900">
                 Sign Up
               </h2>
               <p className="text-gray-500 font-ptsans text-sm">
@@ -184,7 +187,7 @@ export default function SignUpForm({
             </div>
           </div>
 
-          <div className="w-full flex-shrink-0">
+          <div className="w-full shrink-0">
             <ToggleButton
               width="w-full"
               height="h-[40px]"
@@ -199,7 +202,7 @@ export default function SignUpForm({
             />
           </div>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-1.5 flex-1">
             <AnimatePresence>
               {successMessage && (
                 <motion.div
@@ -227,7 +230,6 @@ export default function SignUpForm({
             <div className="flex flex-col gap-2.5">
               <TextBox
                 type="text"
-                autoFocus={true}
                 placeholder="Full Name"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
@@ -334,27 +336,32 @@ export default function SignUpForm({
               </div>
             </div>
 
-            <Button
-              text={loading ? "Creating..." : "Sign Up"}
-              width="w-full"
-              height="h-[45px]"
-              textSize="text-[16px]"
-              type="submit"
-              bg="bg-[#EFBF04] hover:bg-[#D4AF37]"
-              textcolor="text-white"
-              className="rounded-full font-bold shadow-lg shadow-yellow-500/20 mt-2"
-              disabled={loading}
-            />
+            {/* Trailing block: pinned to the bottom with its own fixed internal spacing so
+                the submit button lands at the same height as the one in SignInForms,
+                independent of each form's field gap. Keep both copies identical. */}
+            <div className="mt-auto flex flex-col gap-2">
+              <Button
+                text={loading ? "Creating..." : "Sign Up"}
+                width="w-full"
+                height="h-[45px]"
+                textSize="text-[16px]"
+                type="submit"
+                bg="bg-[#EFBF04] hover:bg-[#D4AF37]"
+                textcolor="text-white"
+                className="rounded-full font-bold shadow-lg shadow-yellow-500/20"
+                disabled={loading}
+              />
 
-            <div className="text-center text-xs font-ptsans text-gray-500 mb-6">
-              Already have an account?{" "}
-              <button
-                type="button"
-                onClick={onSwitch}
-                className="font-bold text-[#EFBF04] hover:underline cursor-pointer"
-              >
-                Sign In
-              </button>
+              <div className="text-center text-xs font-ptsans text-gray-500">
+                Already have an account?{" "}
+                <button
+                  type="button"
+                  onClick={onSwitch}
+                  className="font-bold text-[#EFBF04] hover:underline cursor-pointer"
+                >
+                  Sign In
+                </button>
+              </div>
             </div>
           </form>
         </div>
@@ -362,3 +369,6 @@ export default function SignUpForm({
     </div>
   );
 }
+
+// See the note in SignInForms.tsx — same reason.
+export default memo(SignUpForm);

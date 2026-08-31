@@ -126,7 +126,6 @@ const HeroSection = ({
         >
           {/* Center Logo Area */}
           <div className="relative z-20 group">
-            <div className="absolute inset-0 bg-white/20 blur-[80px] rounded-full transform scale-150 group-hover:bg-white/30 transition-all duration-500" />
             <motion.div
               whileHover={{ scale: 1.05, rotate: 5 }}
               transition={{ type: "spring", stiffness: 300 }}
